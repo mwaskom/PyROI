@@ -1,4 +1,4 @@
-function spm_t2p(concell)
+function spm_t2sig(concell)
 % spm_t2p(contrast cell)
 % Function to convert voxels in spmT images from
 % t-statistics to -log10(p) values for use in FsFast
