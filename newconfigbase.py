@@ -1,3 +1,5 @@
+# emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
+# vi: set ft=python sts=4 ts=4 sw=4 et:
 """
    May/June 2010 update of ROI pypeline.  A work in progress.
 
@@ -54,7 +56,7 @@ def SetUp(setupkey=None):
 
        Parameters
        ----------
-       par : full name of analysis paradigm
+       par : full name of main analysis paradigm
        maskpar : full name of functional mask paradigm 
        maskcon : abbreviated name of functional mask contrast 
        maskthresh : threshold for functional mask (in -log10(P))
@@ -65,18 +67,24 @@ def SetUp(setupkey=None):
        analysis
     """
     
-    analysis = [{'par':'novelfaces','maskpar':'social','maskcon':'AFvNF',
+    analysis = [{'par':'novelfaces', 'maskpar':'social', 'maskcon':'AFvNF',
                  'maskthresh':0,'masksign':'pos'},
-                {'par':'social','maskpar':'novelfaces','maskcon':'AvF',
-                 'maskthresh':1.3,'masksign':'pos'},
+                {'par':'social' ,'maskpar':'novelfaces', 'maskcon':'AvF',
+                 'maskthresh':1.3, 'masksign':'pos'},
 	            {'par':'social'}]
 
     #------------------------------<Atlases>-----------------------------------#
     """
 
     """
-       atlases
-
+    atlases = {'aseg' : 
+                  {'fname' : 'aseg.mgz',
+                   'space' : 'volume',
+                   'source' : 'freesurfer',
+                   'regions' : [17,18,52,53]},
+               'aparc' : 
+                   {'fname' : 'aparc'}}
+       
 
 
     #--------------------<Freesurfer Subject Directory>------------------------#
@@ -102,8 +110,8 @@ def SetUp(setupkey=None):
        analyses. The format is a dictionary where keys are full names and
        values are short names. Full names should correspond to the name 
        associated with the paradigm in your file directory (case-sensitive),
-       while shorthand names should be a lower-case two-letter code that will 
-       identify the paradigm in your database.
+       while shorthand names should be a two-letter code that will identify 
+       the paradigm in your database.
 
        Format
        ------
@@ -123,29 +131,42 @@ def SetUp(setupkey=None):
     #--------------------------<First Level Design>----------------------------#
     """
        Specify the task-related elements of your first-level design matrix.
-       The hrf components variable specifies how many different beta images
-       are associated with each task condition. The condition variable links
+       The hrfcomponents variable specifies how many different beta images
+       are associated with each task condition. The betastoextract variable 
+       specifies which regressors to extract if multiple regressors are
+       associated with each task condition.  It can be 'all' or a list of 
+       integers corresponding to the components. The conditions variable links
        paradigm names (as specified above) to a list of short names (ideally
-       4 or 5 letters) for the task conditions in that paradigm.
+       4 or 5 letters) for the task conditions in that paradigm. The order of
+       condition names in these lists should correspond to the order in your
+       beta images.
+
+       Note that although the hrfcomponents variable is added for forward
+       compatability, the ROI pypeline has not been tested on any data
+       with multiple HRF comopnents for each task condition.
 
        Format
        ------
        integer
+       'all' or list of integers
        dictionary where each key is a string and each value is a list of strings
 
        Variable Name
        -------------
        hrfcomponents
+       betastoextract
        conditions
     """
 
     hrfcomponents = 1
+
+    betastoextract = ['all']
     
     conditions = {'novelfaces' :  ['fmzn','fmlr','novl'],
                   'novelobjects': ['fmzn','fmlr','novl'],
                   'surreal' :     ['valid','inval'],
                   'masked':       ['mkfr','mknl','fear','neut'],
-                  'social':       ['aface','nface','pscen','escen','nscen']},
+                  'social':       ['aface','nface','pscen','escen','nscen']}
 
     #------------------------------<Contrasts>---------------------------------#
     """
@@ -208,9 +229,9 @@ def SetUp(setupkey=None):
        contrastpath
     """
 
-    betapath = 'surface/l1output/$paradgim/$subject/model',    
+    betapath = 'surface/l1output/$paradgim/$subject/model'    
 
-    contrastpath = 'surface/l1output/$paradigm/$subject/contrasts',
+    contrastpath = 'surface/l1output/$paradigm/$subject/contrasts'
     
     #----------------------------<Subjects>------------------------------------#
     """
@@ -234,7 +255,7 @@ def SetUp(setupkey=None):
 
                      ['SAD_017','SAD_018','SAD_019','SAD_020','SAD_021',
                       'SAD_022','SAD_023','SAD_024','SAD_025','SAD_027', 
-                      'SAD_028','SAD_029','SAD_030','SAD_031','SAD_032',           
+                      'SAD_028','SAD_029','SAD_030','SAD_031','SAD_032',         
                       'SAD_033','SAD_034','SAD_035','SAD_036','SAD_037',
                       'SAD_038','SAD_039','SAD_040','SAD_041','SAD_043',
                       'SAD_044','SAD_045','SAD_046','SAD_047','SAD_048',
@@ -253,15 +274,27 @@ def SetUp(setupkey=None):
 
     #----------------------------<Overwrite>-----------------------------------#
     """
+       Specify which files the program should overwrite as it is run multiple
+       times. The format is of a dictionary where keys are descriptions of
+       classes of files produced by the pypeline and values are booleans (True
+       or False), where True means that the file will be overwritten.  NB: in
+       Python, True and False are case-sensitive when serving as booleans.
+
+       Format
+       ------
+       a dictionary where each key is a string and each value is a boolean
        
+       Variable Name
+       -------------
+       overwrite
     """
-    overwrite = {'task_betas' = True,
-                 'registration_matrices' = True,
-                 'resampled_volumes' = True,
-                 'full_atlas_stats' = True,
-                 'label_atlases' = True,
-                 'spm_Sig_images' = True,
-                 'functional_extracts' = True}
+    overwrite = {'task_betas' : True,
+                 'registration_matrices' : True,
+                 'resampled_volumes' : True,
+                 'full_atlas_stats' : True,
+                 'label_atlases' : True,
+                 'spm_Sig_images' : True,
+                 'functional_extracts' : True}
 
 
     #==========================================================================#    
@@ -271,16 +304,17 @@ def SetUp(setupkey=None):
     setup = {'projname' : projname, 'analysis' : analysis, 'atlases' : atlases,
              'subjdir' : subjdir, 'subjects' : subjects, 'paradigms' : paradigms,
              'contrastpath' : contrastpath, 'betapath' : betapath, 'contrasts' :
-             contrasts, 'conditions' : conditions, 'hrfcomponents' : hrfcomponents}
+             contrasts, 'conditions' : conditions, 'hrfcomponents' : hrfcomponents,
+             'overwrite' : overwrite, 'betastoextract' : betastoextract}
     
     # XXX Change to variable based setup probably obviates the below, but
     # we should find a way to catch the exception from assigning the setup
     # dictionary with a variable that accidentally got deleted above
-
+    """
     # Full list of keys we expect
     fullkeylist = ['projname','analysis','atlases','subjdir','subjects',
                    'contrastpath','betapath','contrasts','conditions',
-                   'hrfcomponents','paradigms']
+                   'hrfcomponents','paradigms','overwrite']
     
     # Get the list of keys in the actual SetUp dictionary
     actkeylist = setup.keys()
@@ -310,364 +344,249 @@ def SetUp(setupkey=None):
     # If something is missing or unexpected, error out with some information about it
     if fullkeylist != actkeylist:
         if missing and extra:
-            errstr = 'You are missing SetUp key(s) \'%s,\' and have unrecognized key(s) \'%s.\'' \
-                     % (missingstr, extrastr)
+            errstr = 'You are missing SetUp key(s) \'%s,\' and have '+\
+                     'unrecognized key(s) \'%s.\'' % (missingstr, extrastr)
         elif missing and not extra:
             errstr = 'You are missing SetUp key(s) \'%s.\'' % missingstr
         elif extra and not missing:
             errstr = 'You have unrecognized SetUp key(s) \'%s.\'' % extrastr
         else:
-            errstr = 'Something is wrong in your SetUp, but we cannot figure out what.'
+            errstr = 'Something is wrong in SetUp, but we cannot figure out what.'
         raise Exception(errstr)
-    
+    """ 
     # Return SetUp information
     if setupkey is None: return setup
     else: return setup[setupkey]
 
 def ProjectName():
-    """This is where you specify your project name, which will be the name of
-    the directory in roi/analyses/ where your data will be stored.
- 
-    Returns: string
+    """This function will return the project name string
+
+    Parameters
+    ----------
+    none
+
+    Returns
+    -------
+    string
     """
  
-    #--------------------------------------------------------------------------#
-    #--------------------------------------------------------------------------#
-    
-   
+    projname = SetUp('projname')
+
     return projname
 
-
-def Groups():
-    """Here is where you set whether you want to run statistics for both groups
-    or are looking at only one of your groups.  The return value should correspond 
-    with the code in the Subjects function below (i.e. it should be either 'all,' 
-    'patients,' or 'controls.'
-
-    Returns: string
-    """
-
-    #--------------------------------------------------------------------------#
-    #--------------------------------------------------------------------------#
-
-    return grouptype
-
-
 def Analysis():
-    """A way to hardcode a list of dictionaries specifying analysis
-    parameters (analysis paradigm and mask paradigm, contrast, sign, and thresh).
-    You can leave out the masksign parameter and it will be set to 'pos.'
-    Note: must be a list of dictionaries, even if specifying only one analysis.
-    Leave out the mask parameters if you don't want to mask the ROI.
- 
-    Returns: list of dictionaries
+    """This function will return the analysis list.  If the variable type
+    of analysis is a dictionary, it wraps it in a list.
+   
+    Parameters
+    ----------
+    none
+
+    Returns
+    -------
+    list of dictionaries
     """
 
-    #--------------------------------------------------------------------------#
-    #--------------------------------------------------------------------------#
-    
+    analysis = SetUp('analysis')
+
+    if isinstance(analysis, dict):
+        analysis = [analysis]
+
     return analysis
 
+def Paradigms(parname=None, case='upper'):
+    """This function has two uses. If called with an empty scope, it will
+    return a list of the paradigms inolved in the project. If called with 
+    the full name of a paradigm as the first argument, it will return the 
+    two-letter code for that paradigm. You may specify whether the paradigm
+    code should be returned in upper or lower case using the second argument
+    (upper case is default).
 
-def SegVols(retval='dict'):
-    """A dictionary of the automatic segmentation volumes
-    (those that reside in the $SUBJ/mri/ directory with segmentation
-    names keyed in the fsroidict.py module).
+    Parameters
+    ----------
+    parname : full paradigm name (if None, returns the full list of paradigms)
+    case : upper or lower -- Def: upper
 
-    Returns: dictionary or string
+    Returns
+    -------
+    list of full paradigm names or string 
     """
 
-    #--------------------------------------------------------------------------#
-    #--------------------------------------------------------------------------#
-    
-    space = RoiSpace('orig')
-    tempsegvols = {}
-    for key in segvols:
-        if space[key] == 'surface':
-	    for hemi in ['lh','rh']:
-	        tempsegvols[key+'.'+hemi] = hemi+'.'+segvols[key]
-        else:
-	    tempsegvols[key] = segvols[key]
-    segvols = tempsegvols
-
-    space = RoiSpace()
-    for segkey in segvols.keys():
-         if segkey == 'aseg' or segkey == 'label_seg':
-             segvols[segkey] = segvols[segkey] + '.mgz'
-         elif space[segkey] == 'volume':
-             segvols[segkey] = segvols[segkey] + '+aseg.mgz'
-         elif space[segkey] == 'surface':
-             segvols[segkey] = segvols[segkey]
-
-    if retval == 'dict':   
-        return segvols
-    else:
-        return segvols[retval]
-
-
-def Regions(seg='aseg'):
-    """A group of lists with the numerical ids (found in FreesurferColorLUT.txt)
-    for the ROIs we are investigating.  
-
-    Returns: list 
-    """
+    pardict = SetUp('paradigms')
 
  
-    #--------------------------------------------------------------------------#
-    #--------------------------------------------------------------------------#
-
-    for key in regions:
-        if isinstance(regions[key],int):
-            regions[key] = [regions[key]]
-    
-    retlist = regions[seg]
-    retlist.sort()
-    if RoiSpace(seg) == 'surface':
-        retlist = [int(i-(N.floor(i/100)*100)) for i in retlist]
-    return retlist
-
-
-def Labels(retval='fulldict'):
-    """
-    
-    NOTE: this docstring is depracated, but it's Saturday and I'm lazy
-
-    A list of names for rois that are the prefix to their .label files 
-    (without the .label extension).  For use with labels created  from 
-    functional data, or other non recon-all source.  If you do not intend
-    To examine any label-based ROIs, this should be an empty list: []
-    NOTE: labels should be bilateral (for now).
-
-    Returns: list
-    """
-    
-    #--------------------------------------------------------------------------#
-    labels = {}
-    """{'lh':
-             {1:'lh_dummylabel_1'},
-        'rh':
-             {1:'rh.FFA'}}"""
-    #--------------------------------------------------------------------------#
-
-    if not labels: return None
-
-    labels['adjrh'] = {}
-    adj = len(labels['lh'].keys()) + 1
-    for id in labels['rh'].keys():
-        labels['adjrh'][id*adj] = labels['rh'][id]
-
-    lhids = labels['lh'].keys()
-    rhids = labels['adjrh'].keys()
-    lhids.sort()
-    rhids.sort()
-    fullids = lhids + rhids
-
-    fullnames = []
-    for id in fullids:
-        if id < adj: hemi = 'lh'
-	else: hemi = 'adjrh'
-        fullnames.append(labels[hemi][id])
-       
-    if len(labels['lh'].keys()) != len(labels['rh'].keys()):
-        raise Exception('Number of label ROIs are not even across hemispheres')
-
-    realnames = []
-    for id in labels['lh'].keys():
-        if 'dummy' not in labels['lh'][id]:
-	    realnames.append(labels['lh'][id])
-	else:
-	    oppname = labels['rh'][id]
-	    fakename = 'lh_' + oppname[3:len(oppname)]
-	    realnames.append(fakename)
-    for id in labels['rh'].keys():
-        if 'dummy' not in labels['rh'][id]:
-	    realnames.append(labels['rh'][id])
-	else:
-	    oppname = labels['lh'][id]
-	    fakename = 'rh_' + oppname[3:len(oppname)]
-	    realnames.append(fakename)
-
-    if retval == 'fulldict': 
-        return labels
-    elif retval == 'lh' or retval == 'left':
-        return labels['lh']
-    elif retval == 'rh' or retval == 'right':
-        return labels['adjrh']
-    elif retval == 'origrh' or retval == 'origright':
-        return labels['rh']
-    elif retval == 'fullids':
-        return fullids    
-    elif retval == 'fullnames':
-        return fullnames
-    elif retval == 'realnames':
-        return realnames
-    elif retval == 'adjust':
-        return adj
-    elif retval == 'space':
-        return RoiSpace()['label_seg']
-    else:
-        raise Exception('Label return value \'%s\' not understood' % retval)
-
-
-def RoiSpace(retval='dict'):
-    """Sets whether the ROIs will be analyzed in the volume or on the surface.
-    Note: aseg ROIs must be analyzed in the volume.  Label ROIs should be
-    analyzed in the space in which they were created.
-
-    Returns: dict
-    """
-    
-    #--------------------------------------------------------------------------#
-    #--------------------------------------------------------------------------#
-
-    if retval == 'orig':
-        return roispacedict
-
-    temproispacedict = {}
-    for key in roispacedict:
-        if roispacedict[key] == 'surface':
-	    temproispacedict[key+'.lh'] = 'surface'
-	    temproispacedict[key+'.rh'] = 'surface'
-        else:
-	    temproispacedict[key] = 'volume'
-
-    roispacedict = temproispacedict
-
-    if retval == 'dict':
-        return roispacedict
-    else:
-        return roispacedict[retval]
-
-
-def SubjDir():
-    """Sets the Freesurfer subject directory.
-
-    Returns: string
-    """    
-
-    #--------------------------------------------------------------------------#
-    {'subjdir' : fs.FSInfo.subjectsdir(os.path.abspath('data'))}
-    #--------------------------------------------------------------------------# 
-    
-    return subjdir    
-
-
-def Paradigms(parname='all',case='upper'):
-    """Contains two items: a list of paradigms used in this analysis (paradigms 
-    should have the same scan parameters if they will be used in ROI analysis),
-    and a dictionary to link paradigm names to two-letter shortcuts for datafiles.
-    If called with an empty scope, returns the list; if called with a paradigm name,
-    it will return the shortcut.
-
-    Second argument sets the case of the abbreviation, if intended to be returned.
-    By default returns upper case, which is convention for analysis paradigm.  Include
-    'lower' to return lowercase, which is convention for mask paradigm.
-
-    Returns: list or string
-    """
-
-    #--------------------------------------------------------------------------#
-    #--------------------------------------------------------------------------#
-
-
-    if parname == 'all':
-        return parlist
+    if parname is None:
+        return pardict.keys()
     else:
         if case == 'lower':
-            return pardict[parname]
+            return pardict[parname].lower()
         elif case == 'upper':
-            return string.swapcase(pardict[parname])
+            return pardict[parname].upper()
         else:
-            raise exception('Case argument \'%s\' to '+\
-	                        'config.Paradigms not understood.' % case)
+            raise Exception('Case argument \'%s\' to ' % case +\
+	                        'config.Paradigms not understood.') 
 
+def Betas(par = None, retval = None):
+    """This function deals with both condition and file names for the 
+    first-level betas.  It takes the name of a paradigm and the type 
+    of list to return as parameters.  If asked for "names," it will
+    return the list of condition names.  If asked for "images," it 
+    will return the list of image file names associated with task
+    betas for that paradigm. If par is None, it will return the full
+    conditions dictionary.
 
-def Betas(par,retval='names'):
-    """Contains  lists defining the task condition names.  Can return those
-    names or the file names of their associated beta images.  First argument 
-    should be the paradig you want the betas for, second arugment should be 
-    either 'images' or 'names' ('names' is default) depending on what you want 
-    to return.  Names should be shortened to fit in the stats database, if possible.
-    Also suggested is that all beta names for one paradigm have same length.
+    If the hrfconditions variable is set higher than 1, it will add
+    n names to the condition list in the format cond-n.  You can also
+    control which of the multiple components will be returned (and thus
+    involved in the analysis) with the betastoextract variable. Note 
+    that this functionality is included for forward compatability, but 
+    that it has not yet actually been tested.
 
-    Returns: list
+    Parameters
+    ----------
+    par : paradigm
+    retval : images or names
+
+    Returns :
+    list of condition names or image files names
     """    
 
-    #--------------------------------------------------------------------------#
-    #--------------------------------------------------------------------------#
+    # Get the elements from the SetUp function 
+    hrfcomponents = SetUp('hrfcomponents')
+    betastoextract = SetUp('betastoextract')
+    conditions = SetUp('conditions')
 
+    # Return the conditions dictionary and hrfcomponents if scope is empty
+    if par is None:
+        return conditions, hrfcomponents
 
+    # Check that the paradigm is in the conditions dictionary
+    # Exit with a more informative error if it is not
+    try:
+        dump = conditions[par]
+    except KeyError:
+        raise Exception('Paradigm \'%s\' not found in conditions dictionary'\
+                        % par)
+
+    # Wrap betastoextract in a list if it's just an int
+    if isinstance(betastoextract, int):
+        betastoextract = [betastoextract]
+
+    # Initialize filename and multi-component condition name lists
     condimages = []
     mcompnames = []
 
-    for i in range(1,len(condnames)+1):
-        for j in range(0,components):
-            pad = None
-            if j < 10:
-	        pad = '0'
-            mcompnames.append(condnames[i-1] + '-' + pad + str(j+1))
-	    num = i + ((i-1)*(components-1)) + j
-            if num < 10:
-                condimages.append('beta_000%s.img' %str(num))
-            elif num < 100:
-                condimages.append('beta_00%s.img' %str(num))
-            elif num < 1000:
-                condimages.append('beta_0%s.img' %str(num))
-            else:
-                condimages.append('beta_%s.img' %str(num))
+    # If extracting all beta components, make that list
+    if betastoextract == 'all':
+        betastoextract = range(1, hrfcomponents + 1)
 
+    # Insert additional component image/names
+    for i in range(1,len(conditions[par])+1):
+        for j in range(0,hrfcomponents):
+            if j+1 in betastoextract:
+                pad = None
+                if j < 10:
+                    pad = '0'
+                # Add the component number to condition names    
+                mcompnames.append(conditions[par][i-1] + '-' + pad + str(j+1))
+                num = i + ((i-1)*(hrfcomponents-1)) + j
+                # Add the image filename to the image list
+                if num < 10:
+                    condimages.append('beta_000%s.img' %str(num))
+                elif num < 100:
+                    condimages.append('beta_00%s.img' %str(num))
+                elif num < 1000:
+                    condimages.append('beta_0%s.img' %str(num))
+                else:
+                    condimages.append('beta_%s.img' %str(num))
+    
+    
+    # Figure out what the function is being asked about and return it
     if retval == 'images':
         return condimages
-    elif retval == 'names' and components == 1:
-        return condnames
-    elif retval == 'names' and components > 1:
+    elif retval == 'names' and (hrfcomponents == 1 or betastoextract == [1]):
+        return conditions[par]
+    elif retval == 'names' and hrfcomponents > 1:
         return mcompnames
     else:
         raise Exception('Beta return type \'%s\' not understood' % retval)
 
+def Contrasts(par = None, type = None, format = None):
+    """This function controls the contrast images used in the analysis.
+    It takes the paradigm, image type, and image format as parameters 
+    and returns a dictionary mapping contrast shorthand names to image
+    file names.
 
-def Contrasts(par,type='P-map',format='.nii'):
-    """A set of dictionaries that define the contrast image number
-    for each paradigm in FsFast format.  Arguments: par = paradigm,
-    type = 'T-map' or 'con-img' (default).  
+    Parameters
+    ----------
+    par : paradigm
+    type : sig, T-map, or con-img
+    format : file extension
 
-    Returns: dictionary
+    Returns
+    -------
+    dictionary
+
     """
 
+    # Get the specified dict from SetUp
+    contrastdict = SetUp('contrasts')
 
+    # Return the full dict if called with an empty scope
+    if par is None:
+        return contrastdict
 
+    # Get the dictionary for the paradigm we're looking at
+    contrasts = contrastdict[par]
+
+    # Initialize the dictionaries for file names
     contrasts_sig = {}
     contrasts_tstat = {}
     contrasts_con = {}
+
+    # Iterate through the contrasts and populate the filename dictionaries
     for con in contrasts:
         if contrasts[con] < 10:
            pad = '0'
         else:
             pad = ''
-	contrasts_sig[con] = 'spmP_00' + pad + str(contrasts[con]) + format
-        contrasts_tstat[con] = 'spmT_00' + pad + str(contrasts[con]) + format 
-        contrasts_con[con] = 'con_00' + pad + str(contrasts[con]) + format
+        contrasts_sig[con] = 'spmSig_00%s%d%s' % (pad, contrasts[con], format)
+        contrasts_tstat[con] = 'spmT_00%s%d%s' % (pad, contrasts[con], format)
+        contrasts_con[con] = 'con_00%s%d%s' % (pad, contrasts[con], format)
 
-    if type == 'P-map':
+    # Figure out what type of image the function is being asked about and return
+    if type == 'sig':
         return contrasts_sig
     elif type == 'T-map':
-        return contrasts_sig
+        return contrasts_tstat
     elif type == 'con-img':
         return contrasts_con
     else:
-        raise Exception('Image type \'%s\' \
-	                not found: use \'T-map\', \'P-map\', or \'con-img\'' % type)
+        raise Exception('Image type \'%s\' ' %type +\
+	                'not understood: use \'T-map\', \'sig\', or \'con-img\'')
 
 
-def Subjects(group='all',subject=None):
-    """Group lists.  By default returns both patients and controls, but 
-    can specify by passing either 'patients' or 'controls'
-    
-    Returns: list or dict
+def Subjects(group = None, subject = None):
+    """This function controls the subjects and groups involved in the 
+    analysis.  It takes either a group or a subject as a parameter.
+    If called with an empty scope, it returns a list of all subjects.
+    If called with the name of a group, it returns a list of the subjects
+    in that group. If called with group = 'groups', it returns a list of 
+    the group names.  If called with the name of a subject, it will return
+    the name of the group that subject is a member of.
+
+    Parameters
+    ----------
+    group : group name or 'groups'
+    subject : subject name
+
+    Returns
+    -------
+    list
+
     """
 
-    #--------------------------------------------------------------------------#
-    #--------------------------------------------------------------------------#
+    subjects = SetUp('subjects')
 
     for grp in subjects.keys():
         subjects[grp].sort()
@@ -677,17 +596,18 @@ def Subjects(group='all',subject=None):
            if subject in subjects[grp]:
               return grp
 
-    if group == 'all':
+    if group is None:
         all = []
-	for grp in subjects.keys():
-	    all = all + subjects[grp]
-	return all
+        for grp in subjects.keys():
+	        all = all + subjects[grp]
+        return all
     elif group in subjects.keys():
         return subjects[group]
     elif group == 'groups':
         return subjects.keys()
     else:
         raise Exception('Group \'%s\' not found.' % group)
+
 
 def PathSpec(imgtype, paradigm=None, subject=None, contrast=None):
     """Return a path to a beta or contrast image directory
@@ -733,3 +653,37 @@ def PathSpec(imgtype, paradigm=None, subject=None, contrast=None):
             varpath = varpath.replace(var,vardict[var])
 
     return varpath
+
+def Overwrite(filetype = None):
+    """Query whether a given filetype should be overwritten if it is found
+    to exist at runtime.
+
+    The following filetypes are accepted:
+    (Note that which filetypes are accepted is fully dependent on the keys
+    of the overwrite dictionary as specified in the SetUp function).
+    - 'task_betas'
+    - 'registration_matrices'
+    - 'resampled_volumes'
+    - 'full_atlas_stats'
+    - 'label_atlases'
+    - 'spm_Sig_images'
+    - 'functional_extracts'
+
+    If this filetype is None, the function will return the dictionary
+
+    Parameters
+    ----------
+    string specifying file type
+
+    Returns
+    -------
+    boolean where True means "overwrite"
+    
+    """
+
+    overwrite = SetUp('overwrite')
+
+    if filetype is None:
+        return overwrite
+    else:
+        return overwrite[filetype]
