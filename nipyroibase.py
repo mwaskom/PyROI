@@ -1,11 +1,10 @@
-"""Analysis script for Python Roi package.  See documentation for more information on how to use.
-   Only user-editable section of this code is the initial import statement.  Edit to import
-   your customized configuration module.
+# emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
+# vi: set ft=python sts=4 ts=4 sw=4 et:
+"""
+   May/June 2010 update of ROI pypeline.  A work in progress.
 
-   Written by Michael Waskom
-   mwaskom@mit.edu
-   Version 0.7
-   April 10, 2010
+   Michael Waskom -- mwaskom@mit.edu
+
 """
 
 
@@ -21,7 +20,6 @@ import re
 import datetime
 import fsroidict
 import numpy as N
-from os.path import *
 from glob import glob
 from nipype.interfaces import freesurfer as fs
 from nipype.interfaces import matlab as mlab
@@ -33,25 +31,24 @@ analysis = Analysis()
 
 
 # Get our subject list
-group = Groups()
 if ProjectName() == 'development':
     subjList = ['SAD_022','SAD_033']
 else:
-    subjList = Subjects(group)
+    subjList = Subjects()
 
 
 # Set up some directory variables
 fsSubjDir = SubjDir()
-maindir = abspath('.')
-l1output = join(maindir,'surface/l1output')
-segvoldir = join(maindir,'roi/segvols')
-analysisdir = join(maindir,'roi/analyses')
-projectdir = join(analysisdir,ProjectName())
-logdir = join(projectdir,'logfiles')
+maindir = os.path.abspath('.')
+l1output = os.path.join(maindir,'surface/l1output')
+segvoldir = os.path.join(maindir,'roi/segvols')
+analysisdir = os.path.join(maindir,'roi/analyses')
+projectdir = os.path.join(analysisdir,ProjectName())
+logdir = os.path.join(projectdir,'logfiles')
 
 
 # Make roi directories, if they don't exist
-try: os.mkdir(joinp(maindir,'roi'))
+try: os.mkdir(os.path.joinp(maindir,'roi'))
 except: pass
 
 roidirs = [segvoldir,analysisdir,projectdir,logdir]
@@ -64,16 +61,6 @@ for dir in roidirs:
 analysisPars = set()
 for anparams in analysis:
     analysisPars.add(anparams['par'])
-
-# Print a list of these pars
-parlist = open(join(projectdir,'parlist.txt'),'w')
-parids = open(join(projectdir,'parids.txt'),'w')
-for par in analysisPars:
-    parlist.write(par + '\t')
-    parids.write(Paradigms(par) + '\t')
-parlist.close()
-parids.close()
-
 
 # Set some variables we'll use when we print to the terminal/log
 thinline = '----------------------------------------------------------------------'
@@ -100,6 +87,8 @@ def shortOut(message):
     print message
     lf.write(message)
 
+    
+
 # Get a timestamp for the analysis
 now = datetime.datetime.now()
 now = str(now)
@@ -112,7 +101,7 @@ timeStamp = nowyear + nowmonth + nowday + '-' + nowhour + nowminute
 
 
 # Open up the log file and print important information
-logpath = (join(logdir,ProjectName() + '_' + timeStamp + '.log'))
+logpath = (os.path.join(logdir,ProjectName() + '_' + timeStamp + '.log'))
             
 lf = open(logpath,'w')
 
@@ -140,11 +129,11 @@ lf.write('NiPyRoi Analysis \n' + now[0:16] + '\n' + os.getcwd() +
 for par in analysisPars:
     fullOut('Creating segmentation volumes for '+par+' analysis',thickline)
     for subj in subjList:
-        svsubjdir = join(segvoldir,par,subj)
-        regdir = join(svsubjdir,'regmats')
+        svsubjdir = os.path.join(segvoldir,par,subj)
+        regdir = os.path.join(svsubjdir,'regmats')
         regmat = Paradigms(par,'lower') + '2orig_bbregister.dat'
-        regmat = join(regdir,regmat)
-        funcvol = glob(join(l1output,par,subj,'realign/*.nii'))
+        regmat = os.path.join(regdir,regmat)
+        funcvol = glob(os.path.join(l1output,par,subj,'realign/*.nii'))
         funcvol = funcvol[0]
         try: os.mkdir(regdir)
         except: pass
@@ -168,7 +157,7 @@ for par in analysisPars:
 
 
         # Check to see if the segmentation volumes exist and make them if not
-        volumedir = join(svsubjdir,'volumes')
+        volumedir = os.path.join(svsubjdir,'volumes')
         segvols = []
         segvoltypes = []
         segspace = RoiSpace()
@@ -183,14 +172,14 @@ for par in analysisPars:
 
         for vol in segvols:
 
-            resampledvol = join(volumedir,vol)
+            resampledvol = os.path.join(volumedir,vol)
             if not isfile(resampledvol):
                 fullOut('Resampling ' + vol + ' for ' + subj,thinline)
                 # Set the inputs
 
                 resample = fs.ApplyVolTransform()
             
-                resample.inputs.targfile = join(fsSubjDir,subj,'mri',vol)
+                resample.inputs.targfile = os.path.join(fsSubjDir,subj,'mri',vol)
                 resample.inputs.sourcefile = funcvol
                 resample.inputs.outfile = resampledvol
                 resample.inputs.tkreg = regmat
@@ -204,12 +193,13 @@ for par in analysisPars:
                 shortOut('Found ' + resampledvol)
         
             # Print a summarry of the voxel counts in each ROI with mri_segstats 
-            statsdir = join(svsubjdir,'stats')
+            statsdir = os.path.join(svsubjdir,'stats')
             try: os.mkdir(statsdir)
             except: pass 
-            segstatsfile = join(statsdir,vol + '.stats') 
+            segstatsfile = os.path.join(statsdir,vol + '.stats') 
             if not isfile(segstatsfile):
-                fullOut('Running segmentation statistics on ' + vol + ' for ' + subj,thinline)
+                fullOut('Running segmentation statistics \
+                         on %s for %s' % (vol,subj),thinline)
                 # Set the inputs
 
                 segstats = fs.SegStats()
@@ -232,10 +222,10 @@ for par in analysisPars:
         """        
         # Make a segmentation volume from labels, if label ROIs exist
         if 'label_seg' in SegVols().keys():
-            origvol = join(fsSubjDir,subj,'mri/orig.mgz')
-            labeldir = join(fsSubjDir,subj,'label')
+            origvol = os.path.join(fsSubjDir,subj,'mri/orig.mgz')
+            labeldir = os.path.join(fsSubjDir,subj,'label')
             for hemi in ['lh','rh']:
-                hemivol = join(volumedir,hemi + '_labels.mgz')
+                hemivol = os.path.join(volumedir,hemi + '_labels.mgz')
                 if not isfile(hemivol):
                     fullOut('Projecting '+hemi+' labels into the colume for '+subj,thinline)
       
@@ -264,7 +254,7 @@ for par in analysisPars:
                     shortOut('Found ' + hemivol)
 
             # Adjust the segids of the right hemisphere volume
-            adjrhvol = join(volumedir,'adj_rh_labels.mgz')
+            adjrhvol = os.path.join(volumedir,'adj_rh_labels.mgz')
             if not isfile(adjrhvol):
                 fullOut('Adjusting rh label IDs for ' + subj,thinline)
   
@@ -272,7 +262,7 @@ for par in analysisPars:
 
                 adjseg = fs.Concatenate()
 
-                adjseg.inputs.invol = join(volumedir,'rh_labels.mgz')
+                adjseg.inputs.invol = os.path.join(volumedir,'rh_labels.mgz')
                 adjseg.inputs.outvol = adjrhvol
                 adjseg.inputs.mul = Labels('adjust')
       
@@ -284,9 +274,9 @@ for par in analysisPars:
 
 
             # Combine the left and right hemisphere label seg vols
-            origlabelsegvol = join(volumedir,'orig_label_seg.mgz')
-            lhvol = join(volumedir,'lh_labels.mgz')
-            rhvol = join(volumedir,'adj_rh_labels.mgz')
+            origlabelsegvol = os.path.join(volumedir,'orig_label_seg.mgz')
+            lhvol = os.path.join(volumedir,'lh_labels.mgz')
+            rhvol = os.path.join(volumedir,'adj_rh_labels.mgz')
             if not isfile(origlabelsegvol):
                 fullOut('Merging label volumes for ' + subj)
   
@@ -305,7 +295,7 @@ for par in analysisPars:
                 shortOut('Found ' + origlabelsegvol)
 
             # Resample the label seg volume into functional space
-            labelsegvol = join(volumedir,'label_seg.mgz')
+            labelsegvol = os.path.join(volumedir,'label_seg.mgz')
             if not isfile(labelsegvol):
                 fullOut('Resampling label_seg for ' + subj)
                 # Set the inputs
@@ -326,7 +316,7 @@ for par in analysisPars:
                 shortOut('Found ' + labelsegvol)
 
             # Print a summary of the label seg volume
-            labelstats = join(statsdir,'label_seg.mgz.stats')
+            labelstats = os.path.join(statsdir,'label_seg.mgz.stats')
             if not isfile(labelstats):
                 fullOut('Running segmentation statistics on ' + labelsegvol + ' for ' + subj)
                 # Set the inputs
@@ -355,8 +345,8 @@ for par in analysisPars:
 for par in analysisPars:
     fullOut('Creating beta volumes for ' + par + ' analysis',thickline)
     for subj in subjList:
-        modeldir = join(l1output,par,subj,'model')
-        betavol = join(modeldir,'task_betas.mgz')
+        modeldir = os.path.join(l1output,par,subj,'model')
+        betavol = os.path.join(modeldir,'task_betas.mgz')
         if not isfile(betavol):
             fullOut('Concatenating task betas for ' + subj,thinline)
             # Set the inputs
@@ -365,7 +355,7 @@ for par in analysisPars:
 
             volumes = []
             for img in Betas(par,'images'):
-                volumes.append(join(modeldir,img))
+                volumes.append(os.path.join(modeldir,img))
             concat.inputs.invol = volumes
             concat.inputs.outvol = betavol
             
@@ -383,13 +373,13 @@ for par in analysisPars:
 conCell = '{'
 for par in analysisPars:
     for subj in subjList:
-        conDir = join(l1output,par,subj,'contrasts')
-        tmaps = glob(join(conDir,'spmT*.img'))
+        conDir = os.path.join(l1output,par,subj,'contrasts')
+        tmaps = glob(os.path.join(conDir,'spmT*.img'))
         doCon = None
         for tmapimg in tmaps:
             l = len(tmapimg)
             imgnum = tmapimg[l-8:l-4]
-            pmapimg = join(conDir,'spmP_' + imgnum + '.nii')
+            pmapimg = os.path.join(conDir,'spmP_' + imgnum + '.nii')
             if not isfile(pmapimg):
                 doCon = True
             if doCon:
@@ -415,31 +405,31 @@ for par in analysisPars:
 
 # Print a full subject list
 shortOut('\nWriting subject list\n')
-subjtxt = open(join(projectdir,'subjectlist.txt'),'w')
+subjtxt = open(os.path.join(projectdir,'subjectlist.txt'),'w')
 for subj in subjList:
     subjtxt.write(subj + '\t')
 subjtxt.close()
 
 # Print a list of the groups
 shortOut('\nWriting group lists\n')
-grptxt = open(join(projectdir,'grouplist.txt'),'w')
+grptxt = open(os.path.join(projectdir,'grouplist.txt'),'w')
 for group in Subjects('groups'):
     grptxt.write(group + '\t')
-    grpfile = open(join(projectdir,group + 'list.txt'),'w')
+    grpfile = open(os.path.join(projectdir,group + 'list.txt'),'w')
     for subj in Subjects(group):
        grpfile.write(subj + '\t')
 grpfile.close()
 grptxt.close()
 
 # Print out lists of our ROI names and ids 
-roilistDir = join(projectdir,'roilists')
+roilistDir = os.path.join(projectdir,'roilists')
 try: os.mkdir(roilistDir)
 except: pass
 
 shortOut('\nWriting ROI lists\n')
 
-segvoltext = open(join(roilistDir,'segvols.txt'),'w')
-segnametext = open(join(roilistDir,'segvolnames.txt'),'w')
+segvoltext = open(os.path.join(roilistDir,'segvols.txt'),'w')
+segnametext = open(os.path.join(roilistDir,'segvolnames.txt'),'w')
 vollist = SegVols().keys()
 vollist.sort()
 for voltype in vollist:
@@ -447,15 +437,17 @@ for voltype in vollist:
         segvoltext.write(voltype + '\t')
         segnametext.write(SegVols(voltype) + '\t')
 
-        roinames = open(join(roilistDir,voltype + '_roi_names.txt'),'w')
-        roikeys = open(join(roilistDir,voltype + '_roi_ids.txt'),'w')
-        roivalues = open(join(roilistDir,SegVols(voltype) + '_roi_ids.txt'),'w')
+        roinames = open(os.path.join(roilistDir,voltype + '_roi_names.txt'),'w')
+        roikeys = open(os.path.join(roilistDir,voltype + '_roi_ids.txt'),'w')
+        roivalues = open(os.path.join(roilistDir,
+                                      SegVols(voltype) + '_roi_ids.txt'),'w')
         if voltype == 'label_seg':
             for name in Labels('realnames'):
                 roinames.write(name + '\t')
         for roiID in Regions(voltype):
             if voltype != 'label_seg':
-                roinames.write(fsroidict.Rois(SegVols(voltype),RoiSpace(voltype))[roiID] + '\t')
+                roinames.write(fsroidict.Rois(SegVols(voltype),
+                               RoiSpace(voltype))[roiID] + '\t')
                 roikeys.write(str(roiID) + '\t')
                 roivalues.write(str(roiID) + '\t')
 roinames.close()
@@ -483,22 +475,22 @@ for anparams in analysis:
     analname = Paradigms(anparams['par'],'upper') + '_' + maskstring
     fullOut('Running functional analysis for ' + analname,thickline)
     # Check to see if analysis exists, error out if yes, make directory if no
-    try: os.mkdir(join(projectdir,analname)) 
+    try: os.mkdir(os.path.join(projectdir,analname)) 
     except: pass
 
     for vol in SegVols().keys():
         if Regions(vol):
-            try: os.mkdir(join(projectdir,analname,vol))
+            try: os.mkdir(os.path.join(projectdir,analname,vol))
             except: pass
         
         for txtdir in ['avgwf','segsum']:
-            try: os.mkdir(join(projectdir,analname,vol,txtdir))
+            try: os.mkdir(os.path.join(projectdir,analname,vol,txtdir))
             except: pass
 
     
     # Print a list of the beta conditions
     shortOut('Writing task regressor list\n')
-    betalist = open(join(projectdir,analname,'beta_list.txt'),'w')
+    betalist = open(os.path.join(projectdir,analname,'beta_list.txt'),'w')
     for cond in Betas(anparams['par']):
        betalist.write(cond + '\t')
     betalist.close()
@@ -513,18 +505,18 @@ for anparams in analysis:
             if Regions(segkey):
                     doSeg = True
             analPar = anparams['par']
-            firstleveldir = join(l1output,analPar,subj)
-            svsubjdir = join(segvoldir,analPar,subj)
+            firstleveldir = os.path.join(l1output,analPar,subj)
+            svsubjdir = os.path.join(segvoldir,analPar,subj)
             if RoiSpace(segkey) == 'volume':
-                funcvolfile = join(firstleveldir,'model/task_betas.mgz')
-                segvolfile = join(svsubjdir,'volumes',SegVols(segkey))
+                funcvolfile = os.path.join(firstleveldir,'model/task_betas.mgz')
+                segvolfile = os.path.join(svsubjdir,'volumes',SegVols(segkey))
             else:
                 hemi = segkey[-2] + 'h'
-                funcvolfile = join(firstleveldir,'model/'+hemi+'.task_betas.mgz')
+                funcvolfile = os.path.join(firstleveldir,'model/'+hemi+'.task_betas.mgz')
                 segval = SegVols(segkey)
                 annotfile = [subj,hemi,segval[3:len(segval)]]
-            avgwfdir = join(projectdir,analname,segkey,'avgwf')
-            segsumdir = join(projectdir,analname,segkey,'segsum')
+            avgwfdir = os.path.join(projectdir,analname,segkey,'avgwf')
+            segsumdir = os.path.join(projectdir,analname,segkey,'segsum')
 
 
             if doSeg:
@@ -540,17 +532,17 @@ for anparams in analysis:
                 if RoiSpace(segkey) == 'surface':
                     ids = [int(i-(N.floor(i/100)*100)) for i in ids]
                 funcroi.inputs.segid = ids
-                funcroi.inputs.sumfile = join(segsumdir,subj + '.txt')
+                funcroi.inputs.sumfile = os.path.join(segsumdir,subj + '.txt')
                 funcroi.inputs.invol = funcvolfile
                 if 'maskpar' in anparams.keys():
                     maskcon = anparams['maskcon']
                     maskpar = anparams['maskpar']
                     maskdict = Contrasts(maskpar,'P-map','.nii')
                     if RoiSpace(segkey) == 'volume':
-                        funcroi.inputs.maskvol = join(l1output,maskpar,subj,'contrasts',
+                        funcroi.inputs.maskvol = os.path.join(l1output,maskpar,subj,'contrasts',
                                                               maskdict[maskcon])
                     else:
-                        funcroi.inputs.maskvol = join(l1output,maskpar,subj,'contrasts',
+                        funcroi.inputs.maskvol = os.path.join(l1output,maskpar,subj,'contrasts',
                                                               hemi +'.'+ maskdict[maskcon]) 
                     funcroi.inputs.maskthresh = anparams['maskthresh']
                     if 'masksign' not in anparams.keys():
@@ -558,7 +550,7 @@ for anparams in analysis:
                     else:
                         sign = anparams['masksign']
                     funcroi.inputs.masksign = sign
-                funcroi.inputs.avgwftxt = join(avgwfdir,subj + '.txt')
+                funcroi.inputs.avgwftxt = os.path.join(avgwfdir,subj + '.txt')
 
                 # Run mri_segstats
                 res = funcroi.run()
@@ -572,10 +564,10 @@ fullOut('Assembling analysis database',thickline)
 
 # Make the database directory if it doesn't exist
 shortOut('\nCreating database directory structure\n')
-roidatadir = join(projectdir,'roidatabases')
-outsumdir = join(roidatadir,'outliers')
-winsdir = join(roidatadir,'winsor_databases')
-trimdir = join(roidatadir,'trimmed_databases')
+roidatadir = os.path.join(projectdir,'roidatabases')
+outsumdir = os.path.join(roidatadir,'outliers')
+winsdir = os.path.join(roidatadir,'winsor_databases')
+trimdir = os.path.join(roidatadir,'trimmed_databases')
 for dir in [roidatadir,outsumdir,winsdir,trimdir]:
     try: os.mkdir(dir)
     except: pass
@@ -608,11 +600,11 @@ for anparams in analysis:
     for subj in subjList:
         subjdata = N.array(([],),float)
         for vol in segList:
-            volDir = join(projectdir,analname,vol)
-            voldata = N.genfromtxt(join(volDir,'avgwf',subj+'.txt'))
+            volDir = os.path.join(projectdir,analname,vol)
+            voldata = N.genfromtxt(os.path.join(volDir,'avgwf',subj+'.txt'))
             if voldata.ndim == 1: voldata = N.array((voldata,))
             voldata = voldata.transpose()
-            voxdata = N.genfromtxt(join(volDir,'segsum',subj+'.txt'),int)
+            voxdata = N.genfromtxt(os.path.join(volDir,'segsum',subj+'.txt'),int)
             voxdata = N.array((voxdata[:,2],))
             voxdata = voxdata.transpose()
             voldata = N.hstack((voxdata,voldata))
@@ -686,7 +678,7 @@ for par in analysisPars:
                 volvox = N.array(([],),int)
             else:
                 leftvolvox = volvox
-            fullstats = N.genfromtxt(join(segvoldir,par,subj,'stats',SegVols(vol)+'.stats'),int)
+            fullstats = N.genfromtxt(os.path.join(segvoldir,par,subj,'stats',SegVols(vol)+'.stats'),int)
             if fullstats.ndim == 1: fullstats = N.array((fullstats,))
             for row in range(fullstats.shape[0]):
                 if fullstats[row,1] in Regions(vol):
@@ -710,7 +702,7 @@ head = N.hstack((N.array((['Subject','Group','ROI','Space'],)),head))
 database = N.hstack((subs,groups,rois,space,vox,data))
 database = N.vstack((head,database))
 shortOut('Saving analysis database\n')
-dbfile = join(projectdir,'roidatabases',ProjectName()+'_roidata_'+timeStamp+'.txt')
+dbfile = os.path.join(projectdir,'roidatabases',ProjectName()+'_roidata_'+timeStamp+'.txt')
 N.savetxt(dbfile,database,fmt='%s',delimiter='\t')
 shortOut('Your database printed to %s' % dbfile)
 fullOut('Analysis done',thickline)
