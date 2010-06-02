@@ -4,14 +4,15 @@ function spm_t2sig(concell)
 % Usage: spm_t2sig(concell)  
 % 
 % Inputs:
-%   concell : cell array of paths to SPM contrast directories (can also be a string)
+%   concell : cell array of paths to SPM contrast directories
 %
-% This function will convert all spmT images in an arbitrary number of contrast 
-% directories to -log10(P) images. It expects to read .img files, and writes to .nii.
+% This function will convert all spmT images in an arbitrary number 
+% of contrast directories to -log10(P) images. It expects to read 
+% .img files, and writes to .nii.
 %  
-% Note that this function requires SPM to be on your path, and that it was developed 
-% with SPM 8. It also uses the tTest function provided in the FsFast toolbox with the
-% Freesurfer distribution. 
+% Note that this function requires SPM to be on your path, and that 
+% it was developed with SPM 8. It also uses the tTest function 
+% provided in the FsFast toolbox with the Freesurfer distribution. 
 % ____________________________________________________________________________________
 % $ Written by Michael Waskom -- mwaskom@mit.edu $
 
@@ -48,7 +49,7 @@ spmread = spm_vol(imgs{1});
 t = regexp(spmread.descrip,'\[([0-9\.]*)\]','tokens')
 dof = str2num(t{1}{1})
 
-% Read in each image, convert to -log10(p), change sign appropriately, and write
+% Read in each image, convert to -log10(p), change sign, and write
 for iFile = 1:length(imgs)
     fprintf('Reading %s\n',imgs{iFile});
     spmThead = spm_vol(imgs{iFile});
@@ -58,9 +59,9 @@ for iFile = 1:length(imgs)
     spmPvol = -log10(spmPvol);
     spmPvol = sign(spmTvol) .* spmPvol;
     if iFile < 10
-        filename = ['spmSig_000' num2str(iFile) '.nii'];
+        filename = sprintf('spmSig_000%s.nii',num2str(iFile));
     else 
-        filename = ['spmSig_00' num2str(iFile) '.nii'];
+        filename = sprintf('spmSig_00%s.nii',num2str(iFile));
     end
     filename = fullfile(contrastdir,filename);
     fprintf('Writing %s\n',filename);
