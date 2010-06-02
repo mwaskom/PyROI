@@ -1,14 +1,5 @@
-"""Configuation module template for NiPyRoi package.  See documentation for 
-   information about how to use, or docstrings of each function for information
-   about the purpose of that function.
-
-   Note to users: you should only edit the parts of this script in between
-   the comment bars, which look like this:  #----------------------#
- 
-   Written by Michael Waskom
-   mwaskom@mit.edu
-   Version 0.7
-   April 10, 2010
+"""
+   NOTE: Deprecated 5/27/2010
 """
 
 import nipype.interfaces.freesurfer as fs
@@ -237,7 +228,7 @@ def RoiSpace(retval='dict'):
     roispacedict = {'aseg':'volume',
                     'parc1':'surface',
                     'parc2':'volume',
-		    'label_seg':'volume'}
+		            'label_seg':'volume'}
     #--------------------------------------------------------------------------#
 
     if retval == 'orig':
@@ -305,8 +296,8 @@ def Paradigms(parname='all',case='upper'):
         elif case == 'upper':
             return string.swapcase(pardict[parname])
         else:
-            raise exception('Case argument \'%s\' to \
-	                    config.Paradigms not understood.' % case)
+            raise exception('Case argument \'%s\' to '+\
+	                        'config.Paradigms not understood.' % case)
 
 
 def Betas(par,retval='names'):
