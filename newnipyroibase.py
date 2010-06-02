@@ -1,5 +1,3 @@
-# emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
-# vi: set ft=python sts=4 ts=4 sw=4 et:
 """
    May/June 2010 update of ROI pypeline.  A work in progress.
 
@@ -7,16 +5,9 @@
 
 """
 
-
-# Here is where you import your configuration module
-# This is the only thing you should have to edit in this script
-#----------------------------#
-from configbase import *
-import configbase as config
-#----------------------------#
-
 import os
 import re
+import sys
 import datetime
 import fsroidict
 import numpy as N
@@ -25,33 +16,62 @@ from nipype.interfaces import freesurfer as fs
 from nipype.interfaces import matlab as mlab
 from nipype.interfaces import base
 
+# If the script is not run with one argument, print the docstring and exit
+if len(sys.argv) != 2:
+    print __doc__
+    sys.exit(0)
+# Otherwise, get the config module to use from the command line
+else:
+    configmod = sys.argv[1]
+
+# Import the config module, trying two different ways
+try:
+    cfg = __import__('config%s' % configmod)
+    print '\nImporting config%s module\n' % configmod
+except ImportError:
+    cfg = __import('%s' % configmod)
+    print '\nImporting %s module\n' % configmod
+
+# Get the project name
+projname = cfg.projectname()
 
 # Get the analysis parameters 
-analysis = Analysis()
-
+analysis = cfg.analysis()
 
 # Get our subject list
-if ProjectName() == 'development':
+if projname == 'development':
     subjList = ['SAD_022','SAD_033']
 else:
-    subjList = Subjects()
+    subjList = cfg.subjects()
 
+# Get our dictionary of atlases
+atlases = cfg.atlases()
 
 # Set up some directory variables
-fsSubjDir = SubjDir()
+fsSubjDir = cfg.subjDir()
 maindir = os.path.abspath('.')
-l1output = os.path.join(maindir,'surface/l1output')
-segvoldir = os.path.join(maindir,'roi/segvols')
-analysisdir = os.path.join(maindir,'roi/analyses')
-projectdir = os.path.join(analysisdir,ProjectName())
+l1output = os.path.join(maindir,'surface','l1output')
+
+analysisdir = os.path.join(maindir,'roi','analyses')
+projectdir = os.path.join(analysisdir,cfg.projectName())
 logdir = os.path.join(projectdir,'logfiles')
 
+atlasdir = os.path.join(maindir,'roi','atlases')
+fsatlasdir = os.path.join(atlasdir,'freesurfer')
+talatlasdir = os.path.join(atlasdir,'talairach')
+maskatlasdir = os.path.join(atlasdir,'mask')
+labelatlasdir = os.path.join(atlasdir,'label')
+
+projmaskdir = os.path.join(maskatlasdir,projname)
+projlabeldir = os.path.join(labelatlasdir,projname)
 
 # Make roi directories, if they don't exist
-try: os.mkdir(os.path.joinp(maindir,'roi'))
+try: os.mkdir(os.path.join(maindir,'roi'))
 except: pass
 
-roidirs = [segvoldir,analysisdir,projectdir,logdir]
+roidirs = [atlasdir,analysisdir,projectdir,logdir,fsatlasdir,
+           talatlasdir,maskatlasdir,labelatlasdir,projmaskdir,
+           projlabeldir]
 
 for dir in roidirs:
     try: os.mkdir(dir)
@@ -61,6 +81,7 @@ for dir in roidirs:
 analysisPars = set()
 for anparams in analysis:
     analysisPars.add(anparams['par'])
+
 
 # Set some variables we'll use when we print to the terminal/log
 thinline = '----------------------------------------------------------------------'
@@ -87,8 +108,6 @@ def shortOut(message):
     print message
     lf.write(message)
 
-    
-
 # Get a timestamp for the analysis
 now = datetime.datetime.now()
 now = str(now)
@@ -101,7 +120,7 @@ timeStamp = nowyear + nowmonth + nowday + '-' + nowhour + nowminute
 
 
 # Open up the log file and print important information
-logpath = (os.path.join(logdir,ProjectName() + '_' + timeStamp + '.log'))
+logpath = (os.path.join(logdir,projname + '_' + timeStamp + '.log'))
             
 lf = open(logpath,'w')
 
@@ -109,19 +128,19 @@ print 'NiPyRoi Analysis'
 print now[0:16]
 print os.getcwd()
 print 'User: ' + os.getlogin()
-print 'Project name: ' + ProjectName()
-print 'Config module: ' + config.__file__
+print 'Project name: ' + projname
+print 'Config module: ' + cfg.__file__
 print 'Log file is ' + logpath
 print
 
 lf.write('NiPyRoi Analysis \n' + now[0:16] + '\n' + os.getcwd() + 
-              '\nUser: ' + os.getlogin() + '\n' + 'Project name: ' + ProjectName() + '\n' 
+              '\nUser: ' + os.getlogin() + '\n' + 'Project name: ' + projname + '\n' 
               'Config module: ' + __file__ + '\nLog file is ' + logpath + '\n\n')
  
 
 
 #-------------------------------------------------------------------------------#
-# Resample the segmentation volumes into functional space
+# Set up the ROI atlases
 #-------------------------------------------------------------------------------#
 
 
@@ -129,11 +148,11 @@ lf.write('NiPyRoi Analysis \n' + now[0:16] + '\n' + os.getcwd() +
 for par in analysisPars:
     fullOut('Creating segmentation volumes for '+par+' analysis',thickline)
     for subj in subjList:
-        svsubjdir = os.path.join(segvoldir,par,subj)
+        svsubjdir = os.path.join(atlasdir,par,subj)
         regdir = os.path.join(svsubjdir,'regmats')
-        regmat = Paradigms(par,'lower') + '2orig_bbregister.dat'
+        regmat = '%s2orig_bbregister.dat' % cfg.paradigms(par,'lower')
         regmat = os.path.join(regdir,regmat)
-        funcvol = glob(os.path.join(l1output,par,subj,'realign/*.nii'))
+        funcvol = glob(os.path.join(l1output,par,subj,'realign','*.nii'))
         funcvol = funcvol[0]
         try: os.mkdir(regdir)
         except: pass
@@ -338,7 +357,7 @@ for par in analysisPars:
 
         """
 #-------------------------------------------------------------------------------#
-# Concatenate the task beta volumes into one volume for analysis 
+# Prepare the task beta images for extraction
 #-------------------------------------------------------------------------------#
 
 
@@ -399,67 +418,9 @@ for par in analysisPars:
                 res = mlcmd.run()
                 shortOut(res.runtime.stdout)
 
-#-------------------------------------------------------------------------------#
-# Print some files that will be used when assembling the database 
-#-------------------------------------------------------------------------------#
-
-# Print a full subject list
-shortOut('\nWriting subject list\n')
-subjtxt = open(os.path.join(projectdir,'subjectlist.txt'),'w')
-for subj in subjList:
-    subjtxt.write(subj + '\t')
-subjtxt.close()
-
-# Print a list of the groups
-shortOut('\nWriting group lists\n')
-grptxt = open(os.path.join(projectdir,'grouplist.txt'),'w')
-for group in Subjects('groups'):
-    grptxt.write(group + '\t')
-    grpfile = open(os.path.join(projectdir,group + 'list.txt'),'w')
-    for subj in Subjects(group):
-       grpfile.write(subj + '\t')
-grpfile.close()
-grptxt.close()
-
-# Print out lists of our ROI names and ids 
-roilistDir = os.path.join(projectdir,'roilists')
-try: os.mkdir(roilistDir)
-except: pass
-
-shortOut('\nWriting ROI lists\n')
-
-segvoltext = open(os.path.join(roilistDir,'segvols.txt'),'w')
-segnametext = open(os.path.join(roilistDir,'segvolnames.txt'),'w')
-vollist = SegVols().keys()
-vollist.sort()
-for voltype in vollist:
-    if Regions(voltype):
-        segvoltext.write(voltype + '\t')
-        segnametext.write(SegVols(voltype) + '\t')
-
-        roinames = open(os.path.join(roilistDir,voltype + '_roi_names.txt'),'w')
-        roikeys = open(os.path.join(roilistDir,voltype + '_roi_ids.txt'),'w')
-        roivalues = open(os.path.join(roilistDir,
-                                      SegVols(voltype) + '_roi_ids.txt'),'w')
-        if voltype == 'label_seg':
-            for name in Labels('realnames'):
-                roinames.write(name + '\t')
-        for roiID in Regions(voltype):
-            if voltype != 'label_seg':
-                roinames.write(fsroidict.Rois(SegVols(voltype),
-                               RoiSpace(voltype))[roiID] + '\t')
-                roikeys.write(str(roiID) + '\t')
-                roivalues.write(str(roiID) + '\t')
-roinames.close()
-segvoltext.close()
-segnametext.close() 
-roinames.close()
-roikeys.close()
-roivalues.close()
-
 
 #-------------------------------------------------------------------------------#
-# Run the functional ROI analysis 
+# Run the functional ROI extraction
 #-------------------------------------------------------------------------------#
 
 
@@ -506,7 +467,7 @@ for anparams in analysis:
                     doSeg = True
             analPar = anparams['par']
             firstleveldir = os.path.join(l1output,analPar,subj)
-            svsubjdir = os.path.join(segvoldir,analPar,subj)
+            svsubjdir = os.path.join(atlasdir,analPar,subj)
             if RoiSpace(segkey) == 'volume':
                 funcvolfile = os.path.join(firstleveldir,'model/task_betas.mgz')
                 segvolfile = os.path.join(svsubjdir,'volumes',SegVols(segkey))
@@ -678,7 +639,8 @@ for par in analysisPars:
                 volvox = N.array(([],),int)
             else:
                 leftvolvox = volvox
-            fullstats = N.genfromtxt(os.path.join(segvoldir,par,subj,'stats',SegVols(vol)+'.stats'),int)
+            fullstats = N.genfromtxt(os.path.join(atlasdir,par,subj,
+                                                  'stats',SegVols(vol)+'.stats'),int)
             if fullstats.ndim == 1: fullstats = N.array((fullstats,))
             for row in range(fullstats.shape[0]):
                 if fullstats[row,1] in Regions(vol):
@@ -702,7 +664,7 @@ head = N.hstack((N.array((['Subject','Group','ROI','Space'],)),head))
 database = N.hstack((subs,groups,rois,space,vox,data))
 database = N.vstack((head,database))
 shortOut('Saving analysis database\n')
-dbfile = os.path.join(projectdir,'roidatabases',ProjectName()+'_roidata_'+timeStamp+'.txt')
+dbfile = os.path.join(projectdir,'roidatabases','%s_roidata_%s.txt' % (projname,timeStamp))
 N.savetxt(dbfile,database,fmt='%s',delimiter='\t')
 shortOut('Your database printed to %s' % dbfile)
 fullOut('Analysis done',thickline)

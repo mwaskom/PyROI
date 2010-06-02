@@ -12,7 +12,7 @@ import fsroidict
 import string
 import os
 
-def SetUp(setupkey=None):
+def setup(setupkey=None):
     
     #----------------------------<Project Name>--------------------------------#
     """
@@ -43,7 +43,7 @@ def SetUp(setupkey=None):
 
        See the "parameters" section below for the key names to use.  Values
        should be set according to the paradigm and contrast names you specify
-       below in this SetUp functino.
+       below in this setup functino.
        
        All of the mask parameters are optional. If left unset, analysis will 
        be specified as "nomask" and statistics will be extracted from the full
@@ -67,25 +67,83 @@ def SetUp(setupkey=None):
        analysis
     """
     
-    analysis = [{'par':'novelfaces', 'maskpar':'social', 'maskcon':'AFvNF',
-                 'maskthresh':0,'masksign':'pos'},
-                {'par':'social' ,'maskpar':'novelfaces', 'maskcon':'AvF',
-                 'maskthresh':1.3, 'masksign':'pos'},
-	            {'par':'social'}]
+    analysis = [{'par': 'social'},
+                {'par': 'novelfaces', 'maskpar': 'social', 'maskcon': 'AFvNF',
+                 'maskthresh': 0,'masksign': 'pos'},
+                {'par': 'social' ,'maskpar': 'novelfaces', 'maskcon': 'AvF',
+                 'maskthresh': 1.3, 'masksign': 'pos'}]
 
     #------------------------------<Atlases>-----------------------------------#
     """
+       Specify the atlases that will define your ROIs, and which ROIs from
+       those atlases you will investigate. The format is of a dictionary
+       where each key is a shorthand name for an atlas and the value is
+       a dictionary of attributes for that atlas.
 
-    """
-    atlases = {'aseg' : 
-                  {'fname' : 'aseg.mgz',
-                   'space' : 'volume',
-                   'source' : 'freesurfer',
-                   'regions' : [17,18,52,53]},
-               'aparc' : 
-                   {'fname' : 'aparc'}}
+       For all atlases, you must specify the source and space. 
        
+       Source can be 'freesurfer', for freesurfer segmentations/parcellations
+       in native space; 'talairach', for a modified version of the talairach
+       daemon used by the WFU Pick Atlas that is provided with this software;
+       'mask', for an atlas composed of an arbitrary number of non-overlap-
+       ping binary image files in the same space, or 'label', for an atlas
+       composed of an arbitrary number of non-overlapping Freesurfer labels
+       in fsaverage space. Space is either 'volume' or 'surface'; if the atlas
+       is surface-based, you should also provide the hemisphere in the atlas
+       dictionary with the 'hemi' key.
 
+       If source is 'freesurfer', just provide the filename (this requires your
+       Freesurfer subject directory to be set below). If source is 'talairach',
+       give the path to the image file. For both of these sources, also specify
+       a list of the numerical IDs to investigate from that atlas. For label or
+       mask sources, you will need to provide two pieces of information: the 
+       path to the directory where your masks/labels are stored and a list of
+       the names for the masks/labels in that atlas. ROI names will be derived
+       from these file names.
+
+       Format
+       ------
+       dictionary with internal dictionaries for each atlas
+
+       Parameters
+       ----------
+       All
+       - source : freesurfer, talairach, label, mask
+       - space : volume or surface
+       Surfaces
+       - hemi : hemisphere
+       Freesurfer or Talairach Daemon source
+       - fname : file name of atlas
+       - regions : list of numerical ids to regions under investigation
+       Label or Mask source
+       - sourcedir : directory with source images
+       - sourcefiles : list label or mask image file names 
+
+       Variable Name
+       -------------
+       atlases
+    """
+    
+    atlases = {'aseg': 
+                   {'source': 'freesurfer',
+                   'fname': 'aseg.mgz',
+                   'space': 'volume',
+                   'regions': [17,18,52,53]},
+               'aparc': 
+                   {'source': 'freesurfer',
+                    'fname': 'aparc',
+                    'space': ' surface',
+                    'hemi': 'rh',
+                    'regions': [20,21,22,23]},
+               'social_labels':
+                   {'source': 'label',
+                    'space': 'surface',
+                    'hemi': 'rh',
+                    'sourcedir': 'data/Oliver_Label_Files',
+                    'sourcefiles': ['BG.STS',
+                                    'BG.supoccipital.STS'
+                                    'BG.supparietal.STS']}}
+       
 
     #--------------------<Freesurfer Subject Directory>------------------------#
     """
@@ -160,11 +218,11 @@ def SetUp(setupkey=None):
 
     hrfcomponents = 1
 
-    betastoextract = ['all']
+    betastoextract = 'all'
     
-    conditions = {'novelfaces' :  ['fmzn','fmlr','novl'],
+    conditions = {'novelfaces':   ['fmzn','fmlr','novl'],
                   'novelobjects': ['fmzn','fmlr','novl'],
-                  'surreal' :     ['valid','inval'],
+                  'surreal':      ['valid','inval'],
                   'masked':       ['mkfr','mknl','fear','neut'],
                   'social':       ['aface','nface','pscen','escen','nscen']}
 
@@ -293,7 +351,7 @@ def SetUp(setupkey=None):
                  'resampled_volumes' : True,
                  'full_atlas_stats' : True,
                  'label_atlases' : True,
-                 'spm_Sig_images' : True,
+                 'spm_sig_images' : True,
                  'functional_extracts' : True}
 
 
@@ -316,7 +374,7 @@ def SetUp(setupkey=None):
                    'contrastpath','betapath','contrasts','conditions',
                    'hrfcomponents','paradigms','overwrite']
     
-    # Get the list of keys in the actual SetUp dictionary
+    # Get the list of keys in the actual setup dictionary
     actkeylist = setup.keys()
     fullkeylist.sort()
     actkeylist.sort()
@@ -344,21 +402,21 @@ def SetUp(setupkey=None):
     # If something is missing or unexpected, error out with some information about it
     if fullkeylist != actkeylist:
         if missing and extra:
-            errstr = 'You are missing SetUp key(s) \'%s,\' and have '+\
+            errstr = 'You are missing setup key(s) \'%s,\' and have '+\
                      'unrecognized key(s) \'%s.\'' % (missingstr, extrastr)
         elif missing and not extra:
-            errstr = 'You are missing SetUp key(s) \'%s.\'' % missingstr
+            errstr = 'You are missing setup key(s) \'%s.\'' % missingstr
         elif extra and not missing:
-            errstr = 'You have unrecognized SetUp key(s) \'%s.\'' % extrastr
+            errstr = 'You have unrecognized setup key(s) \'%s.\'' % extrastr
         else:
-            errstr = 'Something is wrong in SetUp, but we cannot figure out what.'
+            errstr = 'Something is wrong in setup, but we cannot figure out what.'
         raise Exception(errstr)
     """ 
-    # Return SetUp information
+    # Return setup information
     if setupkey is None: return setup
     else: return setup[setupkey]
 
-def ProjectName():
+def projectname():
     """This function will return the project name string
 
     Parameters
@@ -370,11 +428,12 @@ def ProjectName():
     string
     """
  
-    projname = SetUp('projname')
+    projname = setup('projname')
 
     return projname
 
-def Analysis():
+
+def analysis():
     """This function will return the analysis list.  If the variable type
     of analysis is a dictionary, it wraps it in a list.
    
@@ -385,16 +444,46 @@ def Analysis():
     Returns
     -------
     list of dictionaries
+
     """
 
-    analysis = SetUp('analysis')
+    analysis = setup('analysis')
 
     if isinstance(analysis, dict):
         analysis = [analysis]
 
     return analysis
 
-def Paradigms(parname=None, case='upper'):
+
+def atlases(atlas=None):
+    """This function deals with the ROI atlas defintions. If the scope is 
+    empty when called, it will return the full atlas dictionary, where each
+    entry specifies an atlas. If called with an atlas key as the argument,
+    it will return the attribute dictionary for that atlas.  
+
+    Eventually, the function will do a fair amount of checking/modification
+    to catch a lot of typcial user errors. Please report all of the errors 
+    you run into to mwaskom@mit.edu to aid this process.
+
+    Parameters
+    ----------
+    atlas : either atlas key name or None
+
+    Returns
+    -------
+    dictionary
+
+    """
+    
+    atlases = setup('atlases')
+    
+    if atlas is None:
+        return atlases
+    else:
+        return atlases[atlas]
+
+
+def paradigms(parname=None, case='upper'):
     """This function has two uses. If called with an empty scope, it will
     return a list of the paradigms inolved in the project. If called with 
     the full name of a paradigm as the first argument, it will return the 
@@ -410,9 +499,10 @@ def Paradigms(parname=None, case='upper'):
     Returns
     -------
     list of full paradigm names or string 
+    
     """
 
-    pardict = SetUp('paradigms')
+    pardict = setup('paradigms')
 
  
     if parname is None:
@@ -426,7 +516,8 @@ def Paradigms(parname=None, case='upper'):
             raise Exception('Case argument \'%s\' to ' % case +\
 	                        'config.Paradigms not understood.') 
 
-def Betas(par = None, retval = None):
+
+def betas(par=None, retval=None):
     """This function deals with both condition and file names for the 
     first-level betas.  It takes the name of a paradigm and the type 
     of list to return as parameters.  If asked for "names," it will
@@ -449,12 +540,13 @@ def Betas(par = None, retval = None):
 
     Returns :
     list of condition names or image files names
+    
     """    
 
-    # Get the elements from the SetUp function 
-    hrfcomponents = SetUp('hrfcomponents')
-    betastoextract = SetUp('betastoextract')
-    conditions = SetUp('conditions')
+    # Get the elements from the setup function 
+    hrfcomponents = setup('hrfcomponents')
+    betastoextract = setup('betastoextract')
+    conditions = setup('conditions')
 
     # Return the conditions dictionary and hrfcomponents if scope is empty
     if par is None:
@@ -477,7 +569,7 @@ def Betas(par = None, retval = None):
     mcompnames = []
 
     # If extracting all beta components, make that list
-    if betastoextract == 'all':
+    if betastoextract == 'all' or betastoextract == ['all']:
         betastoextract = range(1, hrfcomponents + 1)
 
     # Insert additional component image/names
@@ -511,7 +603,8 @@ def Betas(par = None, retval = None):
     else:
         raise Exception('Beta return type \'%s\' not understood' % retval)
 
-def Contrasts(par = None, type = None, format = None):
+
+def contrasts(par=None, type=None, format=None):
     """This function controls the contrast images used in the analysis.
     It takes the paradigm, image type, and image format as parameters 
     and returns a dictionary mapping contrast shorthand names to image
@@ -529,8 +622,8 @@ def Contrasts(par = None, type = None, format = None):
 
     """
 
-    # Get the specified dict from SetUp
-    contrastdict = SetUp('contrasts')
+    # Get the specified dict from setup
+    contrastdict = setup('contrasts')
 
     # Return the full dict if called with an empty scope
     if par is None:
@@ -566,7 +659,53 @@ def Contrasts(par = None, type = None, format = None):
 	                'not understood: use \'T-map\', \'sig\', or \'con-img\'')
 
 
-def Subjects(group = None, subject = None):
+def pathSpec(imgtype, paradigm=None, subject=None, contrast=None):
+    """Return a path to a beta or contrast image directory
+
+    This function allows the ROI procesing pypeline to be free of any
+    specific first-level directory structure. A variable path is specified
+    in the setup function where the directory for paradigm, subject, and
+    contrast is is signified by $variable for beta and contrast files
+    separately.  This function expects those strings to be keyed by 'betapath'
+    and 'contrastpath', respectively.
+
+    In theory, this function should work for both SPM and FsFast first-level
+    structures.  At the time of the writing of this docstring, however, the
+    ROI pypeline does not yet handle the FsFast first level beta images
+    themselves properly.
+
+    Parameters
+    -----------
+    imgtype : beta or contrast
+    paradigm : paradigm name, however it is specified in the actual path
+    subject : subject name, however it is specified in the actual path
+    contrast: : contrast name, however it is specified in the actual path
+
+    Returns
+    -------
+    string of path to image directory
+
+    """
+    betapath = setup('betapath')
+    contrastpath = setup('contrastpath')
+    
+    vardict = {'$paradigm' : paradigm,
+               '$contrast' : contrast,
+               '$subject' : subject}
+
+    imgdict = {'beta' : betapath,
+               'contrast' : contrastpath}
+    
+    varpath = imgdict[imgtype]
+
+    for var in vardict.keys():
+        if var in varpath:
+            varpath = varpath.replace(var,vardict[var])
+
+    return varpath
+
+
+def subjects(group = None, subject = None):
     """This function controls the subjects and groups involved in the 
     analysis.  It takes either a group or a subject as a parameter.
     If called with an empty scope, it returns a list of all subjects.
@@ -586,7 +725,7 @@ def Subjects(group = None, subject = None):
 
     """
 
-    subjects = SetUp('subjects')
+    subjects = setup('subjects')
 
     for grp in subjects.keys():
         subjects[grp].sort()
@@ -609,64 +748,19 @@ def Subjects(group = None, subject = None):
         raise Exception('Group \'%s\' not found.' % group)
 
 
-def PathSpec(imgtype, paradigm=None, subject=None, contrast=None):
-    """Return a path to a beta or contrast image directory
-
-    This function allows the ROI procesing pypeline to be free of any
-    specific first-level directory structure. A variable path is specified
-    in the SetUp function where the directory for paradigm, subject, and
-    contrast is is signified by $variable for beta and contrast files
-    separately.  This function expects those strings to be keyed by 'betapath'
-    and 'contrastpath', respectively.
-
-    In theory, this function should work for both SPM and FsFast first-level
-    structures.  At the time of the writing of this docstring, however, the
-    ROI pypeline does not yet handle the FsFast first level beta images
-    themselves properly.
-
-    Parameters
-    -----------
-    imgtype : beta or contrast
-    paradigm : paradigm name, however it is specified in the actual path
-    subject : subject name, however it is specified in the actual path
-    contrast: : contrast name, however it is specified in the actual path
-
-    Returns
-    -------
-    string of path to image directory
-
-    """
-    betapath = SetUp('betapath')
-    contrastpath = SetUp('contrastpath')
-    
-    vardict = {'$paradigm' : paradigm,
-               '$contrast' : contrast,
-               '$subject' : subject}
-
-    imgdict = {'beta' : betapath,
-               'contrast' : contrastpath}
-    
-    varpath = imgdict[imgtype]
-
-    for var in vardict.keys():
-        if var in varpath:
-            varpath = varpath.replace(var,vardict[var])
-
-    return varpath
-
-def Overwrite(filetype = None):
+def overwrite(filetype=None):
     """Query whether a given filetype should be overwritten if it is found
     to exist at runtime.
 
     The following filetypes are accepted:
     (Note that which filetypes are accepted is fully dependent on the keys
-    of the overwrite dictionary as specified in the SetUp function).
+    of the overwrite dictionary as specified in the setup function).
     - 'task_betas'
     - 'registration_matrices'
     - 'resampled_volumes'
     - 'full_atlas_stats'
     - 'label_atlases'
-    - 'spm_Sig_images'
+    - 'spm_sig_images'
     - 'functional_extracts'
 
     If this filetype is None, the function will return the dictionary
@@ -681,7 +775,7 @@ def Overwrite(filetype = None):
     
     """
 
-    overwrite = SetUp('overwrite')
+    overwrite = setup('overwrite')
 
     if filetype is None:
         return overwrite
