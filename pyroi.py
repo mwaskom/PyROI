@@ -48,13 +48,16 @@ else:
 atlases = cfg.atlases()
 
 # Set up some directory variables
-fsSubjDir = cfg.subjDir()
+fssubjdir = cfg.subjDir()
 maindir = os.path.abspath('.')
 l1output = os.path.join(maindir,'surface','l1output')
 
-analysisdir = os.path.join(maindir,'roi','analyses')
+roidir = os.path.join(miandir,'roi')
+
+analysisdir = os.path.join(roidir,'analyses')
 projectdir = os.path.join(analysisdir,cfg.projectName())
 logdir = os.path.join(projectdir,'logfiles')
+dbdir = os.path.join(projectdir,'databases')
 
 atlasdir = os.path.join(maindir,'roi','atlases')
 fsatlasdir = os.path.join(atlasdir,'freesurfer')
@@ -64,6 +67,12 @@ labelatlasdir = os.path.join(atlasdir,'label')
 
 projmaskdir = os.path.join(maskatlasdir,projname)
 projlabeldir = os.path.join(labelatlasdir,projname)
+
+# Create the analysis directory structure
+roi.make_analysis_dirs(roidir, cfg)
+
+# Create the atlas directory structures
+roi.make_fs_atlas_dirs(roidir, cfg)
 
 # Make roi directories, if they don't exist
 if not os.path.isdir(os.path.join(maindir,'roi')):
@@ -88,7 +97,7 @@ thinline = '--------------------------------------------------------------------
 thickline = '======================================================================'
 
 # Some little functions for controlling terminal and logfile output
-def fullOut(message,line):
+def fullout(message,line):
     print
     print line
     print message
@@ -96,15 +105,15 @@ def fullOut(message,line):
     print
     lf.write('\n'+line+'\n'+message+'\n'+line+'\n\n')
 
-def cmdOut(cmd,res):
-    print cmd.cmdline
+def cmdout(cmdline, res):
+    print cmdline
     print
     print res.runtime.stdout
     print res.runtime.stderr
     print
     lf.write(cmd.cmdline+'\n\n'+res.runtime.stdout+'\n'+res.runtime.stderr+'\n\n')
 
-def shortOut(message):
+def shortout(message):
     print message
     lf.write(message)
 
@@ -143,14 +152,27 @@ lf.write('NiPyRoi Analysis \n' + now[0:16] + '\n' + os.getcwd() +
 # Set up the ROI atlases
 #-------------------------------------------------------------------------------#
 
+fullout('Preparing ROI extraction atlases', thickline)
 
-def freesurfer_atlas(atlas, analysisPars, fsatlasdir):
+doReg = any(([i for i in atlases if 
+                atlases[i]['source'] == 'freesurfer' or 'label']))
+
+# Register the mean functional for each analyzed paradigm to native Freesurfer
+# space if any atlases are in the native volume or on the surface
+if doReg:
+    register = FSRegister(fsatlasdir, fssubjdir) 
+    for par in analysisPars:
+        fullout('Creating registration matrices for %s paradgim' % par,thinline)
+        for subj in subjList:
+            register.init_subj(par, subj)
+            cmdline, res = register.register()
+            cmdout(cmdline, res)
+
 
 
 
 # Register the functional to the original volume with bbregister, calling FLIRT
 for par in analysisPars:
-    fullOut('Creating segmentation volumes for %s analysis' % par,thickline)
     for subj in subjList:
         svsubjdir = os.path.join(atlasdir,par,subj)
         regdir = os.path.join(svsubjdir,'regmats')
@@ -161,7 +183,6 @@ for par in analysisPars:
         try: os.mkdir(regdir)
         except: pass
         if not isfile(regmat):
-            fullOut('Creating registration matrix for ' + subj,thinline)
             # Set the inputs
 
             register = fs.BBRegister()
@@ -174,9 +195,9 @@ for par in analysisPars:
 
             # Run bbregister
             res = register.run()
-            cmdOut = (register,res)
+            cmdout = (register,res)
         else:
-            shortOut('Found ' + regmat)
+            shortout('Found ' + regmat)
 
 
         # Check to see if the segmentation volumes exist and make them if not
@@ -197,12 +218,12 @@ for par in analysisPars:
 
             resampledvol = os.path.join(volumedir,vol)
             if not isfile(resampledvol):
-                fullOut('Resampling ' + vol + ' for ' + subj,thinline)
+                fullout('Resampling ' + vol + ' for ' + subj,thinline)
                 # Set the inputs
 
                 resample = fs.ApplyVolTransform()
             
-                resample.inputs.targfile = os.path.join(fsSubjDir,subj,'mri',vol)
+                resample.inputs.targfile = os.path.join(fssubjdir,subj,'mri',vol)
                 resample.inputs.sourcefile = funcvol
                 resample.inputs.outfile = resampledvol
                 resample.inputs.tkreg = regmat
@@ -211,9 +232,9 @@ for par in analysisPars:
 
                 # Run mri_vol2vol
                 res = resample.run()
-                cmdOut(resample,res)
+                cmdout(resample,res)
             else:
-                shortOut('Found ' + resampledvol)
+                shortout('Found ' + resampledvol)
         
             # Print a summarry of the voxel counts in each ROI with mri_segstats 
             statsdir = os.path.join(svsubjdir,'stats')
@@ -221,7 +242,7 @@ for par in analysisPars:
             except: pass 
             segstatsfile = os.path.join(statsdir,vol + '.stats') 
             if not isfile(segstatsfile):
-                fullOut('Running segmentation statistics \
+                fullout('Running segmentation statistics \
                          on %s for %s' % (vol,subj),thinline)
                 # Set the inputs
 
@@ -238,9 +259,9 @@ for par in analysisPars:
             
                 # Run mri_segstats
                 res = segstats.run()
-                cmdOut(segstats,res)
+                cmdout(segstats,res)
             else:
-                shortOut('Found '+ segstatsfile)
+                shortout('Found '+ segstatsfile)
 
 #-------------------------------------------------------------------------------#
 # Prepare the task beta images for extraction
@@ -248,12 +269,12 @@ for par in analysisPars:
 
 
 for par in analysisPars:
-    fullOut('Creating beta volumes for ' + par + ' analysis',thickline)
+    fullout('Creating beta volumes for ' + par + ' analysis',thickline)
     for subj in subjList:
         modeldir = os.path.join(l1output,par,subj,'model')
         betavol = os.path.join(modeldir,'task_betas.mgz')
         if not isfile(betavol):
-            fullOut('Concatenating task betas for ' + subj,thinline)
+            fullout('Concatenating task betas for ' + subj,thinline)
             # Set the inputs
 
             concat = fs.Concatenate()
@@ -266,9 +287,9 @@ for par in analysisPars:
             
             # Run mri_concat            
             res = concat.run()
-            cmdOut(concat,res)
+            cmdout(concat,res)
         else:
-            shortOut('Found ' + betavol)
+            shortout('Found ' + betavol)
 
 
 #-------------------------------------------------------------------------------#
@@ -291,18 +312,18 @@ for par in analysisPars:
                 conCell = conCell + '\'' + \
                 conDir  + '\','
             else:
-                shortOut('Found %s for %s' % (pmapimg,par))
+                shortout('Found %s for %s' % (pmapimg,par))
 
             if conCell != '{':
                 conCell = conCell[0:len(conCell)-1]
                 conCell = conCell + '}'
                 command = 'spm_t2sig(' + conCell + ')'
-                shortOut(command)
+                shortout(command)
                 mlcmd = mlab.MatlabCommandLine()
                 mlcmd.inputs.script_lines = command
                 mlcmd.mfile = True
                 res = mlcmd.run()
-                shortOut(res.runtime.stdout)
+                shortout(res.runtime.stdout)
 
 
 #-------------------------------------------------------------------------------#
@@ -320,7 +341,7 @@ for anparams in analysis:
     else:       
         maskstring = 'nomask'
     analname = Paradigms(anparams['par'],'upper') + '_' + maskstring
-    fullOut('Running functional analysis for ' + analname,thickline)
+    fullout('Running functional analysis for ' + analname,thickline)
     # Check to see if analysis exists, error out if yes, make directory if no
     try: os.mkdir(os.path.join(projectdir,analname)) 
     except: pass
@@ -336,7 +357,7 @@ for anparams in analysis:
 
     
     # Print a list of the beta conditions
-    shortOut('Writing task regressor list\n')
+    shortout('Writing task regressor list\n')
     betalist = open(os.path.join(projectdir,analname,'beta_list.txt'),'w')
     for cond in Betas(anparams['par']):
        betalist.write(cond + '\t')
@@ -344,7 +365,7 @@ for anparams in analysis:
 
     # Iterate through the subjects
     for subj in subjList:     
-        fullOut('Running functional stats for ' + subj,thinline)
+        fullout('Running functional stats for ' + subj,thinline)
         # Iterate through the four segmentation volumes 
         for segkey in SegVols().keys():
             # Make sure we're looking at ROIs in this segmentation, skip if not
@@ -402,16 +423,16 @@ for anparams in analysis:
 
                 # Run mri_segstats
                 res = funcroi.run()
-                cmdOut(funcroi,res)
+                cmdout(funcroi,res)
 
 #-------------------------------------------------------------------------------#
 # Assemble the database
 #-------------------------------------------------------------------------------#
 
-fullOut('Assembling analysis database',thickline)
+fullout('Assembling analysis database',thickline)
 
 # Make the database directory if it doesn't exist
-shortOut('\nCreating database directory structure\n')
+shortout('\nCreating database directory structure\n')
 roidatadir = os.path.join(projectdir,'roidatabases')
 outsumdir = os.path.join(roidatadir,'outliers')
 winsdir = os.path.join(roidatadir,'winsor_databases')
@@ -550,8 +571,8 @@ head = N.hstack((N.array((['Subject','Group','ROI','Space'],)),head))
 
 database = N.hstack((subs,groups,rois,space,vox,data))
 database = N.vstack((head,database))
-shortOut('Saving analysis database\n')
+shortout('Saving analysis database\n')
 dbfile = os.path.join(projectdir,'roidatabases','%s_roidata_%s.txt' % (projname,timeStamp))
 N.savetxt(dbfile,database,fmt='%s',delimiter='\t')
-shortOut('Your database printed to %s' % dbfile)
-fullOut('Analysis done',thickline)
+shortout('Your database printed to %s' % dbfile)
+fullout('Analysis done',thickline)
