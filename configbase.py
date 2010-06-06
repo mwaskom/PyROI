@@ -7,8 +7,8 @@
 """
 
 import nipype.interfaces.freesurfer as fs
+import pyroilut as lut
 import numpy as N
-import fsroidict
 import string
 import os
 
@@ -129,9 +129,9 @@ def setup(setupkey=None):
                    'fname': 'aseg.mgz',
                    'space': 'volume',
                    'regions': [17,18,52,53]},
-               'aparc': 
+               'rhdesikan': 
                    {'source': 'freesurfer',
-                    'fname': 'aparc.annot',
+                    'fname': 'rh.aparc.annot',
                     'space': ' surface',
                     'hemi': 'rh',
                     'regions': [20,21,22,23]},
@@ -270,27 +270,36 @@ def setup(setupkey=None):
     #------------------------<First Level Datapaths>---------------------------#
     """
        Specify the paths (relative to the directory where the analysis will be
-       run from) to directories containing first-level beta and contrast images.
-       You may include $paradigm, $subject, and $contrast wildcards in the path
-       strings, which will be replaced appropriately as the program runs. Note
-       that you may leave the contrastpath variable as an empty string if you
-       will not be using first level masks.
+       run from) to directories containing first-level beta, mean functional, 
+       and contrast images.  You may include $paradigm, $subject, and $contrast
+       wildcards in the path strings, which will be replaced appropriately as 
+       the program runs. Note that you may leave the contrastpath variable as 
+       an empty string if you will not be using first level masks.
+
+       NOTE: For now, PyROI just looks for a single .nii image in the terminal
+       directory of the meanfunc path.  This is the standard setup for the out-
+       put of NiPype first-level workflows, but if you are working with a diff-
+       erent first-level analysis, you may need to create this path/file yourself.
 
        Format
        ------
+       string
        string
        string
 
        Variable Name
        -------------
        betapath
+       meanfuncpath
        contrastpath
     """
 
-    betapath = 'surface/l1output/$paradgim/$subject/model'    
+    betapath = 'surface/l1output/$paradigm/$subject/model'    
 
-    contrastpath = 'surface/l1output/$paradigm/$subject/contrasts'
+    meanfuncpath = 'surface/l1output/$paradigm/$subject/realign'
     
+    contrastpath = 'surface/l1output/$paradigm/$subject/contrasts'
+
     #----------------------------<Subjects>------------------------------------#
     """
        Specify the subjects to use in your analyses.  The format is a dictionary
@@ -333,10 +342,13 @@ def setup(setupkey=None):
     #----------------------------<Overwrite>-----------------------------------#
     """
        Specify which files the program should overwrite as it is run multiple
-       times. The format is of a dictionary where keys are descriptions of
-       classes of files produced by the pypeline and values are booleans (True
-       or False), where True means that the file will be overwritten.  NB: in
-       Python, True and False are case-sensitive when serving as booleans.
+       times.  This only pertains to files that are created by PyROI; it will
+       never overwrite externally created data.  The format is of a dictionary 
+       where keys are descriptions of classes of files produced by the pypeline
+       and values are booleans (True or False), where True means that the file 
+       will be overwritten.  
+       
+       NB: in Python, True and False are case-sensitive when serving as booleans.
 
        Format
        ------
@@ -347,8 +359,9 @@ def setup(setupkey=None):
        overwrite
     """
     overwrite = {'task_betas' : True,
-                 'registration_matrices' : True,
+                 'registration' : True,
                  'resampled_volumes' : True,
+                 'freesurfer_annots' : True,
                  'full_atlas_stats' : True,
                  'label_atlases' : True,
                  'spm_sig_images' : True,
@@ -363,7 +376,8 @@ def setup(setupkey=None):
              'subjdir' : subjdir, 'subjects' : subjects, 'paradigms' : paradigms,
              'contrastpath' : contrastpath, 'betapath' : betapath, 'contrasts' :
              contrasts, 'conditions' : conditions, 'hrfcomponents' : hrfcomponents,
-             'overwrite' : overwrite, 'betastoextract' : betastoextract}
+             'overwrite' : overwrite, 'betastoextract' : betastoextract,
+             'meanfuncpath' : meanfuncpath}
     
     # XXX Change to variable based setup probably obviates the below, but
     # we should find a way to catch the exception from assigning the setup
@@ -484,6 +498,26 @@ def atlases(atlas=None):
         return atlases
     else:
         return atlases[atlas]
+
+
+def fssubjdir():
+    """This function returns the path to the Freesurfer Subjects directory.
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    string
+    
+    """
+    
+    dirpath = setup('subjdir')
+
+    subjdir = fs.FSInfo.subjectsdir(os.path.abspath(dirpath))
+
+    return subjdir
 
 
 def paradigms(parname=None, case='upper'):
@@ -607,7 +641,7 @@ def betas(par=None, retval=None):
         raise Exception('Beta return type \'%s\' not understood' % retval)
 
 
-def contrasts(par=None, type=None, format=None):
+def contrasts(par=None, type='con-img', format='.nii'):
     """This function controls the contrast images used in the analysis.
     It takes the paradigm, image type, and image format as parameters 
     and returns a dictionary mapping contrast shorthand names to image
@@ -616,8 +650,8 @@ def contrasts(par=None, type=None, format=None):
     Parameters
     ----------
     par : paradigm
-    type : sig, T-map, or con-img
-    format : file extension
+    type : sig, T-map, or con-img -- def: con-img
+    format : file extension -- def: .nii
 
     Returns
     -------
@@ -662,7 +696,7 @@ def contrasts(par=None, type=None, format=None):
 	                'not understood: use \'T-map\', \'sig\', or \'con-img\'')
 
 
-def pathSpec(imgtype, paradigm=None, subject=None, contrast=None):
+def pathspec(imgtype, paradigm=None, subject=None, contrast=None):
     """Return a path to a beta or contrast image directory
 
     This function allows the ROI procesing pypeline to be free of any
@@ -690,14 +724,16 @@ def pathSpec(imgtype, paradigm=None, subject=None, contrast=None):
 
     """
     betapath = setup('betapath')
+    meanfuncpath = setup('meanfuncpath')
     contrastpath = setup('contrastpath')
     
     vardict = {'$paradigm' : paradigm,
                '$contrast' : contrast,
                '$subject' : subject}
 
-    imgdict = {'beta' : betapath,
-               'contrast' : contrastpath}
+    imgdict = {'beta': betapath,
+               'meanfunc': meanfuncpath,
+               'contrast': contrastpath}
     
     varpath = imgdict[imgtype]
 

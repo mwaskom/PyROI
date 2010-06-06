@@ -1,6 +1,6 @@
 from numpy import floor
 
-def Rois(vol,space='volume'):
+def freesurfer(vol,space='volume'):
     """Takes a name of a volume or surface and optionally an argument 
     specifying the space of the first argument.  Returns a dictionary
     of ids and names of the Rois in the vol or surf.  If surface is 

@@ -8,9 +8,11 @@
 import os
 import re
 import sys
+import shutil
 import datetime
-import fsroidict
 import numpy as N
+import roiutils as roi
+import pyroilut as lut
 from glob import glob
 from nipype.interfaces import freesurfer as fs
 from nipype.interfaces import matlab as mlab
@@ -148,14 +150,18 @@ lf.write('NiPyRoi Analysis \n' + now[0:16] + '\n' + os.getcwd() +
  
 
 
-#-------------------------------------------------------------------------------#
+#===============================================================================#
 # Set up the ROI atlases
+#===============================================================================#
+
+fullout('Preparing ROI atlases for extraction', thickline)
+
+#-------------------------------------------------------------------------------#
+# Registration
 #-------------------------------------------------------------------------------#
 
-fullout('Preparing ROI extraction atlases', thickline)
-
-doReg = any(([i for i in atlases if 
-                atlases[i]['source'] == 'freesurfer' or 'label']))
+doReg = any([i for i in atlases if 
+                        atlases[i]['source'] == 'freesurfer' or 'label'])
 
 # Register the mean functional for each analyzed paradigm to native Freesurfer
 # space if any atlases are in the native volume or on the surface
@@ -165,107 +171,80 @@ if doReg:
         fullout('Creating registration matrices for %s paradgim' % par,thinline)
         for subj in subjList:
             register.init_subj(par, subj)
-            cmdline, res = register.register()
-            cmdout(cmdline, res)
-
-
-
-
-# Register the functional to the original volume with bbregister, calling FLIRT
-for par in analysisPars:
-    for subj in subjList:
-        svsubjdir = os.path.join(atlasdir,par,subj)
-        regdir = os.path.join(svsubjdir,'regmats')
-        regmat = '%s2orig_bbregister.dat' % cfg.paradigms(par,'lower')
-        regmat = os.path.join(regdir,regmat)
-        funcvol = glob(os.path.join(l1output,par,subj,'realign','*.nii'))
-        funcvol = funcvol[0]
-        try: os.mkdir(regdir)
-        except: pass
-        if not isfile(regmat):
-            # Set the inputs
-
-            register = fs.BBRegister()
-
-            register.inputs.subject_id = subj
-            register.inputs.sourcefile = funcvol
-            register.inputs.init_fsl = True
-            register.inputs.t2_contrast = True
-            register.inputs.outregfile = regmat
-
-            # Run bbregister
-            res = register.run()
-            cmdout = (register,res)
-        else:
-            shortout('Found ' + regmat)
-
-
-        # Check to see if the segmentation volumes exist and make them if not
-        volumedir = os.path.join(svsubjdir,'volumes')
-        segvols = []
-        segvoltypes = []
-        segspace = RoiSpace()
-        for voltype in SegVols().keys():
-            if segspace[voltype] == 'volume':
-                if Regions(voltype) and 'label' not in voltype:
-                    segvols.append(SegVols()[voltype])
-                    segvoltypes.append(voltype)
-
-        try: os.mkdir(volumedir)
-        except: pass
-
-        for vol in segvols:
-
-            resampledvol = os.path.join(volumedir,vol)
-            if not isfile(resampledvol):
-                fullout('Resampling ' + vol + ' for ' + subj,thinline)
-                # Set the inputs
-
-                resample = fs.ApplyVolTransform()
-            
-                resample.inputs.targfile = os.path.join(fssubjdir,subj,'mri',vol)
-                resample.inputs.sourcefile = funcvol
-                resample.inputs.outfile = resampledvol
-                resample.inputs.tkreg = regmat
-                resample.inputs.inverse = True
-                resample.inputs.interp = 'nearest'           
-
-                # Run mri_vol2vol
-                res = resample.run()
-                cmdout(resample,res)
+            if not os.path.isfile(register.regmat) or cfg.overwrite('registration')
+                cmdline, res = register.register()
+                cmdout(cmdline, res)
             else:
-                shortout('Found ' + resampledvol)
-        
-            # Print a summarry of the voxel counts in each ROI with mri_segstats 
-            statsdir = os.path.join(svsubjdir,'stats')
-            try: os.mkdir(statsdir)
-            except: pass 
-            segstatsfile = os.path.join(statsdir,vol + '.stats') 
-            if not isfile(segstatsfile):
-                fullout('Running segmentation statistics \
-                         on %s for %s' % (vol,subj),thinline)
-                # Set the inputs
-
-                segstats = fs.SegStats()
-
-                segstats.inputs.segvol = resampledvol
-                segstats.inputs.invol = resampledvol
-                segids = fsroidict.Rois(vol).keys()
-                segids.sort()
-                if RoiSpace(vol) == 'surface':
-                    segids = [int(i-(N.floor(i/100)*100)) for i in segids]
-                segstats.inputs.segid = segids
-                segstats.inputs.sumfile = segstatsfile
-            
-                # Run mri_segstats
-                res = segstats.run()
-                cmdout(segstats,res)
-            else:
-                shortout('Found '+ segstatsfile)
+                shortout('Found %s' % register.regmat)
 
 #-------------------------------------------------------------------------------#
-# Prepare the task beta images for extraction
+# Freesurfer Volume Resampling
 #-------------------------------------------------------------------------------#
+
+# Make a list of atlases to resample
+fs_vols =  []
+for atlas in atlases.keys():
+    if atlases[atlas]['source'] == 'freesurfer' and \
+       atlases[atlas]['space'] == 'volume':
+        fs_vols.append(atlases[atlas])
+
+for atlas in fs_vols:
+    fullout('Resampling %s volumes into functional space' \
+            % atlas['atlasname'], thickline)
+    resample = roi.FreesurferAtlas(atlas, fsatlasdir, fssubjdir)
+        for par in analysisPars:
+            for subj in subjList:
+                # Resample the Freesurfer segmentations into functional space
+                resample.init_subj(par, subj, roi.meanfunc(cfg, par, subj)
+                if not os.path.isfile(resample.atlas) or \
+                       cfg.overwrite('resampled_volumes'):
+                    cmdline, res = resample.resample()
+                    cmdout(cmdline, res)
+                else:
+                    shortout('Found %s' % resample.atlas)
+
+                # Generate full segmentation statistics
+                if not os.path.isfile(resample.statsfile) or \
+                       cfg.overwrite('atlas_stats'):
+                    cmdline, res = resample.stats()
+                    cmdout(cmdline, res)
+                else
+                    shortout('Found %s' % resample.statsfile)
+
+
+#-------------------------------------------------------------------------------#
+# Freesurfer Surface Copying
+#-------------------------------------------------------------------------------#
+
+fs_surfs = []
+for atlas in atlases.keys()
+    if atlases[atlas]['source'] == 'freesurfer' and \
+       atlases[atlas]['space'] == 'surface':
+        fs_surfs.append(atlases[atlas])
+
+
+for atlas in fs_surfs:
+    fullout('Preparing %s annotations' % atlas['atlasname'], thickline)
+    annot = roi.FreesurferAtlas(atlas, fsatlasdir, fssubjdir)
+        for par in analysisPars:
+            for subj in subjList:
+                # Copy the annot from the fs label dir to the roi atlas dir
+                annot.init_subj(par, subj)
+                if not os.path.isfile(annot.atlas) or \
+                       cfg.overwrite('freesurfer_annots'):
+                    annot.copy()
+                # Generate full annotation statistics
+                if not os.path.isfile(annot.statsfile) or \
+                       cfg.overwrite('atlas_stats'):
+                    cmdline, res = annot.stats()
+                    cmdout(cmdline, res)
+                else
+                    shortout('Found %s' % annot.statsfile)
+
+
+#===============================================================================#
+# Prepare the first level data sources
+#===============================================================================#
 
 
 for par in analysisPars:
@@ -295,6 +274,7 @@ for par in analysisPars:
 #-------------------------------------------------------------------------------#
 # Convert the spmT maps to -log10(p) volumes for masking 
 #-------------------------------------------------------------------------------#
+
 
 conCell = '{'
 for par in analysisPars:
@@ -326,108 +306,33 @@ for par in analysisPars:
                 shortout(res.runtime.stdout)
 
 
-#-------------------------------------------------------------------------------#
+#===============================================================================#
 # Run the functional ROI extraction
-#-------------------------------------------------------------------------------#
+#===============================================================================#
 
-
-# Iterate through the list of analyses
-for anparams in analysis:
-    # Format the names for storage purposes
-    if 'maskpar' in anparams.keys() or anparams['maskpar' != 'nomask': 
-        maskstring = '%s-%s%s-%s' %s (cfg.paradigms(anparams['maskpar'],'lower'),
-                                      anparams['maskcon'],
-                                      str(anparams['maskthresh']))
-    else:       
-        maskstring = 'nomask'
-    analname = Paradigms(anparams['par'],'upper') + '_' + maskstring
-    fullout('Running functional analysis for ' + analname,thickline)
-    # Check to see if analysis exists, error out if yes, make directory if no
-    try: os.mkdir(os.path.join(projectdir,analname)) 
-    except: pass
-
-    for vol in SegVols().keys():
-        if Regions(vol):
-            try: os.mkdir(os.path.join(projectdir,analname,vol))
-            except: pass
-        
-        for txtdir in ['avgwf','segsum']:
-            try: os.mkdir(os.path.join(projectdir,analname,vol,txtdir))
-            except: pass
-
-    
-    # Print a list of the beta conditions
-    shortout('Writing task regressor list\n')
-    betalist = open(os.path.join(projectdir,analname,'beta_list.txt'),'w')
-    for cond in Betas(anparams['par']):
-       betalist.write(cond + '\t')
-    betalist.close()
-
-    # Iterate through the subjects
-    for subj in subjList:     
-        fullout('Running functional stats for ' + subj,thinline)
-        # Iterate through the four segmentation volumes 
-        for segkey in SegVols().keys():
-            # Make sure we're looking at ROIs in this segmentation, skip if not
-            doSeg = None
-            if Regions(segkey):
-                    doSeg = True
-            analPar = anparams['par']
-            firstleveldir = os.path.join(l1output,analPar,subj)
-            svsubjdir = os.path.join(atlasdir,analPar,subj)
-            if RoiSpace(segkey) == 'volume':
-                funcvolfile = os.path.join(firstleveldir,'model/task_betas.mgz')
-                segvolfile = os.path.join(svsubjdir,'volumes',SegVols(segkey))
-            else:
-                hemi = segkey[-2] + 'h'
-                funcvolfile = os.path.join(firstleveldir,
-                                           'model/%s.task_betas.mgz')
-                segval = SegVols(segkey)
-                annotfile = [subj,hemi,segval[3:len(segval)]]
-            avgwfdir = os.path.join(projectdir,analname,segkey,'avgwf')
-            segsumdir = os.path.join(projectdir,analname,segkey,'segsum')
-
-
-            if doSeg:
-                # Set the input variables
-
-                funcroi = fs.SegStats()
-
-                if RoiSpace(segkey) == 'volume':
-                    funcroi.inputs.segvol = segvolfile
+for atlasdict in atlases.values():
+    atlas = roi.init_atlas(atlasdict)
+    fullout('Extracting data with %s atlas' % atlas.atlasname, thickline)
+    for anal in analysis:
+        fullout('Extracting data for %s analysis' % roi.get_analysis_name(anal),
+                thickline)
+        anparams = roi.Analysis(anal)
+        for subj in subjlist:
+            fullout('Extracting data for %s' % subj, thinline)
+            atlas.init_subj(analysis.par, subj)
+            atlas.init_analysis(cfg, anparams)
+            for datafile in [atlas.functxt, atlas.funcvol, atlas.funcstats]:
+                if not os.path.isfile(datafile) or cfg.overwrite('extractions')
+                    cmdline, res = atlas.extract()
+                    cmdout(cmdline, res)
                 else:
-                    funcroi.inputs.annot = annotfile
-                ids = Regions(segkey)
-                if RoiSpace(segkey) == 'surface':
-                    ids = [int(i-(N.floor(i/100)*100)) for i in ids]
-                funcroi.inputs.segid = ids
-                funcroi.inputs.sumfile = os.path.join(segsumdir,subj + '.txt')
-                funcroi.inputs.invol = funcvolfile
-                if 'maskpar' in anparams.keys():
-                    maskcon = anparams['maskcon']
-                    maskpar = anparams['maskpar']
-                    maskdict = Contrasts(maskpar,'P-map','.nii')
-                    if RoiSpace(segkey) == 'volume':
-                        funcroi.inputs.maskvol = os.path.join(l1output,maskpar,subj,'contrasts',
-                                                              maskdict[maskcon])
-                    else:
-                        funcroi.inputs.maskvol = os.path.join(l1output,maskpar,subj,'contrasts',
-                                                              hemi +'.'+ maskdict[maskcon]) 
-                    funcroi.inputs.maskthresh = anparams['maskthresh']
-                    if 'masksign' not in anparams.keys():
-                        sign = 'pos'
-                    else:
-                        sign = anparams['masksign']
-                    funcroi.inputs.masksign = sign
-                funcroi.inputs.avgwftxt = os.path.join(avgwfdir,subj + '.txt')
+                    shortout('Found %s' % datafile)
 
-                # Run mri_segstats
-                res = funcroi.run()
-                cmdout(funcroi,res)
 
-#-------------------------------------------------------------------------------#
+
+#===============================================================================#
 # Assemble the database
-#-------------------------------------------------------------------------------#
+#===============================================================================#
 
 fullout('Assembling analysis database',thickline)
 
