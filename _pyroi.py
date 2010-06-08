@@ -13,11 +13,12 @@ import shutil
 import datetime
 import numpy as N
 import pyroi as roi
+import configinterface as cfg
 import pyroilut as lut
 from glob import glob
-from nipype.interfaces import freesurfer as fs
-from nipype.interfaces import matlab as mlab
-from nipype.interfaces import base
+import nipype.interfaces.freesurfer as fs
+import nipype.interfaces.matlab as mlab
+import nipype.interfaces as base
 
 # If the script is not run with one argument, print the docstring and exit
 if len(sys.argv) != 2:
@@ -25,15 +26,19 @@ if len(sys.argv) != 2:
     sys.exit(0)
 # Otherwise, get the config module to use from the command line
 else:
-    configmod = sys.argv[1]
+    usercfg = sys.argv[1]
 
-# Import the config module, trying two different ways
-try:
-    cfg = __import__('config%s' % configmod)
-    print '\nImporting config%s module\n' % configmod
-except ImportError:
-    cfg = __import('%s' % configmod)
-    print '\nImporting %s module\n' % configmod
+# Import the setup setup function, trying two different ways
+cfg.setup = cfg.import_setup(usercfg)
+
+if 'config' in usercfg: 
+     prefix = ''
+else:
+     prefix = 'config'
+
+print '\nImporting setup function from `%s%s.py`\n' % (prefix, usercfg)
+
+cfg.setup = usercfg.setup
 
 # Get the project name
 projname = cfg.projectname()
