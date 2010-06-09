@@ -265,13 +265,11 @@ def setup(setupkey=None):
 
     #------------------------<First Level Datapaths>---------------------------#
     """
-       Specify the paths (relative to the directory where the analysis will be
-       run from) to directories containing timecourses, mean functionals, first-
+       Specify the absolute path to your main directory and relative paths from
+       that directory to those containing timecourses, mean functionals, first-
        level betas, and contrast images.  You may include $paradigm, $subject,
        and $contrast wildcards in the path strings, which will be replaced 
-       appropriately as the program runs. Note that you may leave the 
-       contrastpath variable as an empty string if you will not be using first-
-       level masks or extracting contrast effect sizes.
+       appropriately as the program runs. 
 
        NOTE: For now, PyROI just looks for a single .nii image in the terminal
        directory of the meanfunc path.  This is the standard setup for the out-
@@ -280,19 +278,24 @@ def setup(setupkey=None):
 
        Format
        ------
-       dictionary or string
+       string
+       string
        string
        string
        string
 
        Variable Name
        -------------
+       basepath
+       timecoursepath
        meanfuncpath
        betapath
        contrastpath
     """
 
-    timecourse = 'surface/l1output/$paradigm/$subject/timecourse'
+    basepath = '/g2/gablab/sad/PY_STUDY_DIR/Block'
+
+    timecoursepath = 'surface/l1output/$paradigm/$subject/timecourse'
 
     meanfuncpath = 'surface/l1output/$paradigm/$subject/realign'
 
@@ -377,8 +380,8 @@ def setup(setupkey=None):
      'subjdir': subjdir, 'subjects': subjects, 'paradigms': paradigms,
      'contrastpath': contrastpath, 'betapath': betapath, 'contrasts':
      contrasts, 'conditions': conditions, 'hrfcomponents': hrfcomponents,
-     'overwrite': overwrite, 'betastoextract': betastoextract,
-     'meanfuncpath': meanfuncpath, 'timecourse': timecourse}
+     'overwrite': overwrite, 'betastoextract': betastoextract, 'basepath':
+     basepath, 'meanfuncpath': meanfuncpath, 'timecoursepath': timecoursepath}
     
     # Return setup information
     if setupkey is None: return setup

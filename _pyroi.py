@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+py#! /usr/bin/env python
 """
    May/June 2010 update of ROI pypeline.  A work in progress.
 
@@ -225,15 +225,14 @@ for atlas in fs_vols:
 #-------------------------------------------------------------------------------#
 
 fs_surfs = []
-for atlas in atlases.keys():
-    if atlases[atlas]['source'] == 'freesurfer' and \
-       atlases[atlas]['space'] == 'surface':
-        fs_surfs.append(atlases[atlas])
+for atlas in atlases.values():
+    if atlas['source'] == 'freesurfer' and atlas['space'] == 'surface':
+        fs_surfs.append(atlas)
 
 
 for atlas in fs_surfs:
     fullout('Preparing %s annotations' % atlas['atlasname'], thickline)
-    annot = roi.FreesurferAtlas(atlas, fsatlasdir, fssubjdir)
+    annot = roi.FreesurferAtlas(atlas, roidir, fssubjdir)
     for subj in subjList:
         # Copy the annot from the fs label dir to the roi atlas dir
         annot.init_subj(subj)
@@ -248,6 +247,39 @@ for atlas in fs_surfs:
         else:
             shortout('Found %s' % annot.statsfile)
 
+
+#-------------------------------------------------------------------------------#
+# Label Atlas Preprocessing
+#-------------------------------------------------------------------------------#
+
+label_atlases = []
+for atlas in atlases.values():
+    if atlas['source'] = 'label':
+        label_atlases.append(atlas)
+
+for atlas in label_atlases:
+    fullout('Preparing %s atlas' % atlas['atlasname'], thickline)
+    lablat = roi.LabelAtlas(atlas, roidir, fssubjdir)
+    for subj in subjList:
+        lablat.init_subject(subj)
+        missing_labels = False
+        for label in lalbat.sourcefiles:
+            if not os.path.isfile(os.path.join(lablat.sourcedir,'%s.label' % label)):
+                missing_labels = True
+        if missing_labels or cfg.overwrite('label_atlases'):
+            results = lablat.resample_labels()
+            for res in results:
+                shortout('%s\n' % res)
+        else: 
+            shortout('Found resamples labels for %s' % lablat.atlasname)
+        if not os.path.isfile(lablat.lutfile) or cfg.overwrite('label_atlases'):
+            lablat.write_lut()
+        if not os.path.isfile(lablat.atlas) or cfg.overwrite('label_atlases'):
+            cmdline, res = lablat.make_annotation()
+            cmdout(cmdline, res)
+        else:
+            shortout('Found %s' % lablat.atlas)
+                                               
 
 #===============================================================================#
 # Prepare the first level data sources

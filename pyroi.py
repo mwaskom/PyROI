@@ -12,13 +12,13 @@ from nipype.interfaces.base import Bunch
 from glob import glob
 
 class Analysis(Bunch):
-    """Analysis object"""
+    """Analysis object."""
     def __init__(self, cfg, analysis):
         
         self.dict = analysis
         self.cfg = cfg
         self.paradigm = analysis['par']
-        self.source = analysis['extract']
+        self.extract = analysis['extract']
         self.name = get_analysis_name(cfg, analysis)
         if 'maskpar' in analysis.keys() and \
            analysis['maskpar'] != 'nomask':
@@ -35,19 +35,20 @@ class Analysis(Bunch):
    
 
 class Atlas(Bunch):
-    """Base atlas class"""
-    def __init__(self):
+    """Base atlas class."""
+    
+    def __call__(self, analysis):
 
-        pass
+        self.init_analysis(analysis)
     
     def init_analysis(self, analysis):
-
+        """Initialize the atlas with an analysis."""
         self.analysis = analysis
     
         if analysis.mask:
             self.mask = True
             maskpath = analysis.cfg.pathspec('contrasts', analysis.maskpar,
-                                             self.subj, analysis.maskcon)
+                                             self.subject, analysis.maskcon)
             maskfile = '%s%s' % (self.atlasprefix, 
                         analysis.cfg.contrasts(analysis.maskpar, 
                                                'sig',)[analysis.maskcon])
@@ -57,16 +58,16 @@ class Atlas(Bunch):
 
         
         sourcedict = \
-        {'betas' : os.path.join(analysis.cfg.pathspec('betas', self.par, 
-                                                      self.subj),
+        {'betas' : os.path.join(analysis.cfg.pathspec('beta', self.par, 
+                                                      self.subject),
                                 '%stask_betas.mgz' % self.atlasprefix),
-         'contrast' : os.path.join(analysis.cfg.pathspec('contrasts', self.par,
-                                   self.subj),
+         'contrast' : os.path.join(analysis.cfg.pathspec('contrast', self.par,
+                                   self.subject),
                                    '%sall_contrasts.mgz' % self.atlasprefix),
-         'timecourse' : os.path.join(cfg.pathspec('timecourse', self.par, 
-                                     self.subj))} #XXX figure this out
+         'timecourse' : os.path.join(analysis.cfg.pathspec('timecourse', self.par, 
+                                     self.subject))} #XXX figure this out
 
-        self.analysis.source = sourcedict[analysis.source]
+        self.analysis.source = sourcedict[analysis.extract]
 
         self.analysis.dir = os.path.join(self.basedir, 'analyses', 
                                         analysis.cfg.projectname(), 
@@ -74,48 +75,46 @@ class Atlas(Bunch):
                                                           analysis.dict))
 
         self.funcstats = os.path.join(self.analysis.dir, 'stats', 
-                                      '%s.stats' % self.subj)
+                                      '%s.stats' % self.subject)
         self.functxt = os.path.join(self.analysis.dir, 'avgwftxt',
-                                    '%s.avgwf' % self.subj)
+                                    '%s.avgwf' % self.subject)
         self.funcvol = os.path.join(self.analysis.dir, 'avgwfvol',
-                                    '%s.nii' % self.subj)
+                                    '%s.nii' % self.subject)
          
 
     def copy_atlas(self):
-
+        """Copy original atlas file to pyroi atlas tree"""
         shutil.copy(self.origatlas, self.atlas)  
 
-    def _nipype_run(self, interface):
-     
+    def nipype_run(self, interface):
+        """Run a program using its nipype interface"""
         if self.debug:
-            return interface.cmdline, 
+            return interface.cmdline, None
         else:
             res = interface.run()
             return interface.cmdline, res
 
-    def _manual_run(self, cmd):
-
+    def manual_run(self, cmd):
+        """Run a freesurfer program that lacks a nipype interface"""
         cmdline = cmd[0]
         for i, component in enumerate(cmd):
             if i != 0:
                 cmdline = '%s %s' % (cmdline, component)
         if self.debug:
-            return cmdline
+            return cmdline, None
         else:
             res = subprocess.call(cmd)
             return cmdline, res
 
-
     def stats(self):
-
+        """Print a summarry file of voxel/vertex counts for all regions in an atlas."""
         segstats = fs.SegStats()
 
         if self.space == 'volume':
             segstats.inputs.segvol = self.atlas
-            segstats.inputs.invol = self.atlas
         else:
             segstats.inputs.annot = self.atlas
-            segstats.inputs.invol = self.atlas
+        segstats.inputs.invol = self.atlas
         segstats.inputs.segid = self.lut.keys()
         segstats.inputs.sumfile = self.statsfile
 
@@ -123,7 +122,7 @@ class Atlas(Bunch):
         return cmdline, res
      
     def extract(self):
-
+        """Extract average functional data from select regions in an atlas."""
         funcex = fs.SegStats()
 
         if self.space == 'volume':
@@ -146,35 +145,43 @@ class Atlas(Bunch):
         cmdline, res = self.nipype_run(funcex)
         return cmdline, res
 
-    def __call__(self, analysis):
-
-        self.init_analysis(analysis)
 
     def group_stats(self, subjects, par=None):
-
+        """Get atlas statistics for a group of subjects"""
         if par is None:
             par = ''
         for subj in subjects:
             self.init_subject(subj, par)
             cmdline, res = self.stats()
-            print '\n%s\n\n%s\n%s' % (cmdline, 
-                                      res.runtime.stdout,
-                                      res.runtime.stdout)
+            if self.debug:
+                print '\n%s\n\n' % cmdline
+            else:
+                print '\n%s\n\n%s\n%s' % (cmdline, 
+                                          res.runtime.stdout,
+                                          res.runtime.stdout)
 
     def group_extract(self, analysis, subjects):
-        
+        """Extract functional data for a group of subjects."""
         for subj in subjects:
             self.init_subject(subj, analysis.paradigm)
             self.init_analysis(analysis)
             cmdline, res = self.extract()
-            print '\n%s\n\n%s\n%s' % (cmdline, 
-                                      res.runtime.stdout,
-                                      res.runtime.stdout)
+            if self.debug:
+                print '\n%s\n\n' % cmdline
+            else:
+                print '\n%s\n\n%s\n%s' % (cmdline, 
+                                          res.runtime.stdout,
+                                          res.runtime.stdout)
 
 class FreesurferAtlas(Atlas):
-    """Freesurfer atlas object"""
-    def __init__(self, atlasdict, fsroidir, fssubjdir, **kwargs):
+    """Atlas class for a Freesurfer atlas"""
+    def __init__(self, atlasdict, roidir=None, subjdir=None, **kwargs):
        
+        if roidir is None:
+            self.roidir = os.path.join(os.path.abspath(os.curdir),'roi')
+        if subjdir is None:
+            subjdir = os.getenv('FREESURFER_HOME')
+        
         self.atlasdict = atlasdict
         self.atlasname = atlasdict['atlasname']
         self.fname = atlasdict['fname']
@@ -185,16 +192,16 @@ class FreesurferAtlas(Atlas):
 
         self.lut = lut.freesurfer(self.fname)
 
-        self.basedir = fsroidir
-        self.subjdir = fssubjdir
+        self.basedir = os.path.join(self.roidir, 'atlases', 'freesurfer')
+        self.subjdir = subjdir
 
         self.__dict__.update(**kwargs)
         if 'debug' not in self.__dict__:
             self.debug = False
 
-    def init_subject(self, subj, par=None, meanfuncimg=None):
-        
-       self.subj = subj
+    def init_subject(self, subject, par=None, meanfuncimg=None):
+       """Initialize the atlas for a subject and analysis paradigm"""
+       self.subject = subject
        if par is None:
            self.par = ''
        else:
@@ -210,23 +217,23 @@ class FreesurferAtlas(Atlas):
            self.origdir = 'mri'
            self.atlasext = 'mgz'
        self.meanfuncimg = meanfuncimg
-       self.regmat = os.path.join(self.basedir, 'reg', par,
-                                  subj, 'func2orig.dat')
+       self.regmat = os.path.join(self.roidir, 'reg', self.par,
+                                  subject, 'func2orig.dat')
 
        if self.space != 'reg':
            self.statsfile = os.path.join(self.basedir, self.space, self.pardir,
-                                         self.subj, self.atlasname,
+                                         self.subject, self.atlasname,
                                          '%s.stats' % self.atlasname)
-           self.origatlas = os.path.join(self.subjdir, subj, 
+           self.origatlas = os.path.join(self.subjdir, subject, 
                                          self.origdir, self.fname)
            self.atlas = os.path.join(self.basedir, self.space, self.pardir,
-                                     self.subj, self.atlasname,
+                                     self.subject, self.atlasname,
                                      '%s%s.%s' % (self.atlasprefix, 
                                                   self.atlasname, 
                                                   self.atlasext))
         
     def resample(self):
-
+        """Resample a freesurfer volume atlas into functional space"""
         transform = fs.ApplyVolTransform()
 
         transform.inputs.targfile = self.origatlas
@@ -241,26 +248,31 @@ class FreesurferAtlas(Atlas):
 
 
 class FSRegister(FreesurferAtlas):
-    """Freesurfer atlas object for registration"""
+    """Freesurfer atlas for registration"""
 
-    def __init__(self, fsroidir, fssubjdir, **kwargs):
-        self.basedir = fsroidir
-        self.subjdir = fssubjdir
+    def __init__(self, roidir=None, subjdir=None, **kwargs):
+
+        if roidir is None:
+            self.roidir = os.path.join(os.path.abspath(os.curdir),'roi')
+        if subjdir is None:
+            subjdir = os.getenv('FREESURFER_HOME')
+        
         self.space = 'reg'
         self.fname = 'orig.mgz'
         self.atlasname = 'register'
 
+        self.basedir = os.path.join(roidir, 'atlases', 'reg')
+        self.subjdir = subjdir
+        
         self.__dict__.update(**kwargs)
         if 'debug' not in self.__dict__:
             self.debug = False
 
     def register(self):
-
-        self.regmat = os.path.join(self.basedir, 'reg', self.par,
-                                   self.subj, 'func2orig.dat')
+        """Register functional space to Freesurfer original atlas space"""
         reg = fs.BBRegister()
 
-        reg.inputs.subject_id = self.subj
+        reg.inputs.subject_id = self.subject
         reg.inputs.sourcefile = self.meanfuncimg
         reg.inputs.init_fsl = True
         reg.inputs.t2_contrast = True
@@ -276,9 +288,14 @@ class TalairachAtlas(Atlas):
         pass
 
 class LabelAtlas(Atlas):
-
-    def __init__(self, atlasdict, roidir, subjdir, **kwargs):
+    """Atlas class for an atlas construced from surface labels"""
+    def __init__(self, atlasdict, roidir=None, subjdir=None, **kwargs):
         
+        if roidir is None:
+            self.roidir = os.path.join(os.path.abspath(os.curdir),'roi')
+        if subjdir is None:
+            subjdir = os.getenv('FREESURFER_HOME')
+                 
         self.atlasdict = atlasdict
         self.atlasname = atlasdict['atlasname']
         self.manifold = 'surface'
@@ -287,10 +304,10 @@ class LabelAtlas(Atlas):
         self.sourcedir = atlasdict['sourcedir']
 
 
-        self._labels_to_dict(atlasdict['labels'])
+        self.labels_to_dict(atlasdict['labels'])
         self.regions = self.lut.keys()
 
-        self.basedir = os.path.join(roidir, 'atlases')
+        self.basedir = os.path.join(roidir, 'atlases', 'label')
         self.subjdir = subjdir
 
         self.__dict__.update(**kwargs)
@@ -298,9 +315,8 @@ class LabelAtlas(Atlas):
         if 'debug' not in self.__dict__:
             self.debug = False
 
-    def _labels_to_dict(self, labels):
+    def labels_to_dict(self, labels):
         """Turn a list of labels into a look-up dictionary"""
- 
         # Assuming the list of labels has been trimmed of hemisphere
         # prefix and .label extension
 
@@ -310,9 +326,8 @@ class LabelAtlas(Atlas):
 
     def init_subject(self, subject):
         """Initialize the atlas for a subject"""
-
         self.subject = subject
-        self.atlasdir = os.path.join(self.basedir, 'label', subject,
+        self.atlasdir = os.path.join(self.basedir, subject,
                                      self.atlasname)
         self.lutfile = os.path.join(self.atlasdir, '%s.lut' % self.atlasname)
         self.atlas = os.path.join(self.atlasdir, 
@@ -323,7 +338,6 @@ class LabelAtlas(Atlas):
 
     def resample_labels(self):
        """Resample label files from fsaverage surface to native surfaces"""
-
        results = []
        for label in self.sourcefiles:
 
@@ -338,15 +352,18 @@ class LabelAtlas(Atlas):
             cmd.append('--hemi %s' % self.hemi)
             cmd.append('--regmethod surface')
 
-            res = self._manual_run(cmd)
-            results.append(res)
+            cmdline, res = self.manual_run(cmd)
+            if self.debug:
+                results.append(cmdline)
+            else:
+                for output in [cmdline, res.runtime.stdout, res.runtime.stderr]:
+                    results.append(output)
 
-       print results
+       return results
 
     
     def write_lut(self):
         """Write a look up table to the roi atlas directory"""
-
         lutfile = open(self.lutfile, 'w')
         for id in self.lut.keys():
             lutfile.write('%d\t%s\t\t\t' % id, self.lut[id])
@@ -358,7 +375,6 @@ class LabelAtlas(Atlas):
 
     def make_annotation(self):
         """Create an annotation from a list of labels"""
-        
         cmd = ['mris_label2annot']
 
         cmd.append('--s %s' % self.subject)
@@ -369,19 +385,27 @@ class LabelAtlas(Atlas):
             filepath = os.path.join(self.sourcedir, '%s.label' % label)
             cmd.append('--l %s' % filepath)
 
-        res = self._manual_run(cmd)
+        cmdline, res = self.manual_run(cmd)
 
         self.copy_atlas(self.origatlas, self.atlas)
 
-        return res
+        return cmdline, res
 
     def group_preproc(self, subjects):
-        """Resample labels, write a lookup table, and create an annotation"""
+        """Run atlas preprocessing steps for a list of subjects"""
         for subject in subjects:
             self.init_subject(subject)
-            self.resample_labels()
+            results = self.resample_labels()
+            for item in results:
+                print item
             self.write_lut()
-            self.make_annotation()
+            cmdline, res = self.make_annotation()
+            if self.debug:
+                print cmdline
+            else:
+                print '\n%s\n\n%s\n%s' % (cmdline, 
+                                          res.runtime.stdout,
+                                          res.runtime.stdout)
 
 class MaskAtlas(Atlas):
 
@@ -402,8 +426,8 @@ class FirstLevelStats(Bunch):
 
         pass
 
-def init_atlas(atlasdict, roidir, subjdir):
-    """Docstring goes here"""
+def init_atlas(atlasdict, roidir, subjdir= None):
+    """Initialize the proper atlas class with an atlas dictionary"""
     atlasopts = {'freesurfer': FreesurferAtlas(atlasdict, roidir, subjdir),
                  'talairach': TalairachAtlas(atlasdict, roidir),
                  'label': LabelAtlas(atlasdict, roidir, subjdir),
@@ -475,7 +499,7 @@ def meanfunc(cfg, par, subj, basedir = ''):
     string
     
     """
-    #XXX This whole function seems a bit misplaced, no? =
+    #XXX This whole function seems a bit misplaced, no? 
     funcpath = cfg.pathspec('meanfunc', par, subj)
     niftis = glob(os.path.join(basedir,funcpath,'*.nii'))
     meanfuncimg = niftis[0]
@@ -532,10 +556,10 @@ def make_fs_atlas_tree(roidir, cfg):
         fsdirs.append(topdir)
 
 
+#If module is told to run, turn around and run _pyroi.py script
 if __name__ == '__main__':
-    """If module is told to run, turn around and run _pyroi.py script"""
     cmd = ['_pyroi.py']
     if len(sys.argv) > 0:
-        for arg in range(1,len(sys.argv)):
-            cmd.append(sys.argv[arg])
+        for arg in sys.argv[1:]:
+            cmd.append(arg)
     P = subprocess.call(cmd)

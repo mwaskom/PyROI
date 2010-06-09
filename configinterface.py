@@ -13,11 +13,18 @@ import pyroilut as lut
 import nipype.interfaces.freesurfer as fs
 
 def import_setup(module_name):
-    """This function imports a customized setup function
+    """Import a customized setup function.
 
-    It tries to import configmodule_name, then just module_name.
-    If it fails a second time, it exits with advice for using
-    it properly.
+    It tries to import `configmodule_name`, then just `module_name`.
+    
+    Parameters
+    ----------
+    module_name : the name of the custom config file (sans .py extension)
+
+    Returns
+    -------
+    setup function from custom module
+
     """
     try:
         setupmodule = __import__('config%s' % module_name)
@@ -27,7 +34,7 @@ def import_setup(module_name):
     return setupmodule.setup
 
 def projectname():
-    """This function will return the project name string
+    """Return the project name string.
 
     Parameters
     ----------
@@ -44,8 +51,9 @@ def projectname():
 
 
 def analysis():
-    """This function will return the analysis list.  If the variable type
-    of analysis is a dictionary, it wraps it in a list.
+    """Return the analysis list.  
+    
+    If the variable type of analysis is a dictionary, it wraps it in a list.
    
     Parameters
     ----------
@@ -66,7 +74,9 @@ def analysis():
 
 
 def atlases(atlas=None):
-    """This function deals with the ROI atlas defintions. If the scope is 
+    """Return the atlas specifications.
+    
+    This function deals with the ROI atlas defintions. If the scope is 
     empty when called, it will return the full atlas dictionary, where each
     entry specifies an atlas. If called with an atlas key as the argument,
     it will return the attribute dictionary for that atlas.  
@@ -97,7 +107,7 @@ def atlases(atlas=None):
 
 
 def fssubjdir():
-    """This function returns the path to the Freesurfer Subjects directory.
+    """Set and return the path to the Freesurfer Subjects directory.
 
     Parameters
     ----------
@@ -117,7 +127,9 @@ def fssubjdir():
 
 
 def paradigms(parname=None, case='upper'):
-    """This function has two uses. If called with an empty scope, it will
+    """Return paradigm information.
+    
+    This function has two uses. If called with an empty scope, it will
     return a list of the paradigms inolved in the project. If called with 
     the full name of a paradigm as the first argument, it will return the 
     two-letter code for that paradigm. You may specify whether the paradigm
@@ -151,7 +163,9 @@ def paradigms(parname=None, case='upper'):
 
 
 def betas(par=None, retval=None):
-    """This function deals with both condition and file names for the 
+    """Return information about task regressors.
+    
+    This function deals with both condition and file names for the 
     first-level betas.  It takes the name of a paradigm and the type 
     of list to return as parameters.  If asked for "names," it will
     return the list of condition names.  If asked for "images," it 
@@ -171,7 +185,8 @@ def betas(par=None, retval=None):
     par : paradigm
     retval : images or names
 
-    Returns :
+    Returns
+    -------
     list of condition names or image files names
     
     """    
@@ -238,7 +253,9 @@ def betas(par=None, retval=None):
 
 
 def contrasts(par=None, type='con-img', format='.nii'):
-    """This function controls the contrast images used in the analysis.
+    """Return information about contrasts.
+    
+    This function controls the contrast images used in the analysis.
     It takes the paradigm, image type, and image format as parameters 
     and returns a dictionary mapping contrast shorthand names to image
     file names.
@@ -293,7 +310,7 @@ def contrasts(par=None, type='con-img', format='.nii'):
 
 
 def pathspec(imgtype, paradigm=None, subject=None, contrast=None):
-    """Return a path to a beta or contrast image directory
+    """Return the path to directories containing various first-level components.
 
     This function allows the ROI procesing pypeline to be free of any
     specific first-level directory structure. A variable path is specified
@@ -319,21 +336,22 @@ def pathspec(imgtype, paradigm=None, subject=None, contrast=None):
     string of path to image directory
 
     """
+    basepath = setup('basepath')
     betapath = setup('betapath')
     meanfuncpath = setup('meanfuncpath')
     contrastpath = setup('contrastpath')
-    timecoursepath = setup('timecourse')
+    timecoursepath = setup('timecoursepath')
     
     vardict = {'$paradigm' : paradigm,
                '$contrast' : contrast,
                '$subject' : subject}
 
-    imgdict = {'betas': betapath,
+    imgdict = {'beta': betapath,
                'meanfunc': meanfuncpath,
-               'contrasts': contrastpath,
+               'contrast': contrastpath,
                'timecourse': timecoursepath}
     
-    varpath = imgdict[imgtype]
+    varpath = os.path.join(basepath, imgdict[imgtype])
 
     for var in vardict.keys():
         if var in varpath:
@@ -342,7 +360,9 @@ def pathspec(imgtype, paradigm=None, subject=None, contrast=None):
     return varpath
 
 def subjects(group = None, subject = None):
-    """This function controls the subjects and groups involved in the 
+    """Return a list of subjects or subject group membership.
+    
+    This function controls the subjects and groups involved in the 
     analysis.  It takes either a group or a subject as a parameter.
     If called with an empty scope, it returns a list of all subjects.
     If called with the name of a group, it returns a list of the subjects
@@ -385,7 +405,9 @@ def subjects(group = None, subject = None):
 
 
 def overwrite(filetype=None):
-    """Query whether a given filetype should be overwritten if it is found
+    """Control file overwriting.
+    
+    Query whether a given filetype should be overwritten if it is found
     to exist at runtime.
 
     If this filetype is None, the function will return the dictionary
