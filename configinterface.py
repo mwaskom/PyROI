@@ -1,19 +1,24 @@
-# emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
 # vi: set ft=python sts=4 ts=4 sw=4 et:
+# emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
 """
    May/June 2010 update of ROI pypeline.  A work in progress.
 
    Michael Waskom -- mwaskom@mit.edu
 """
 
-import nipype.interfaces.freesurfer as fs
-import pyroilut as lut
-import numpy as N
-import string
 import os
+import sys
+import numpy as N
+import pyroilut as lut
+import nipype.interfaces.freesurfer as fs
 
 def import_setup(module_name):
+    """This function imports a customized setup function
 
+    It tries to import configmodule_name, then just module_name.
+    If it fails a second time, it exits with advice for using
+    it properly.
+    """
     try:
         setupmodule = __import__('config%s' % module_name)
     except ImportError:

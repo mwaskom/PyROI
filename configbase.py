@@ -137,7 +137,7 @@ def setup(setupkey=None):
                     'hemi': 'rh',
                     'sourcedir': 'data/Oliver_Label_Files',
                     'sourcefiles': ['BG.STS',
-                                    'BG.supoccipital.STS'
+                                    'BG.supoccipital.STS',
                                     'BG.supparietal.STS']}}
        
 
@@ -373,7 +373,6 @@ def setup(setupkey=None):
     
     # Set up the setup dictionary
     setup = \
-    
     {'projname': projname, 'analysis': analysis, 'atlases': atlases,
      'subjdir': subjdir, 'subjects': subjects, 'paradigms': paradigms,
      'contrastpath': contrastpath, 'betapath': betapath, 'contrasts':

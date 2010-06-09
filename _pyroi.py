@@ -28,8 +28,12 @@ if len(sys.argv) != 2:
 else:
     usercfg = sys.argv[1]
 
-# Import the setup setup function, trying two different ways
-cfg.setup = cfg.import_setup(usercfg)
+# Import customized setup function
+try:
+    cfg.setup = cfg.import_setup(usercfg)
+except ImportError:
+    print '\nGraceful exit on import fail\n'
+    sys.exit(0)
 
 if 'config' in usercfg: 
      prefix = ''
@@ -37,8 +41,6 @@ else:
      prefix = 'config'
 
 print '\nImporting setup function from `%s%s.py`\n' % (prefix, usercfg)
-
-cfg.setup = usercfg.setup
 
 # Get the project name
 projname = cfg.projectname()
@@ -56,7 +58,7 @@ else:
 atlases = cfg.atlases()
 
 # Set up some directory variables
-fssubjdir = cfg.subjDir()
+fssubjdir = cfg.fssubjdir()
 maindir = os.path.abspath('.')
 l1output = os.path.join(maindir,'surface','l1output')
 
@@ -144,9 +146,14 @@ print 'Config module: ' + cfg.__file__
 print 'Log file is ' + logpath
 print
 
-lf.write('NiPyRoi Analysis \n' + now[0:16] + '\n' + os.getcwd() + 
-              '\nUser: ' + os.getlogin() + '\n' + 'Project name: ' + projname + '\n' 
-              'Config module: ' + __file__ + '\nLog file is ' + logpath + '\n\n')
+lf.write('NiPyRoi Analysis \
+         \n' + now[0:16] + '\
+         \n' + os.getcwd() + '\
+         \nUser: ' + os.getlogin() + '\
+         \nProject name: ' + projname + '\
+         \nConfig module: ' + __file__ + '\
+         \nLog file is ' + logpath + '\
+         \n\n')
  
 
 
@@ -227,20 +234,19 @@ for atlas in atlases.keys():
 for atlas in fs_surfs:
     fullout('Preparing %s annotations' % atlas['atlasname'], thickline)
     annot = roi.FreesurferAtlas(atlas, fsatlasdir, fssubjdir)
-    for par in analysisPars:
-        for subj in subjList:
-            # Copy the annot from the fs label dir to the roi atlas dir
-            annot.init_subj(par, subj)
-            if not os.path.isfile(annot.atlas) or \
-                   cfg.overwrite('freesurfer_annots'):
-                annot.copy()
-            # Generate full annotation statistics
-            if not os.path.isfile(annot.statsfile) or \
-                   cfg.overwrite('atlas_stats'):
-                cmdline, res = annot.stats()
-                cmdout(cmdline, res)
-            else:
-                shortout('Found %s' % annot.statsfile)
+    for subj in subjList:
+        # Copy the annot from the fs label dir to the roi atlas dir
+        annot.init_subj(subj)
+        if not os.path.isfile(annot.atlas) or \
+               cfg.overwrite('freesurfer_annots'):
+            annot.copy()
+        # Generate full annotation statistics
+        if not os.path.isfile(annot.statsfile) or \
+               cfg.overwrite('atlas_stats'):
+            cmdline, res = annot.stats()
+            cmdout(cmdline, res)
+        else:
+            shortout('Found %s' % annot.statsfile)
 
 
 #===============================================================================#
@@ -320,7 +326,7 @@ for atlasdict in atlases.values():
         anparams = roi.Analysis(anal)
         for subj in subjlist:
             fullout('Extracting data for %s' % subj, thinline)
-            atlas.init_subj(analysis.par, subj)
+            atlas.init_subj(subj, analysis.par)
             atlas.init_analysis(cfg, anparams)
             for datafile in [atlas.functxt, atlas.funcvol, atlas.funcstats]:
                 if not os.path.isfile(datafile) or cfg.overwrite('extractions'):
