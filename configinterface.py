@@ -287,6 +287,9 @@ def contrasts(par=None, type='con-img', format='.nii'):
     contrasts_tstat = {}
     contrasts_con = {}
 
+    if not format.startswith('.'): 
+        format = '.' + format
+
     # Iterate through the contrasts and populate the filename dictionaries
     for con in contrasts:
         if contrasts[con] < 10:

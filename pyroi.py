@@ -4,9 +4,11 @@ import re
 import sys
 import shutil
 import subprocess
+import numpy as np
 import pyroilut as lut
 import configinterface as cfg
-import numpy as np
+import scipy.stats as stats
+import nibabel as nib
 import nipype.interfaces.freesurfer as fs
 from nipype.interfaces.base import Bunch
 from glob import glob
@@ -32,7 +34,7 @@ class Analysis(Bunch):
                 self.masksign = 'abs'
         else:
             self.mask = False
-   
+ 
 
 class Atlas(Bunch):
     """Base atlas class."""
@@ -41,10 +43,11 @@ class Atlas(Bunch):
 
         self.init_analysis(analysis)
     
+    # Initialization methods
     def init_analysis(self, analysis):
         """Initialize the atlas with an analysis."""
         self.analysis = analysis
-    
+        self.__init_analysis = True 
         if analysis.mask:
             self.mask = True
             maskpath = analysis.cfg.pathspec('contrasts', analysis.maskpar,
@@ -82,6 +85,7 @@ class Atlas(Bunch):
                                     '%s.nii' % self.subject)
          
 
+    # Operation methos
     def copy_atlas(self):
         """Copy original atlas file to pyroi atlas tree"""
         shutil.copy(self.origatlas, self.atlas)  
@@ -105,9 +109,9 @@ class Atlas(Bunch):
         else:
             res = subprocess.call(cmd)
             return cmdline, res
-
+    # Processing methods
     def stats(self):
-        """Print a summarry file of voxel/vertex counts for all regions in an atlas."""
+        """Generate a summary of voxel/vertex counts for all regions in an atlas."""
         segstats = fs.SegStats()
 
         if self.space == 'volume':
@@ -195,10 +199,14 @@ class FreesurferAtlas(Atlas):
         self.basedir = os.path.join(self.roidir, 'atlases', 'freesurfer')
         self.subjdir = subjdir
 
+        self._init_subject = False
+        self.__init_analysis = True
+
         self.__dict__.update(**kwargs)
         if 'debug' not in self.__dict__:
             self.debug = False
 
+    # Initialization methods
     def init_subject(self, subject, par=None, meanfuncimg=None):
        """Initialize the atlas for a subject and analysis paradigm"""
        self.subject = subject
@@ -231,7 +239,10 @@ class FreesurferAtlas(Atlas):
                                      '%s%s.%s' % (self.atlasprefix, 
                                                   self.atlasname, 
                                                   self.atlasext))
-        
+       
+           self._init_subject = True
+
+    # Processing methods
     def resample(self):
         """Resample a freesurfer volume atlas into functional space"""
         transform = fs.ApplyVolTransform()
@@ -267,7 +278,8 @@ class FSRegister(FreesurferAtlas):
         self.__dict__.update(**kwargs)
         if 'debug' not in self.__dict__:
             self.debug = False
-
+            
+    # Processing methods
     def register(self):
         """Register functional space to Freesurfer original atlas space"""
         reg = fs.BBRegister()
@@ -312,6 +324,9 @@ class LabelAtlas(Atlas):
 
         self.__dict__.update(**kwargs)
 
+        self._init_subject = False
+        self.__init_analysis = False
+
         if 'debug' not in self.__dict__:
             self.debug = False
 
@@ -324,6 +339,7 @@ class LabelAtlas(Atlas):
         for i, label in enumerate(labels):
             self.lut[i+1] = label
 
+    # Initialization methods
     def init_subject(self, subject):
         """Initialize the atlas for a subject"""
         self.subject = subject
@@ -334,8 +350,10 @@ class LabelAtlas(Atlas):
                                   '%s.%s.annot' % (self.hemi, self.atlasname))
         self.origatlas = os.path.join(self.subjdir, subject, 'label',
                                       '%s.%s.annot' % (self.hemi, self.atlasname))
-                                      
+        
+        self._init_subject = True
 
+    # Processing methods
     def resample_labels(self):
        """Resample label files from fsaverage surface to native surfaces"""
        results = []
@@ -418,6 +436,7 @@ class FirstLevelStats(Bunch):
         
         pass
 
+    # Processing methods
     def concatenate(self):
 
         pass
@@ -426,17 +445,106 @@ class FirstLevelStats(Bunch):
 
         pass
 
+class TStatImage(FirstLevelStats):
+    """Docstring goes here"""
+    def __init__(self, cfg, analysis, **kwargs):
+        
+        self.cfg = cfg
+        self.analysis = analysis
+        self.timgdict = cfg.contrasts(analysis.maskpar, 'T-map', '.img')
+
+        self.roidir = os.path.join(cfg.setup('basepath'), 'roi')
+        self.statsdir = os.path.join(self.roidir, 'levelone', 'sig')
+
+        self._init_subject = False
+
+        self.__dict__.update(**kwargs)
+
+        if 'debug' not in self.__dict__:
+            self.debug = False
+
+    # Operation methods
+    def get_dof(self, timg):
+        """Get the degrees of freedom from a NiBabel T image"""
+        theader = timg.get_header()
+        desc = str(theader['descrip'])
+        m = re.search('(\[)([\d\.]+)(\])', desc)
+        dof = float(m.groups()[1])
+
+        return dof
+    
+    # Initialization methods
+    def init_subj(self, subject):
+        """Initialize the object for a subject"""
+        self.subject = subject
+        self.condirpath = cfg.pathspec('contrast', self.analysis.maskpar,
+                                       subject, self.analysis.maskcon)
+        self.timg = os.path.join(self.condirpath, 
+                                 self.timgdict[self.analysis.maskcon])
+        self.sigpath = os.path.join(self.statsdir, self.analysis.maskpar,
+                                   subject)
+        self.sigimg = os.path.join(self.sigpath, 
+                                   self.cfg.contrasts(self.analysis.maskpar,
+                                                      'sig')[self.analysis.maskcon])
+
+        self._init_subj = True                                               
+
+    # Processing methods
+    def convert_to_sig(self):
+        """Read a T stat image in and write it to -log10(P)"""
+        if not self._init_subject:
+            raise InitError('Subject')
+        
+        timg = nib.load(self.timg)
+        dof = self.get_dof(timg)
+        origvol = timg.get_data()
+        signvol = np.sign(origvol)
+        pvol = stats.t.sf(origvol, dof)
+        unsignedsigvol = -np.log10(pvol)
+        sigvol = signvol * unsignedsigvol
+        
+        sigaffine = timg.get_affine()
+        sigimg = nib.Nifti1Image(sigvol, sigaffine)
+
+        nib.save(sigimg, self.sigimg)
+
+        
+class InitError(Exception):
+
+    def __init__(self, component):
+        self.comp = component
+    
+    def __str__(self):
+        return '%s not initialized' % self.comp
+
+
 def init_atlas(atlasdict, roidir, subjdir= None):
-    """Initialize the proper atlas class with an atlas dictionary"""
-    atlasopts = {'freesurfer': FreesurferAtlas(atlasdict, roidir, subjdir),
-                 'talairach': TalairachAtlas(atlasdict, roidir),
-                 'label': LabelAtlas(atlasdict, roidir, subjdir),
-                 'mask': MaskAtlas(atlasdict, roidir)}
+    """Initialize the proper atlas class with an atlas dictionary.
+    
+    Parameters
+    ----------
+    atlasdict : atlas dictionary
+    roidir : path to roi directory
+    subjdir : path to Freesurfer subjects directory
+
+    Returns
+    -------
+    atlas object
+
+    """
+    atlasopts = {'freesurfer': 
+                     FreesurferAtlas(atlasdict, roidir, subjdir),
+                 'talairach': 
+                     TalairachAtlas(atlasdict, roidir),
+                 'label': 
+                     LabelAtlas(atlasdict, roidir, subjdir),
+                 'mask': 
+                     MaskAtlas(atlasdict, roidir)}
 
     return atlasopts[atlasdict['source']] 
 
 def get_analysis_name_list(cfg):
-    """Return a list of analysis names in PyROI format
+    """Return a list of analysis names in PyROI format.
 
     Parameters
     ----------
@@ -454,7 +562,7 @@ def get_analysis_name_list(cfg):
 
         
 def get_analysis_name(cfg, analysis):
-    """Get an analysis name in PyROI format
+    """Get an analysis name in PyROI format.
 
     Parameters
     ----------
@@ -480,7 +588,7 @@ def get_analysis_name(cfg, analysis):
         return '%s_nomask' % (analpar)
 
 def meanfunc(cfg, par, subj, basedir = ''):
-    """Return the path to a mean functional image
+    """Return the path to a mean functional image.
 
     Note: this function simply globs nifti files from the path and takes the 
     first one.  Standard NiPype behavior is to create a first level directory
@@ -506,7 +614,7 @@ def meanfunc(cfg, par, subj, basedir = ''):
     return meanfuncimg
 
 def make_analysis_tree(cfg, roidir):
-    """Set up the analysis directory tree for a project
+    """Set up the analysis directory tree for a project.
 
     Parameters
     ----------
