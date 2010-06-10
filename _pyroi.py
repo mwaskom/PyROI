@@ -264,7 +264,8 @@ for atlas in label_atlases:
         lablat.init_subject(subj)
         missing_labels = False
         for label in lalbat.sourcefiles:
-            if not os.path.isfile(os.path.join(lablat.sourcedir,'%s.label' % label)):
+            if not os.path.isfile(os.path.join(lablat.sourcedir,
+                                  '%s.label' % label)):
                 missing_labels = True
         if missing_labels or cfg.overwrite('label_atlases'):
             results = lablat.resample_labels()
@@ -294,7 +295,7 @@ for anparams in analysis:
             ,thickline)
     for subj in subjList:
         fullout('Concatenating %s volumes for %s' %(subj,anparams['extract'])
-        statimg = roi.init_stat_image(analysis)
+        statimg = roi.init_stat_object(analysis)
         statimg.init_subject(subj)
         if not os.path.isfile(statimg.extractvol) or \
            cfg.overwrite('concatenated_volumes'):
@@ -302,7 +303,6 @@ for anparams in analysis:
             cmdout(cmdline, res)
         else:
             shortout('Found %s' % statimg.extractvol)
-
 
 #-------------------------------------------------------------------------------#
 # Convert the spmT maps to -log10(p) volumes for masking 
@@ -322,6 +322,17 @@ for anparams in analysis:
                 tstat.convert_to_sig()
             else:
                 shortout('Found %s' % tstat.sigimg)
+
+#-------------------------------------------------------------------------------#
+# Sample various things to the surface
+#-------------------------------------------------------------------------------#
+
+surfanalysis = False
+for atlasdict in atlases.values():
+    if atlasdict['manifold'] = 'surface':
+        surfanalysis = True
+
+
 
 #===============================================================================#
 # Run the functional ROI extraction

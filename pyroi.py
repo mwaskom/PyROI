@@ -85,7 +85,7 @@ class Atlas(Bunch):
                                     '%s.nii' % self.subject)
          
 
-    # Operation methos
+    # Operation methods
     def copy_atlas(self):
         """Copy original atlas file to pyroi atlas tree"""
         shutil.copy(self.origatlas, self.atlas)  
@@ -109,6 +109,7 @@ class Atlas(Bunch):
         else:
             res = subprocess.call(cmd)
             return cmdline, res
+
     # Processing methods
     def stats(self):
         """Generate a summary of voxel/vertex counts for all regions in an atlas."""
@@ -444,6 +445,18 @@ class FirstLevelStats(Bunch):
         else:
             res = interface.run()
             return interface.cmdline, res
+    
+    def manual_run(self, cmd):
+        """Run a freesurfer program that lacks a nipype interface"""
+        cmdline = cmd[0]
+        for i, component in enumerate(cmd):
+            if i != 0:
+                cmdline = '%s %s' % (cmdline, component)
+        if self.debug:
+            return cmdline, None
+        else:
+            res = subprocess.call(cmd)
+            return cmdline, res
 
     # Processing methods
     def concatenate(self):
@@ -460,8 +473,29 @@ class FirstLevelStats(Bunch):
         return cmdline, res
 
     def sample_to_surface(self):
+        """Sample an extraction volume to the surface."""
+        if not self._init_subject:
+            raise InitError('Subject')
 
-        pass
+        surfs = {'lh': self.extractlhsurf,
+                 'rh': self.extractrhsurf}
+
+        cmdlines = []
+        results = []
+
+        for hemi in ['lh','rh']:
+            cmd = ['mri_vol2surf']    
+            cmd.append('--mov %s' % self.extractvol)
+            cmd.append('--o %s' % surfs[hemi])
+            cmd.append('--reg %s' % self.regmat)
+            cmd.append('--hemi %s' % hemi)
+            cmd.append('--noreshape')
+
+            cmdline, res = self.manual_run(cmd)
+            cmdlines.append(cmdline)
+            results.append(res)
+
+        return cmdlines, results
 
     def group_concatenate(self, subjects):
         """Concatenate stat images for a group of subjects."""
@@ -474,6 +508,19 @@ class FirstLevelStats(Bunch):
                 print '\n%s\n\n%s\n%s' % (cmdline, 
                                           res.runtime.stdout,
                                           res.runtime.stdout)
+
+    def group_sample_to_surface(self, subjects):
+        """Sample stat volumes to the surface for a group."""
+        for subj in subjects:
+            self.init_subject(subj)
+            cmdlines, results = self.sample_to_surface()
+            for i in range(1):
+                if self.debug:
+                    print '\n%s\n\n' % cmdlines[i]
+                else:
+                    print '\n%s\n\n%s\n%s' % (cmdlines[i], 
+                                          results[i].runtime.stdout,
+                                          results[i].runtime.stdout)
 
 class BetaImage(FirstLevelStats):
     """Docstring goes here"""
@@ -506,9 +553,55 @@ class BetaImage(FirstLevelStats):
 
         self.roistatdir = os.path.join(self.roidir, 'levelone', 'beta',
                                        self.analysis.paradigm, subject)
-        self.extractvol = os.path.join(self.roistatdir, 'task_betas.mgz') 
+        self.extractvol = os.path.join(self.roistatdir, 'task_betas.mgz')
+        
+        self.regmat = os.path.join(self.roidir, 'reg', self.analysis.paradigm,
+                                   subject, 'func2orig.dat')
+        self.extractlhsurf = os.path.join(self.roistatdir, 'lh.task_betas.mgz')
+        self.extractrhsurf = os.path.join(self.roistatdir, 'rh.task_betas.mgz')
         
         self._init_subject = True
+
+
+class ContrastImage(FirstLevelStats):
+    """Contrast Image class."""
+    def __init__(self, analysis, **kwargs):
+
+        self.cfg = analysis.cfg
+        self.analysis = analysis
+        self.condict = self.cfg.contrasts(analysis.maskpar, 'con-img', '.img')
+
+        self.roidir = os.path.join(self.cfg.setup('basepath'), 'roi')
+        self.statsdir = os.path.join(self.roidir, 'levelone', 'sig')
+
+        self._init_subject = False
+
+        self.__dict__.update(**kwargs)
+
+        if 'debug' not in self.__dict__:
+            self.debug = False
+
+    # Initialization methods
+    def init_subject(self, subject):
+        """Initialize the object for a subject"""
+        self.subject = subject
+        self.extractlist = []
+        for name, image in self.condict.items():
+            self.conpath = cfg.pathspec('contrast', self.analysis.paradigm,
+                                        self.subject, name)
+            self.extractlist.append(os.path.join(self.conpath, image))
+
+        self.roistatdir = os.path.join(self.roidir, 'levelone', 'contrasts',
+                                       self.analysis.paradigm, subject)
+        self.extractvol = os.path.join(self.roistatdir, 'all_contrasts.mgz') 
+        
+        self.regmat = os.path.join(self.roidir, 'reg', self.analysis.paradigm,
+                                   subject, 'func2orig.dat')
+        self.extractlhsurf = os.path.join(self.roistatdir, 'lh.all_contrasts.mgz')
+        self.extractrhsurf = os.path.join(self.roistatdir, 'rh.all_contrasts.mgz')
+        
+        self._init_subject = True
+
 
 class TStatImage(FirstLevelStats):
     """T Statistic class"""
@@ -548,9 +641,14 @@ class TStatImage(FirstLevelStats):
                                  self.timgdict[self.analysis.maskcon])
         self.sigpath = os.path.join(self.statsdir, self.analysis.maskpar,
                                    subject)
-        self.sigimg = os.path.join(self.sigpath, 
-                                   self.cfg.contrasts(self.analysis.maskpar,
-                                                      'sig')[self.analysis.maskcon])
+        imagefname = self.cfg.contrasts(self.analysis.maskpar,
+                                        'sig', '.nii')[analysis.maskcon]
+        self.sigimg = os.path.join(self.sigpath, imagefname)
+
+        self.regmat = os.path.join(self.roidir, 'reg', self.analysis.maskpar,
+                                   subject, 'func2orig.dat')
+        self.siglhsurf = os.path.join(self.roistatdir, 'lh.%s' % imagefname )
+        self.sigrhsurf = os.path.join(self.roistatdir, 'rh.%s' % imagefname)
 
         self._init_subject = True                                               
 
@@ -616,39 +714,6 @@ def init_atlas(atlasdict, roidir=None, subjdir= None):
     return atlasopts[atlasdict['source']] 
 
 
-class ContrastImage(FirstLevelStats):
-    """Contrast Image class."""
-    def __init__(self, analysis, **kwargs):
-
-        self.cfg = analysis.cfg
-        self.analysis = analysis
-        self.condict = self.cfg.contrasts(analysis.maskpar, 'con-img', '.img')
-
-        self.roidir = os.path.join(self.cfg.setup('basepath'), 'roi')
-        self.statsdir = os.path.join(self.roidir, 'levelone', 'sig')
-
-        self._init_subject = False
-
-        self.__dict__.update(**kwargs)
-
-        if 'debug' not in self.__dict__:
-            self.debug = False
-
-    # Initialization methods
-    def init_subject(self, subject):
-        """Initialize the object for a subject"""
-        self.subject = subject
-        self.extractlist = []
-        for name, image in self.condict.items():
-            self.conpath = cfg.pathspec('contrast', self.analysis.paradigm,
-                                        self.subject, name)
-            self.extractlist.append(os.path.join(self.conpath, image))
-
-        self.roistatdir = os.path.join(self.roidir, 'levelone', 'contrasts',
-                                       self.analysis.paradigm, subject)
-        self.extractvol = os.path.join(self.roistatdir, 'all_contrasts.mgz') 
-        
-        self._init_subject = True
 
 
 def init_stat_object(analysis):
