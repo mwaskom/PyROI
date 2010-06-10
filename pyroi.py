@@ -453,8 +453,8 @@ class FirstLevelStats(Bunch):
         
         concat = fs.Concatenate()
 
-        concat.inputs.invol = self.betaimglist
-        concat.inputs.outvol = self.taskbetas
+        concat.inputs.invol = self.extractlist
+        concat.inputs.outvol = self.extractvol
 
         cmdline, res = self.nipype_run(concat)
         return cmdline, res
@@ -500,13 +500,13 @@ class BetaImage(FirstLevelStats):
         self.subject = subject
         self.betapath = cfg.pathspec('beta', self.analysis.paradigm,
                                         self.subject)
-        self.betaimglist = []
+        self.extractlist = []
         for img in self.betalist:
-            self.betaimglist.append(os.path.join(self.betapath, img))
+            self.extractlist.append(os.path.join(self.betapath, img))
 
         self.roistatdir = os.path.join(self.roidir, 'levelone', 'beta',
                                        self.analysis.paradigm, subject)
-        self.taskbetas = os.path.join(self.roistatdir, 'task_betas.mgz') 
+        self.extractvol = os.path.join(self.roistatdir, 'task_betas.mgz') 
         
         self._init_subject = True
 
@@ -590,7 +590,7 @@ class InitError(Exception):
         return '%s not initialized' % self.comp
 
 
-def init_atlas(atlasdict, roidir, subjdir= None):
+def init_atlas(atlasdict, roidir=None, subjdir= None):
     """Initialize the proper atlas class with an atlas dictionary.
     
     Parameters
@@ -614,6 +614,62 @@ def init_atlas(atlasdict, roidir, subjdir= None):
                      MaskAtlas(atlasdict, roidir)}
 
     return atlasopts[atlasdict['source']] 
+
+
+class ContrastImage(FirstLevelStats):
+    """Contrast Image class."""
+    def __init__(self, analysis, **kwargs):
+
+        self.cfg = analysis.cfg
+        self.analysis = analysis
+        self.condict = self.cfg.contrasts(analysis.maskpar, 'con-img', '.img')
+
+        self.roidir = os.path.join(self.cfg.setup('basepath'), 'roi')
+        self.statsdir = os.path.join(self.roidir, 'levelone', 'sig')
+
+        self._init_subject = False
+
+        self.__dict__.update(**kwargs)
+
+        if 'debug' not in self.__dict__:
+            self.debug = False
+
+    # Initialization methods
+    def init_subject(self, subject):
+        """Initialize the object for a subject"""
+        self.subject = subject
+        self.extractlist = []
+        for name, image in self.condict.items():
+            self.conpath = cfg.pathspec('contrast', self.analysis.paradigm,
+                                        self.subject, name)
+            self.extractlist.append(os.path.join(self.conpath, image))
+
+        self.roistatdir = os.path.join(self.roidir, 'levelone', 'contrasts',
+                                       self.analysis.paradigm, subject)
+        self.extractvol = os.path.join(self.roistatdir, 'all_contrasts.mgz') 
+        
+        self._init_subject = True
+
+
+def init_stat_object(analysis):
+    """Initalize the proper first level statistic class with an analysis object.
+    
+    Parameters
+    ----------
+    analysis : analysis object
+    
+    Returns
+    -------
+    First Level Statistics object
+    
+    """
+    statopts = {'betas':
+                    BetaImage(analysis),
+                'contrasts':
+                    ContrastImage(analysis)}
+
+    return statopts[analysis.extract]
+
 
 def get_analysis_name_list(cfg):
     """Return a list of analysis names in PyROI format.

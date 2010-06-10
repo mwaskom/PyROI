@@ -285,28 +285,23 @@ for atlas in label_atlases:
 # Prepare the first level data sources
 #===============================================================================#
 
-for par in analysisPars:
-    fullout('Creating beta volumes for ' + par + ' analysis',thickline)
+#-------------------------------------------------------------------------------#
+# Concatenate beta or contrast images for extraction
+#-------------------------------------------------------------------------------#
+
+for anparams in analysis:
+    fullout('Creating extraction volumes for %s analysis' % anparams['par']
+            ,thickline)
     for subj in subjList:
-        modeldir = os.path.join(l1output,par,subj,'model')
-        betavol = os.path.join(modeldir,'task_betas.mgz')
-        if not isfile(betavol):
-            fullout('Concatenating task betas for ' + subj,thinline)
-            # Set the inputs
-
-            concat = fs.Concatenate()
-
-            volumes = []
-            for img in Betas(par,'images'):
-                volumes.append(os.path.join(modeldir,img))
-            concat.inputs.invol = volumes
-            concat.inputs.outvol = betavol
-            
-            # Run mri_concat            
-            res = concat.run()
-            cmdout(concat,res)
+        fullout('Concatenating %s volumes for %s' %(subj,anparams['extract'])
+        statimg = roi.init_stat_image(analysis)
+        statimg.init_subject(subj)
+        if not os.path.isfile(statimg.extractvol) or \
+           cfg.overwrite('concatenated_volumes'):
+            cmdline, res = statimg.concatenate()
+            cmdout(cmdline, res)
         else:
-            shortout('Found ' + betavol)
+            shortout('Found %s' % statimg.extractvol)
 
 
 #-------------------------------------------------------------------------------#
@@ -315,11 +310,18 @@ for par in analysisPars:
 
 for anparams in analysis:
     if 'maskpar' in anparams.keys() and anparams['maskpar'] != 'nomask':
+        fullout('Converting T-maps for %s' % anparams['maskcon'], thickline)
         anal = roi.Analysis(cfg, anparams)
         tstat = roi.TStatImage(anal)
         for subj in subjList:
+            fullout('Converting T-map for %s', thinline)
             tstat.init_subj(subj)
-            tstat.convert_to_sig()
+            if not os.path.isfile(tstat.sigimg) or\
+               cfg.overwrite('spm_sig_images'):
+                fullout('Converting %s' % tstat.sigimg, thinline)
+                tstat.convert_to_sig()
+            else:
+                shortout('Found %s' % tstat.sigimg)
 
 #===============================================================================#
 # Run the functional ROI extraction
