@@ -1,5 +1,3 @@
-# vi: set ft=python sts=4 ts=4 sw=4 et:
-# emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
 """
    May/June 2010 update of ROI pypeline.  A work in progress.
 
@@ -7,8 +5,6 @@
 """
 
 import os
-import sys
-import numpy as N
 import pyroilut as lut
 import nipype.interfaces.freesurfer as fs
 

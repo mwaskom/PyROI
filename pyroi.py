@@ -436,17 +436,82 @@ class FirstLevelStats(Bunch):
         
         pass
 
+    # Operation methods
+    def nipype_run(self, interface):
+        """Run a program using its nipype interface"""
+        if self.debug:
+            return interface.cmdline, None
+        else:
+            res = interface.run()
+            return interface.cmdline, res
+
     # Processing methods
     def concatenate(self):
+        """Concatenate the first level images and write them to roi tree."""
+        if not self._init_subject:
+            raise InitError('Subject')
+        
+        concat = fs.Concatenate()
 
-        pass
+        concat.inputs.invol = self.betaimglist
+        concat.inputs.outvol = self.taskbetas
+
+        cmdline, res = self.nipype_run(concat)
+        return cmdline, res
 
     def sample_to_surface(self):
 
         pass
 
-class TStatImage(FirstLevelStats):
+    def group_concatenate(self, subjects):
+        """Concatenate stat images for a group of subjects."""
+        for subj in subjects:
+            self.init_subject(subj)
+            cmdline, res = self.concatenate()
+            if self.debug:
+                print '\n%s\n\n' % cmdline
+            else:
+                print '\n%s\n\n%s\n%s' % (cmdline, 
+                                          res.runtime.stdout,
+                                          res.runtime.stdout)
+
+class BetaImage(FirstLevelStats):
     """Docstring goes here"""
+    def __init__(self, analysis, **kwargs):
+
+        self.cfg = analysis.cfg
+        self.analysis = analysis
+
+        self.betalist = self.cfg.betas(analysis.paradigm, 'images')
+
+        self.roidir = os.path.join(self.cfg.setup('basepath'), 'roi')
+        self.statsdir = os.path.join(self.roidir, 'levelone', 'sig')
+
+        self._init_subject = False
+
+        self.__dict__.update(**kwargs)
+
+        if 'debug' not in self.__dict__:
+            self.debug = False
+    
+    # Initialization methods
+    def init_subject(self, subject):
+        """Initialize the object for a subject"""
+        self.subject = subject
+        self.betapath = cfg.pathspec('beta', self.analysis.paradigm,
+                                        self.subject)
+        self.betaimglist = []
+        for img in self.betalist:
+            self.betaimglist.append(os.path.join(self.betapath, img))
+
+        self.roistatdir = os.path.join(self.roidir, 'levelone', 'beta',
+                                       self.analysis.paradigm, subject)
+        self.taskbetas = os.path.join(self.roistatdir, 'task_betas.mgz') 
+        
+        self._init_subject = True
+
+class TStatImage(FirstLevelStats):
+    """T Statistic class"""
     def __init__(self, analysis, **kwargs):
         
         self.cfg = analysis.cfg
@@ -477,9 +542,9 @@ class TStatImage(FirstLevelStats):
     def init_subject(self, subject):
         """Initialize the object for a subject"""
         self.subject = subject
-        self.condirpath = cfg.pathspec('contrast', self.analysis.maskpar,
+        self.conpath = cfg.pathspec('contrast', self.analysis.maskpar,
                                        subject, self.analysis.maskcon)
-        self.timg = os.path.join(self.condirpath, 
+        self.timg = os.path.join(self.conpath, 
                                  self.timgdict[self.analysis.maskcon])
         self.sigpath = os.path.join(self.statsdir, self.analysis.maskpar,
                                    subject)
