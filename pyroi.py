@@ -447,13 +447,13 @@ class FirstLevelStats(Bunch):
 
 class TStatImage(FirstLevelStats):
     """Docstring goes here"""
-    def __init__(self, cfg, analysis, **kwargs):
+    def __init__(self, analysis, **kwargs):
         
-        self.cfg = cfg
+        self.cfg = analysis.cfg
         self.analysis = analysis
-        self.timgdict = cfg.contrasts(analysis.maskpar, 'T-map', '.img')
+        self.timgdict = self.cfg.contrasts(analysis.maskpar, 'T-map', '.img')
 
-        self.roidir = os.path.join(cfg.setup('basepath'), 'roi')
+        self.roidir = os.path.join(self.cfg.setup('basepath'), 'roi')
         self.statsdir = os.path.join(self.roidir, 'levelone', 'sig')
 
         self._init_subject = False
@@ -474,7 +474,7 @@ class TStatImage(FirstLevelStats):
         return dof
     
     # Initialization methods
-    def init_subj(self, subject):
+    def init_subject(self, subject):
         """Initialize the object for a subject"""
         self.subject = subject
         self.condirpath = cfg.pathspec('contrast', self.analysis.maskpar,
@@ -487,7 +487,7 @@ class TStatImage(FirstLevelStats):
                                    self.cfg.contrasts(self.analysis.maskpar,
                                                       'sig')[self.analysis.maskcon])
 
-        self._init_subj = True                                               
+        self._init_subject = True                                               
 
     # Processing methods
     def convert_to_sig(self):
@@ -507,6 +507,13 @@ class TStatImage(FirstLevelStats):
         sigimg = nib.Nifti1Image(sigvol, sigaffine)
 
         nib.save(sigimg, self.sigimg)
+
+    def group_convert_to_sig(self, subjects):
+        """Convert a t statistic image to a sig image for a group of subjects"""  
+        for subj in subjects:
+            self.init_subject(subj)
+            self.convert_to_sig()
+            print 'Converting %s to %s' % (self.timg, self.sigimg)
 
         
 class InitError(Exception):

@@ -285,7 +285,6 @@ for atlas in label_atlases:
 # Prepare the first level data sources
 #===============================================================================#
 
-
 for par in analysisPars:
     fullout('Creating beta volumes for ' + par + ' analysis',thickline)
     for subj in subjList:
@@ -314,36 +313,13 @@ for par in analysisPars:
 # Convert the spmT maps to -log10(p) volumes for masking 
 #-------------------------------------------------------------------------------#
 
-
-conCell = '{'
-for par in analysisPars:
-    for subj in subjList:
-        conDir = os.path.join(l1output,par,subj,'contrasts')
-        tmaps = glob(os.path.join(conDir,'spmT*.img'))
-        doCon = None
-        for tmapimg in tmaps:
-            l = len(tmapimg)
-            imgnum = tmapimg[l-8:l-4]
-            pmapimg = os.path.join(conDir,'spmP_' + imgnum + '.nii')
-            if not isfile(pmapimg):
-                doCon = True
-            if doCon:
-                conCell = conCell + '\'' + \
-                conDir  + '\','
-            else:
-                shortout('Found %s for %s' % (pmapimg,par))
-
-            if conCell != '{':
-                conCell = conCell[0:len(conCell)-1]
-                conCell = conCell + '}'
-                command = 'spm_t2sig(' + conCell + ')'
-                shortout(command)
-                mlcmd = mlab.MatlabCommandLine()
-                mlcmd.inputs.script_lines = command
-                mlcmd.mfile = True
-                res = mlcmd.run()
-                shortout(res.runtime.stdout)
-
+for anparams in analysis:
+    if 'maskpar' in anparams.keys() and anparams['maskpar'] != 'nomask':
+        anal = roi.Analysis(cfg, anparams)
+        tstat = roi.TStatImage(anal)
+        for subj in subjList:
+            tstat.init_subj(subj)
+            tstat.convert_to_sig()
 
 #===============================================================================#
 # Run the functional ROI extraction
