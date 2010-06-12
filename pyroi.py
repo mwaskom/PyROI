@@ -4,18 +4,23 @@ import re
 import sys
 import shutil
 import subprocess
-import numpy as np
+from glob import glob
+
 import pyroilut as lut
 import configinterface as cfg
+
+import numpy as np
 import scipy.stats as stats
 import nibabel as nib
 import nipype.interfaces.freesurfer as fs
 from nipype.interfaces.base import Bunch
-from glob import glob
 
 class Analysis(Bunch):
     """Analysis object."""
     def __init__(self, cfg, analysis):
+        
+        if not 'setup' in cfg.__dict__.keys():
+            raise InitError('Config setup function')
         
         make_analysis_tree(cfg)
         self.dict = analysis
@@ -40,6 +45,26 @@ class Analysis(Bunch):
 class Atlas(Bunch):
     """Base atlas class."""
     
+    def __init__(self, cfg, atlasdict, **kwargs):
+
+        self.roidir = os.path.join(cfg.setup('basepath'),'roi') 
+        self.subjdir = cfg.setup('subjdir')
+
+        if not 'setup' in cfg.__dict__.keys():
+            raise InitError('Config setup function')
+
+        self.cfg = cfg
+        self.atlasdict = atlasdict
+        self.atlasname = atlasdict['atlasname']
+
+        self._init_paradigm = False
+        self._init_subject = False
+        self._init_analysis = False
+
+        self.__dict__.update(**kwargs)
+        if 'debug' not in self.__dict__:
+            self.debug = False
+
     def __call__(self, analysis):
 
         self.init_analysis(analysis)
@@ -211,6 +236,15 @@ class SurfaceAtlas(Bunch):
 
         lutfile.close()
 
+    def labels_to_dict(self, labels):
+        """Turn a list of labels into a look-up dictionary"""
+        # Assuming the list of labels has been trimmed of hemisphere
+        # prefix and .label extension
+
+        self.lut = {}
+        for i, label in enumerate(labels):
+            self.lut[i+1] = label
+    
     def make_annotation(self):
         """Create an annotation from a list of labels"""
         cmd = ['mris_label2annot']
@@ -233,13 +267,8 @@ class SurfaceAtlas(Bunch):
 class FreesurferAtlas(Atlas, SurfaceAtlas):
     """Atlas class for a Freesurfer atlas"""
     def __init__(self, cfg, atlasdict, **kwargs):
-       
-        self.roidir = os.path.join(cfg.setup('basepath'),'roi')
-        subjdir = cfg.setup('subjdir')
-        
-        self.cfg = cfg
-        self.atlasdict = atlasdict
-        self.atlasname = atlasdict['atlasname']
+               
+        Atlas.__init__(self, cfg, atlasdict, **kwargs)
         self.fname = atlasdict['fname']
         self.manifold = atlasdict['manifold']
         self.regions = atlasdict['regions']
@@ -249,15 +278,7 @@ class FreesurferAtlas(Atlas, SurfaceAtlas):
         self.lut = lut.freesurfer(self.fname)
 
         self.basedir = os.path.join(self.roidir, 'atlases', 'freesurfer')
-        self.subjdir = subjdir
 
-        self._init_paradigm = False
-        self._init_subject = False
-        self._init_analysis = False
-
-        self.__dict__.update(**kwargs)
-        if 'debug' not in self.__dict__:
-            self.debug = False
 
     # Initialization methods
     def init_subject(self, subject):
@@ -359,39 +380,17 @@ class LabelAtlas(Atlas, SurfaceAtlas):
     """Atlas class for an atlas construced from surface labels"""
     def __init__(self, cfg, atlasdict, **kwargs):
         
-        self.roidir = os.path.join(cfg.setup('basepath'),'roi')
-        subjdir = cfg.setup('subjdir')
-                 
-        self.atlasdict = atlasdict
-        self.atlasname = atlasdict['atlasname']
+        Atlas.__init__(self, cfg, atlasdict, **kwargs)
+        
         self.manifold = 'surface'
         self.hemi = atlasdict['hemi']
         self.sourcefiles = atlasdict['sourcefiles']
         self.sourcedir = atlasdict['sourcedir']
 
+        self.labels_to_dict(atlasdict['sourcefiles'])
+        # FIX: self.regions = self.lut.keys()
 
-        self.labels_to_dict(atlasdict['labels'])
-        self.regions = self.lut.keys()
-
-        self.basedir = os.path.join(roidir, 'atlases', 'label')
-        self.subjdir = subjdir
-
-        self.__dict__.update(**kwargs)
-
-        self._init_subject = False
-        self.__init_analysis = False
-
-        if 'debug' not in self.__dict__:
-            self.debug = False
-
-    def labels_to_dict(self, labels):
-        """Turn a list of labels into a look-up dictionary"""
-        # Assuming the list of labels has been trimmed of hemisphere
-        # prefix and .label extension
-
-        self.lut = {}
-        for i, label in enumerate(labels):
-            self.lut[i+1] = label
+        self.basedir = os.path.join(self.roidir, 'atlases', 'label')
 
     # Initialization methods
     def init_subject(self, subject):
@@ -432,8 +431,6 @@ class LabelAtlas(Atlas, SurfaceAtlas):
                     results.append(output)
 
        return results
-
-    
 
     def group_preproc(self, subjects):
         """Run atlas preprocessing steps for a list of subjects"""
