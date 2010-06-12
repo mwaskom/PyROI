@@ -105,12 +105,14 @@ def setup(setupkey=None):
        ----------
        All
        - source : freesurfer, talairach, label, mask
-       - space : volume or surface
-       Surfaces
-       - hemi : hemisphere
+       - manifold : volume or surface
+       Volumes
+       - space : native or MNI
        Freesurfer or Talairach Daemon source
        - fname : file name of atlas
        - regions : list of numerical ids to regions under investigation
+       Label Source
+       - hemi : hemisphere
        Label or Mask source
        - sourcedir : directory with source images
        - sourcefiles : list label or mask image file names 
@@ -123,17 +125,16 @@ def setup(setupkey=None):
     atlases = {'aseg': 
                    {'source': 'freesurfer',
                    'fname': 'aseg.mgz',
-                   'space': 'volume',
+                   'manifold': 'volume',
                    'regions': [17,18,52,53]},
-               'rhdesikan': 
+               'aparc': 
                    {'source': 'freesurfer',
-                    'fname': 'rh.aparc.annot',
-                    'space': ' surface',
-                    'hemi': 'rh',
+                    'fname': 'aparc.annot',
+                    'manifold': ' surface',
                     'regions': [20,21,22,23]},
                'social_bg':
                    {'source': 'label',
-                    'space': 'surface',
+                    'manifold': 'surface',
                     'hemi': 'rh',
                     'sourcedir': 'data/Oliver_Label_Files',
                     'sourcefiles': ['BG.STS',

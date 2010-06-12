@@ -6,6 +6,7 @@
 
 import os
 import pyroilut as lut
+from glob import glob
 import nipype.interfaces.freesurfer as fs
 
 def import_setup(module_name):
@@ -307,6 +308,30 @@ def contrasts(par=None, type='con-img', format='.nii'):
         raise Exception('Image type \'%s\' ' %type +\
 	                'not understood: use \'T-map\', \'sig\', or \'con-img\'')
 
+def meanfunc(paradigm, subject):
+    """Return the path to a mean functional image.
+
+    Note: this function simply globs nifti files from the path and takes the 
+    first one.  Standard NiPype behavior is to create a first level directory
+    called 'realign' for each paradigm/subject and store mean images there. 
+    There may be issues if a NiPype is set up unusually or if it is not used
+    for first level analysis
+
+    Parameters
+    ----------
+    par : paradigm
+    subj : subject
+
+    Returns
+    -------
+    string
+    
+    """
+
+    funcpath = pathspec('meanfunc', paradigm, subject)
+    niftis = glob(os.path.join(funcpath,'*.nii'))
+    meanfuncimg = niftis[0]
+    return meanfuncimg
 
 def pathspec(imgtype, paradigm=None, subject=None, contrast=None):
     """Return the path to directories containing various first-level components.
@@ -345,9 +370,9 @@ def pathspec(imgtype, paradigm=None, subject=None, contrast=None):
                '$contrast' : contrast,
                '$subject' : subject}
 
-    imgdict = {'beta': betapath,
+    imgdict = {'betas': betapath,
                'meanfunc': meanfuncpath,
-               'contrast': contrastpath,
+               'contrasts': contrastpath,
                'timecourse': timecoursepath}
     
     varpath = os.path.join(basepath, imgdict[imgtype])

@@ -254,14 +254,12 @@ def freesurfer(vol,space='volume'):
             12174: 'rh_S_temporal_sup',
             12175: 'rh_S_temporal_transverse'}
    
-    minmax = {'full'            :(0,12199),
-              'aseg.mgz'        :(0,1000),
-              'aparc+aseg.mgz'  :(1000,3000),
-              'aparc.a2009s.mgz':(11100,13000),
-              'lh.aparc'        :(1000,1999),
-              'rh.aparc'        :(2000,2999),
-              'lh.aparc.a2009s' :(11100,11199),
-              'rh.aparc.a2009s' :(12100,12199)}
+    minmax = {'full'              :(0,12199),
+              'aseg.mgz'          :(0,1000),
+              'aparc+aseg.mgz'    :(1000,3000),
+              'aparc.a2009s.mgz'  :(11100,13000),
+              'aparc.annot'       :(1000,1999),
+              'aparc.a2009s.annot':(11100,11199)}
    
     
     min = minmax[vol][0]
