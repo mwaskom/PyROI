@@ -28,7 +28,7 @@ def import_setup(module_name):
     except ImportError:
         setupmodule = __import__(module_name)
 
-    return setupmodule.setup
+    return setupmodule
 
 def projectname():
     """Return the project name string.
@@ -42,9 +42,7 @@ def projectname():
     string
     """
  
-    projname = setup("projname")
-
-    return projname
+    return setup.projname
 
 
 def analysis():
@@ -62,7 +60,7 @@ def analysis():
 
     """
 
-    analysis = setup("analysis")
+    analysis = setup.analysis
 
     if isinstance(analysis, dict):
         analysis = [analysis]
@@ -92,7 +90,7 @@ def atlases(atlas=None):
 
     """
     
-    atlases = setup("atlases")
+    atlases = setup.atlases
     
     for key in atlases.keys():
         atlases[key]["atlasname"] = key
@@ -116,7 +114,7 @@ def fssubjdir():
     
     """
     
-    dirpath = setup("subjdir")
+    dirpath = setup.subjdir
 
     subjdir = fs.FSInfo.subjectsdir(os.path.abspath(dirpath))
 
@@ -146,7 +144,7 @@ def paradigms(parname=None, case="upper"):
     
     """
 
-    pardict = setup("paradigms")
+    pardict = setup.paradigms
 
  
     if parname is None:
@@ -193,9 +191,9 @@ def betas(par=None, retval=None):
     """    
 
     # Get the elements from the setup function 
-    hrfcomponents = setup("hrfcomponents")
-    betastoextract = setup("betastoextract")
-    conditions = setup("conditions")
+    hrfcomponents = setup.hrfcomponents
+    betastoextract = setup.betastoextract
+    conditions = setup.conditions
 
     # Return the conditions dictionary and hrfcomponents if scope is empty
     if par is None:
@@ -266,7 +264,7 @@ def contrasts(par=None, type="con-img", format=".nii"):
     """
 
     # Get the specified dict from setup
-    contrastdict = setup("contrasts")
+    contrastdict = setup.contrasts
 
     # Return the full dict if called with an empty scope
     if par is None:
@@ -352,11 +350,11 @@ def pathspec(imgtype, paradigm=None, subject=None, contrast=None):
     string of path to image directory
 
     """
-    basepath = setup("basepath")
-    betapath = setup("betapath")
-    meanfuncpath = setup("meanfuncpath")
-    contrastpath = setup("contrastpath")
-    timecoursepath = setup("timecoursepath")
+    basepath = setup.basepath
+    betapath = setup.betapath
+    meanfuncpath = setup.meanfuncpath
+    contrastpath = setup.contrastpath
+    timecoursepath = setup.timecoursepath
     
     vardict = {"$paradigm" : paradigm,
                "$contrast" : contrast,
@@ -397,7 +395,7 @@ def subjects(group = None, subject = None):
 
     """
 
-    subjects = setup("subjects")
+    subjects = setup.subjects
 
     for grp in subjects.keys():
         subjects[grp].sort()
@@ -438,7 +436,7 @@ def overwrite(filetype=None):
     
     """
 
-    overwrite = setup("overwrite")
+    overwrite = setup.overwrite
 
     if filetype is None:
         return overwrite

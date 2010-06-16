@@ -545,6 +545,7 @@ class FirstLevelStats(Bunch):
     """Docstring goes here"""
     def __init__(self, analysis, **kwargs):
         
+        make_levelone_tree(analysis.cfg)
         self.cfg = analysis.cfg
         self.analysis = analysis
         
@@ -984,8 +985,26 @@ def make_levelone_tree(cfg):
         Initialized config module.
         
     """
-    roidir = os.path.join(cfg.setup.basepath, "roi")
+    roidir = os.path.join(cfg.setup("basepath"), "roi")
     l1dir = os.path.join(roidir, "levelone")
+
+    l1dirs = [roidir, l1dir]
+
+    for stat in ["betas", "contrasts", "timecourses"]:
+        statdir = os.path.join(l1dir, stat)
+        l1dirs.append(statdir)
+
+        for par in cfg.paradigms():
+            pardir = os.path.join(statdir, par)
+            l1dirs.append(pardir)
+
+            for subj in cfg.subjects():
+                subjdir = os.path.join(pardir, subj)
+                l1dirs.append(subjdir)
+
+    for dir in l1dirs:
+        if not os.path.isdir(dir):
+            os.mkdir(dir)
 
 def make_fs_atlas_tree(cfg):
     """Setup the Freesurfer atlas tree
