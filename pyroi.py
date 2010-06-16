@@ -47,8 +47,8 @@ class Atlas(Bunch):
     
     def __init__(self, cfg, atlasdict, **kwargs):
 
-        self.roidir = os.path.join(cfg.setup("basepath"),"roi") 
-        self.subjdir = cfg.setup("subjdir")
+        self.roidir = os.path.join(cfg.setup.basepath,"roi") 
+        self.subjdir = cfg.setup.subjdir
 
         if not "setup" in cfg.__dict__.keys():
             raise InitError("Config setup function")
@@ -427,8 +427,8 @@ class FSRegister(FreesurferAtlas):
     def __init__(self, cfg, **kwargs):
 
         make_reg_tree(cfg)
-        self.roidir = os.path.join(cfg.setup("basepath"),"roi")
-        subjdir = cfg.setup("subjdir")
+        self.roidir = os.path.join(cfg.setup.basepath,"roi")
+        subjdir = cfg.setup.subjdir
         
         self.manifold = "reg"
         self.fname = "orig.mgz"
@@ -549,7 +549,7 @@ class FirstLevelStats(Bunch):
         self.cfg = analysis.cfg
         self.analysis = analysis
         
-        self.roidir = os.path.join(self.cfg.setup("basepath"), "roi")
+        self.roidir = os.path.join(self.cfg.setup.basepath, "roi")
         
         self._init_subject = False
 
@@ -920,7 +920,7 @@ def trim_analysis_tree(cfg, analysis):
     analysis, whereas the make function sets up the directory
     structure for all analyses.
     """
-    projectdir = os.path.join(cfg.setup("basepath"),
+    projectdir = os.path.join(cfg.setup.basepath,
                                "roi", "analysis",
                                cfg.projectname())
     analysisname = get_analysis_name(cfg, analysis)
@@ -937,7 +937,7 @@ def make_analysis_tree(cfg):
         Initialized config module.
 
     """
-    roidir = os.path.join(cfg.setup("basepath"), "roi")
+    roidir = os.path.join(cfg.setup.basepath, "roi")
     analysisdir = os.path.join(roidir, "analysis")
 
     projdir = os.path.join(analysisdir, cfg.projectname())
@@ -985,7 +985,7 @@ def make_levelone_tree(cfg):
         Initialized config module.
         
     """
-    roidir = os.path.join(cfg.setup("basepath"), "roi")
+    roidir = os.path.join(cfg.setup.basepath, "roi")
     l1dir = os.path.join(roidir, "levelone")
 
     l1dirs = [roidir, l1dir]
@@ -1015,7 +1015,7 @@ def make_fs_atlas_tree(cfg):
         Initialized config module.
         
     """
-    roidir = os.path.join(cfg.setup("basepath"), "roi")
+    roidir = os.path.join(cfg.setup.basepath, "roi")
     atlasdir = os.path.join(roidir, 'atlases')
     basedir = os.path.join(atlasdir, "freesurfer")
 
@@ -1053,7 +1053,7 @@ def make_reg_tree(cfg):
         Initialized config module
 
      """
-    roidir = os.path.join(cfg.setup("basepath"), "roi")
+    roidir = os.path.join(cfg.setup.basepath, "roi")
     basedir = os.path.join(roidir, "reg")
     regdirs = [roidir, basedir]
 

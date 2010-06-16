@@ -10,18 +10,18 @@ from glob import glob
 import nipype.interfaces.freesurfer as fs
 
 def import_setup(module_name):
-    """Import a customized setup function.
+    """Import a customized setup module.
 
     It tries to import `configmodule_name`, then just `module_name`.
     
     Parameters
     ----------
-    module_name : the name of the custom config file (sans .py extension)
+    module_name : str
+        The name of the custom config file (sans .py extension).
 
     Returns
     -------
-    setup function from custom module
-
+    module
     """
     try:
         setupmodule = __import__("config%s" % module_name)
@@ -33,13 +33,9 @@ def import_setup(module_name):
 def projectname():
     """Return the project name string.
 
-    Parameters
-    ----------
-    none
-
     Returns
     -------
-    string
+    str
     """
  
     return setup.projname
@@ -50,13 +46,9 @@ def analysis():
     
     If the variable type of analysis is a dictionary, it wraps it in a list.
    
-    Parameters
-    ----------
-    none
-
     Returns
     -------
-    list of dictionaries
+    list of dicts
 
     """
 
@@ -76,17 +68,14 @@ def atlases(atlas=None):
     entry specifies an atlas. If called with an atlas key as the argument,
     it will return the attribute dictionary for that atlas.  
 
-    Eventually, the function will do a fair amount of checking/modification
-    to catch a lot of typcial user errors. Please report all of the errors 
-    you run into to mwaskom@mit.edu to aid this process.
-
     Parameters
     ----------
-    atlas : either atlas key name or None
+    atlas : str, optional
+        The atlas name, or None to return the full dictionary.
 
     Returns
     -------
-    dictionary
+    dict
 
     """
     
@@ -104,13 +93,9 @@ def atlases(atlas=None):
 def fssubjdir():
     """Set and return the path to the Freesurfer Subjects directory.
 
-    Parameters
-    ----------
-    None
-
     Returns
     -------
-    string
+    str
     
     """
     
@@ -179,14 +164,14 @@ def betas(par=None, retval=None):
 
     Parameters
     ----------
-    par : string
+    par : str
         paradigm
-    retval : string
+    retval : str
         "images" or "names"
 
     Returns
     -------
-    list or dictionary
+    list or dict
     
     """    
 
@@ -250,12 +235,12 @@ def contrasts(par=None, type="con-img", format=".nii"):
 
     Parameters
     ----------
-    par : string
-        paradigm
-    type : string 
-        sig, T-map, or con-img -- def: con-img
-    format : string
-        file extension -- def: .nii
+    par : str
+        Paradigm
+    type : str
+        "sig", "T-map", or "con-img" -- def: con-img
+    format : str
+        File extension -- def: .nii
 
     Returns
     -------
@@ -301,7 +286,7 @@ def contrasts(par=None, type="con-img", format=".nii"):
 def meanfunc(paradigm, subject):
     """Return the path to a mean functional image.
 
-    Note: this function simply globs nifti files from the path and takes the 
+    Note: this function simply globs nifti files from the path and takes the
     first one.  Standard NiPype behavior is to create a first level directory
     called "realign" for each paradigm/subject and store mean images there. 
     There may be issues if a NiPype is set up unusually or if it is not used
@@ -360,9 +345,9 @@ def pathspec(imgtype, paradigm=None, subject=None, contrast=None):
                "$contrast" : contrast,
                "$subject" : subject}
 
-    imgdict = {"betas": betapath,
+    imgdict = {"beta": betapath,
                "meanfunc": meanfuncpath,
-               "contrasts": contrastpath,
+               "contrast": contrastpath,
                "timecourse": timecoursepath}
     
     varpath = os.path.join(basepath, imgdict[imgtype])
