@@ -24,7 +24,7 @@ def import_setup(module_name):
 
     """
     try:
-        setupmodule = __import__('config%s' % module_name)
+        setupmodule = __import__("config%s" % module_name)
     except ImportError:
         setupmodule = __import__(module_name)
 
@@ -42,7 +42,7 @@ def projectname():
     string
     """
  
-    projname = setup('projname')
+    projname = setup("projname")
 
     return projname
 
@@ -62,7 +62,7 @@ def analysis():
 
     """
 
-    analysis = setup('analysis')
+    analysis = setup("analysis")
 
     if isinstance(analysis, dict):
         analysis = [analysis]
@@ -92,10 +92,10 @@ def atlases(atlas=None):
 
     """
     
-    atlases = setup('atlases')
+    atlases = setup("atlases")
     
     for key in atlases.keys():
-        atlases[key]['atlasname'] = key
+        atlases[key]["atlasname"] = key
 
     if atlas is None:
         return atlases
@@ -116,14 +116,14 @@ def fssubjdir():
     
     """
     
-    dirpath = setup('subjdir')
+    dirpath = setup("subjdir")
 
     subjdir = fs.FSInfo.subjectsdir(os.path.abspath(dirpath))
 
     return subjdir
 
 
-def paradigms(parname=None, case='upper'):
+def paradigms(parname=None, case="upper"):
     """Return paradigm information.
     
     This function has two uses. If called with an empty scope, it will
@@ -135,8 +135,10 @@ def paradigms(parname=None, case='upper'):
 
     Parameters
     ----------
-    parname : full paradigm name (if None, returns the full list of paradigms)
-    case : upper or lower -- Def: upper
+    parname : string
+        full paradigm name (if None, returns the full list of paradigms)
+    case : string
+        "upper" or "lower" -- Def: upper
 
     Returns
     -------
@@ -144,29 +146,29 @@ def paradigms(parname=None, case='upper'):
     
     """
 
-    pardict = setup('paradigms')
+    pardict = setup("paradigms")
 
  
     if parname is None:
         return pardict.keys()
     else:
-        if case == 'lower':
+        if case == "lower":
             return pardict[parname].lower()
-        elif case == 'upper':
+        elif case == "upper":
             return pardict[parname].upper()
         else:
-            raise Exception('Case argument \'%s\' to ' % case +\
-	                        'config.Paradigms not understood.') 
+            raise Exception("Case argument \"%s\" to " % case +\
+	                        "config.Paradigms not understood.") 
 
 
 def betas(par=None, retval=None):
     """Return information about task regressors.
     
     This function deals with both condition and file names for the 
-    first-level betas.  It takes the name of a paradigm and the type 
-    of list to return as parameters.  If asked for "names," it will
-    return the list of condition names.  If asked for "images," it 
-    will return the list of image file names associated with task
+    first-level regressors.  It takes the name of a paradigm and the 
+    type of list to return as parameters.  If asked for "names," it 
+    will return the list of condition names.  If asked for "images," 
+    it will return the list of image file names associated with task
     betas for that paradigm. If par is None, it will return the full
     conditions dictionary.
 
@@ -179,19 +181,21 @@ def betas(par=None, retval=None):
 
     Parameters
     ----------
-    par : paradigm
-    retval : images or names
+    par : string
+        paradigm
+    retval : string
+        "images" or "names"
 
     Returns
     -------
-    list of condition names or image files names
+    list or dictionary
     
     """    
 
     # Get the elements from the setup function 
-    hrfcomponents = setup('hrfcomponents')
-    betastoextract = setup('betastoextract')
-    conditions = setup('conditions')
+    hrfcomponents = setup("hrfcomponents")
+    betastoextract = setup("betastoextract")
+    conditions = setup("conditions")
 
     # Return the conditions dictionary and hrfcomponents if scope is empty
     if par is None:
@@ -202,10 +206,10 @@ def betas(par=None, retval=None):
     try:
         dump = conditions[par]
     except KeyError:
-        raise Exception('Paradigm \'%s\' not found in conditions dictionary'\
+        raise Exception("Paradigm \"%s\" not found in conditions dictionary"\
                         % par)
 
-    # Wrap betastoextract in a list if it's just an int
+    # Wrap betastoextract in a list if it"s just an int
     if isinstance(betastoextract, int):
         betastoextract = [betastoextract]
 
@@ -214,42 +218,31 @@ def betas(par=None, retval=None):
     mcompnames = []
 
     # If extracting all beta components, make that list
-    if betastoextract == 'all' or betastoextract == ['all']:
+    if betastoextract == "all" or betastoextract == ["all"]:
         betastoextract = range(1, hrfcomponents + 1)
 
     # Insert additional component image/names
     for i in range(1,len(conditions[par])+1):
         for j in range(0,hrfcomponents):
             if j+1 in betastoextract:
-                pad = None
-                if j < 10:
-                    pad = '0'
-                # Add the component number to condition names    
-                mcompnames.append(conditions[par][i-1] + '-' + pad + str(j+1))
+                # Add the component number to condition names
+                mcompnames.append("%s-%02d" % (conditions[par][i-1], j+1))
                 num = i + ((i-1)*(hrfcomponents-1)) + j
                 # Add the image filename to the image list
-                if num < 10:
-                    condimages.append('beta_000%s.img' %str(num))
-                elif num < 100:
-                    condimages.append('beta_00%s.img' %str(num))
-                elif num < 1000:
-                    condimages.append('beta_0%s.img' %str(num))
-                else:
-                    condimages.append('beta_%s.img' %str(num))
-    
+                condimages.append("beta_%04d.img" % num)
     
     # Figure out what the function is being asked about and return it
-    if retval == 'images':
+    if retval == "images":
         return condimages
-    elif retval == 'names' and (hrfcomponents == 1 or betastoextract == [1]):
+    elif retval == "names" and (hrfcomponents == 1 or betastoextract == [1]):
         return conditions[par]
-    elif retval == 'names' and hrfcomponents > 1:
+    elif retval == "names" and hrfcomponents > 1:
         return mcompnames
     else:
-        raise Exception('Beta return type \'%s\' not understood' % retval)
+        raise Exception("Beta return type \"%s\" not understood" % retval)
 
 
-def contrasts(par=None, type='con-img', format='.nii'):
+def contrasts(par=None, type="con-img", format=".nii"):
     """Return information about contrasts.
     
     This function controls the contrast images used in the analysis.
@@ -259,9 +252,12 @@ def contrasts(par=None, type='con-img', format='.nii'):
 
     Parameters
     ----------
-    par : paradigm
-    type : sig, T-map, or con-img -- def: con-img
-    format : file extension -- def: .nii
+    par : string
+        paradigm
+    type : string 
+        sig, T-map, or con-img -- def: con-img
+    format : string
+        file extension -- def: .nii
 
     Returns
     -------
@@ -270,13 +266,13 @@ def contrasts(par=None, type='con-img', format='.nii'):
     """
 
     # Get the specified dict from setup
-    contrastdict = setup('contrasts')
+    contrastdict = setup("contrasts")
 
     # Return the full dict if called with an empty scope
     if par is None:
         return contrastdict
 
-    # Get the dictionary for the paradigm we're looking at
+    # Get the dictionary for the paradigm we"re looking at
     contrasts = contrastdict[par]
 
     # Initialize the dictionaries for file names
@@ -284,36 +280,32 @@ def contrasts(par=None, type='con-img', format='.nii'):
     contrasts_tstat = {}
     contrasts_con = {}
 
-    if not format.startswith('.'): 
-        format = '.' + format
+    if not format.startswith("."): 
+        format = "." + format
 
     # Iterate through the contrasts and populate the filename dictionaries
     for con in contrasts:
-        if contrasts[con] < 10:
-           pad = '0'
-        else:
-            pad = ''
-        contrasts_sig[con] = 'spmSig_00%s%d%s' % (pad, contrasts[con], format)
-        contrasts_tstat[con] = 'spmT_00%s%d%s' % (pad, contrasts[con], format)
-        contrasts_con[con] = 'con_00%s%d%s' % (pad, contrasts[con], format)
+        contrasts_sig[con] = "spmSig_%04d%s" % (contrasts[con], format)
+        contrasts_tstat[con] = "spmT_%04d%s" % (contrasts[con], format)
+        contrasts_con[con] = "con_%04d%s" % (contrasts[con], format)
 
     # Figure out what type of image the function is being asked about and return
-    if type == 'sig':
+    if type == "sig":
         return contrasts_sig
-    elif type == 'T-map':
+    elif type == "T-map":
         return contrasts_tstat
-    elif type == 'con-img':
+    elif type == "con-img":
         return contrasts_con
     else:
-        raise Exception('Image type \'%s\' ' %type +\
-	                'not understood: use \'T-map\', \'sig\', or \'con-img\'')
+        raise Exception("Image type '%s' " %type +\
+	                "not understood: use 'T-map', 'sig', or 'con-img'")
 
 def meanfunc(paradigm, subject):
     """Return the path to a mean functional image.
 
     Note: this function simply globs nifti files from the path and takes the 
     first one.  Standard NiPype behavior is to create a first level directory
-    called 'realign' for each paradigm/subject and store mean images there. 
+    called "realign" for each paradigm/subject and store mean images there. 
     There may be issues if a NiPype is set up unusually or if it is not used
     for first level analysis
 
@@ -328,8 +320,8 @@ def meanfunc(paradigm, subject):
     
     """
 
-    funcpath = pathspec('meanfunc', paradigm, subject)
-    niftis = glob(os.path.join(funcpath,'*.nii'))
+    funcpath = pathspec("meanfunc", paradigm, subject)
+    niftis = glob(os.path.join(funcpath,"*.nii"))
     meanfuncimg = niftis[0]
     return meanfuncimg
 
@@ -340,8 +332,8 @@ def pathspec(imgtype, paradigm=None, subject=None, contrast=None):
     specific first-level directory structure. A variable path is specified
     in the setup function where the directory for paradigm, subject, and
     contrast is is signified by $variable for beta and contrast files
-    separately.  This function expects those strings to be keyed by 'betapath'
-    and 'contrastpath', respectively.
+    separately.  This function expects those strings to be keyed by "betapath"
+    and "contrastpath", respectively.
 
     In theory, this function should work for both SPM and FsFast first-level
     structures.  At the time of the writing of this docstring, however, the
@@ -360,20 +352,20 @@ def pathspec(imgtype, paradigm=None, subject=None, contrast=None):
     string of path to image directory
 
     """
-    basepath = setup('basepath')
-    betapath = setup('betapath')
-    meanfuncpath = setup('meanfuncpath')
-    contrastpath = setup('contrastpath')
-    timecoursepath = setup('timecoursepath')
+    basepath = setup("basepath")
+    betapath = setup("betapath")
+    meanfuncpath = setup("meanfuncpath")
+    contrastpath = setup("contrastpath")
+    timecoursepath = setup("timecoursepath")
     
-    vardict = {'$paradigm' : paradigm,
-               '$contrast' : contrast,
-               '$subject' : subject}
+    vardict = {"$paradigm" : paradigm,
+               "$contrast" : contrast,
+               "$subject" : subject}
 
-    imgdict = {'betas': betapath,
-               'meanfunc': meanfuncpath,
-               'contrasts': contrastpath,
-               'timecourse': timecoursepath}
+    imgdict = {"betas": betapath,
+               "meanfunc": meanfuncpath,
+               "contrasts": contrastpath,
+               "timecourse": timecoursepath}
     
     varpath = os.path.join(basepath, imgdict[imgtype])
 
@@ -390,13 +382,13 @@ def subjects(group = None, subject = None):
     analysis.  It takes either a group or a subject as a parameter.
     If called with an empty scope, it returns a list of all subjects.
     If called with the name of a group, it returns a list of the subjects
-    in that group. If called with group = 'groups', it returns a list of 
+    in that group. If called with group = "groups", it returns a list of 
     the group names.  If called with the name of a subject, it will return
     the name of the group that subject is a member of.
 
     Parameters
     ----------
-    group : group name or 'groups'
+    group : group name or "groups"
     subject : subject name
 
     Returns
@@ -405,7 +397,7 @@ def subjects(group = None, subject = None):
 
     """
 
-    subjects = setup('subjects')
+    subjects = setup("subjects")
 
     for grp in subjects.keys():
         subjects[grp].sort()
@@ -422,10 +414,10 @@ def subjects(group = None, subject = None):
         return all
     elif group in subjects.keys():
         return subjects[group]
-    elif group == 'groups':
+    elif group == "groups":
         return subjects.keys()
     else:
-        raise Exception('Group \'%s\' not found.' % group)
+        raise Exception("Group '%s' not found." % group)
 
 
 def overwrite(filetype=None):
@@ -446,7 +438,7 @@ def overwrite(filetype=None):
     
     """
 
-    overwrite = setup('overwrite')
+    overwrite = setup("overwrite")
 
     if filetype is None:
         return overwrite

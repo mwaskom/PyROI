@@ -130,7 +130,7 @@ def setup(setupkey=None):
                'aparc': 
                    {'source': 'freesurfer',
                     'fname': 'aparc.annot',
-                    'manifold': ' surface',
+                    'manifold': 'surface',
                     'regions': [20,21,22,23]},
                'social_bg':
                    {'source': 'label',
