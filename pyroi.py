@@ -7,7 +7,7 @@ import subprocess
 from glob import glob
 
 import pyroilut as lut
-import configinterface as cfg
+from configinterface import cfg
 
 import numpy as np
 import scipy.stats as stats
@@ -17,17 +17,16 @@ from nipype.interfaces.base import Bunch
 
 class Analysis(Bunch):
     """Analysis object."""
-    def __init__(self, cfg, analysis):
+    def __init__(self, analysis):
         
-        if not "setup" in cfg.__dict__.keys():
+        if not cfg.is_setup:
             raise InitError("Config setup module")
         
         make_analysis_tree(cfg)
-        self.cfg = cfg
         self.dict = analysis
         self.paradigm = analysis["par"]
         self.extract = analysis["extract"]
-        self.name = get_analysis_name(cfg, analysis)
+        self.name = get_analysis_name(analysis)
         if "maskpar" in analysis.keys() and \
            analysis["maskpar"] != "nomask":
             self.mask = True
@@ -45,7 +44,7 @@ class Analysis(Bunch):
 class Atlas(Bunch):
     """Base atlas class."""
     
-    def __init__(self, cfg, atlasdict, **kwargs):
+    def __init__(self, atlasdict, **kwargs):
 
         self.roidir = os.path.join(cfg.setup.basepath,"roi") 
         self.subjdir = cfg.setup.subjdir
@@ -53,7 +52,7 @@ class Atlas(Bunch):
         if not "setup" in cfg.__dict__.keys():
             raise InitError("Config setup function")
 
-        self.cfg = cfg
+        cfg = cfg
         self.atlasdict = atlasdict
         self.atlasname = atlasdict["atlasname"]
 
@@ -89,14 +88,11 @@ class Atlas(Bunch):
                 mask.sigimg = mask.sigsurf
             else:
                 mask.sigimg = mask.sigvol
-
             self.analysis.maskimg = mask.sigimg
             self.analysis.maskthresh = analysis.maskthresh
             self.analysis.masksign = analysis.masksign
         else:
             self.mask = False
-
-        
         source = init_stat_object(analysis)
         source.init_subject(self.subject)
         if self.manifold == "surface":
@@ -120,6 +116,11 @@ class Atlas(Bunch):
                                     "%s.txt" % self.subject)
         self.funcvol = os.path.join(self.analysis.dir, "extractvol",
                                     "%s.nii" % self.subject)
+
+        for file in [self.atlas, self.analysis.source, self.analysis.maskimg]:
+            if not os.path.isfile(file):
+                raise PreprocessError(file)
+
         self._init_analysis = True         
 
     # Operation methods
@@ -129,7 +130,7 @@ class Atlas(Bunch):
             shutil.copy(self.origatlas, self.atlas)  
         else:
             shutil.copy(self.origatlas % self.hemi,
-                        self.atlas % (self.hemi, self.hemi))
+                        self.atlas % self.hemi)
 
     def _nipype_run(self, interface):
         """Run a program using its nipype interface"""
@@ -275,7 +276,7 @@ class Atlas(Bunch):
     def group_stats(self, subjects=None, paradigm=None):
         """Get atlas statistics for a group of subjects"""
         if subjects is None:
-            subjects = self.cfg.subjects()
+            subjects = cfg.subjects()
         if paradigm is not None:
             self.init_paradigm(paradigm)
         for subj in subjects:
@@ -291,7 +292,7 @@ class Atlas(Bunch):
     def group_extract(self, analysis, subjects=None):
         """Extract functional data for a group of subjects."""
         if subjects is None:
-            subjects = self.cfg.subjects()
+            subjects = cfg.subjects()
         for subj in subjects:
             self.init_paradigm(analysis.paradigm)
             self.init_subject(subj)
@@ -352,9 +353,9 @@ class SurfaceAtlas(Bunch):
 
 class FreesurferAtlas(Atlas, SurfaceAtlas):
     """Atlas class for a Freesurfer atlas"""
-    def __init__(self, cfg, atlasdict, **kwargs):
+    def __init__(self, atlasdict, **kwargs):
                
-        Atlas.__init__(self, cfg, atlasdict, **kwargs)
+        Atlas.__init__(self, atlasdict, **kwargs)
         make_fs_atlas_tree(cfg)
         
         self.manifold = atlasdict["manifold"]
@@ -385,7 +386,7 @@ class FreesurferAtlas(Atlas, SurfaceAtlas):
            fname = self.fname
            atlasname = self.atlasname
            origdir = "mri"
-           self.meanfuncimg = self.cfg.meanfunc(self.paradigm, subject)
+           self.meanfuncimg = cfg.meanfunc(self.paradigm, subject)
            self.regmat = os.path.join(self.roidir, "reg", self.paradigm,
                                       subject, "func2orig.dat")
 
@@ -424,7 +425,7 @@ class FreesurferAtlas(Atlas, SurfaceAtlas):
 class FSRegister(FreesurferAtlas):
     """Freesurfer atlas for registration"""
 
-    def __init__(self, cfg, **kwargs):
+    def __init__(self, **kwargs):
 
         make_reg_tree(cfg)
         self.roidir = os.path.join(cfg.setup.basepath,"roi")
@@ -464,9 +465,9 @@ class TalairachAtlas(Atlas):
 
 class LabelAtlas(Atlas, SurfaceAtlas):
     """Atlas class for an atlas construced from surface labels"""
-    def __init__(self, cfg, atlasdict, **kwargs):
+    def __init__(self, atlasdict, **kwargs):
         
-        Atlas.__init__(self, cfg, atlasdict, **kwargs)
+        Atlas.__init__(self, atlasdict, **kwargs)
         
         self.manifold = "surface"
         self.iterhemi = [atlasdict["hemi"]]
@@ -521,7 +522,7 @@ class LabelAtlas(Atlas, SurfaceAtlas):
     def group_preproc(self, subjects=None):
         """Run atlas preprocessing steps for a list of subjects"""
         if subjects is None:
-            subjects = self.cfg.subjects()
+            subjects = cfg.subjects()
         for subject in subjects:
             self.init_subject(subject)
             results = self.resample_labels()
@@ -546,10 +547,10 @@ class FirstLevelStats(Bunch):
     def __init__(self, analysis, **kwargs):
         
         make_levelone_tree(analysis.cfg)
-        self.cfg = analysis.cfg
+        cfg = analysis.cfg
         self.analysis = analysis
         
-        self.roidir = os.path.join(self.cfg.setup.basepath, "roi")
+        self.roidir = os.path.join(cfg.setup.basepath, "roi")
         
         self._init_subject = False
 
@@ -621,7 +622,7 @@ class FirstLevelStats(Bunch):
     def group_concatenate(self, subjects=None):
         """Concatenate stat images for a group of subjects."""
         if subjects is None:
-            subjects = self.cfg.subjects()
+            subjects = cfg.subjects()
         for subj in subjects:
             self.init_subject(subj)
             cmdline, res = self.concatenate()
@@ -635,7 +636,7 @@ class FirstLevelStats(Bunch):
     def group_sample_to_surface(self, subjects=None):
         """Sample stat volumes to the surface for a group."""
         if subjects is None:
-            subjects = self.cfg.subjects()
+            subjects = cfg.subjects()
         for subj in subjects:
             self.init_subject(subj)
             cmdlines, results = self.sample_to_surface()
@@ -652,14 +653,14 @@ class BetaImage(FirstLevelStats):
     def __init__(self, analysis, **kwargs):
 
         FirstLevelStats.__init__(self, analysis, **kwargs)
-        self.betalist = self.cfg.betas(analysis.paradigm, "images")
-        self.statsdir = os.path.join(self.roidir, "levelone", "betas")
+        self.betalist = cfg.betas(analysis.paradigm, "images")
+        self.statsdir = os.path.join(self.roidir, "levelone", "beta")
 
     # Initialization methods
     def init_subject(self, subject):
         """Initialize the object for a subject"""
         self.subject = subject
-        self.betapath = cfg.pathspec("betas", self.analysis.paradigm,
+        self.betapath = cfg.pathspec("beta", self.analysis.paradigm,
                                         self.subject)
         self.extractlist = []
         for img in self.betalist:
@@ -680,8 +681,8 @@ class ContrastImage(FirstLevelStats):
     def __init__(self, analysis, **kwargs):
 
         FirstLevelStats.__init__(self, analysis, **kwargs)
-        self.imgdict = self.cfg.contrasts(analysis.maskpar, "con-img", ".img")
-        self.statsdir = os.path.join(self.roidir, "levelone", "contrasts")
+        self.imgdict = cfg.contrasts(analysis.maskpar, "con-img", ".img")
+        self.statsdir = os.path.join(self.roidir, "levelone", "contrast")
 
     # Initialization methods
     def init_subject(self, subject):
@@ -693,7 +694,7 @@ class ContrastImage(FirstLevelStats):
                                         self.subject, name)
             self.extractlist.append(os.path.join(self.conpath, image))
 
-        self.roistatdir = os.path.join(self.roidir, "levelone", "contrasts",
+        self.roistatdir = os.path.join(self.roidir, "levelone", "contrast",
                                        self.analysis.paradigm, subject)
         self.extractvol = os.path.join(self.roistatdir, "all_contrasts.mgz") 
         self.extractsurf = os.path.join(self.roistatdir, "%s.all_contrasts.mgz")
@@ -708,8 +709,8 @@ class TStatImage(FirstLevelStats):
     def __init__(self, analysis, **kwargs):
         
         FirstLevelStats.__init__(self, analysis, **kwargs)
-        self.imgdict = self.cfg.contrasts(analysis.maskpar, "T-map", ".img")
-        self.statsdir = os.path.join(self.roidir, "levelone", "contrasts")
+        self.imgdict = cfg.contrasts(analysis.maskpar, "T-map", ".img")
+        self.statsdir = os.path.join(self.roidir, "levelone", "contrast")
 
     # Operation methods
     def get_dof(self, timg):
@@ -731,7 +732,7 @@ class TStatImage(FirstLevelStats):
                                  self.imgdict[self.analysis.maskcon])
         self.sigpath = os.path.join(self.statsdir, self.analysis.maskpar,
                                    subject)
-        imagefname = self.cfg.contrasts(self.analysis.maskpar,
+        imagefname = cfg.contrasts(self.analysis.maskpar,
                                         "sig", ".nii")[analysis.maskcon]
         self.sigimg = os.path.join(self.sigpath, imagefname)
 
@@ -763,7 +764,7 @@ class TStatImage(FirstLevelStats):
     def group_convert_to_sig(self, subjects=None):
         """Convert a t statistic image to a sig image for a group of subjects"""  
         if subjects is None:
-            subjects = self.cfg.subjects()
+            subjects = cfg.subjects()
         for subj in subjects:
             self.init_subject(subj)
             self.convert_to_sig()
@@ -774,21 +775,21 @@ class SigImage(FirstLevelStats):
     def __init__(self, analysis, **kwargs):
         
         FirstLevelStats.__init__(self, analysis, **kwargs)
-        self.imgdict = self.cfg.contrasts(analysis.maskpar, "sig", ".nii")
-        self.statsdir = os.path.join(self.roidir, "levelone", "contrasts")
+        self.imgdict = cfg.contrasts(analysis.maskpar, "sig", ".nii")
+        self.statsdir = os.path.join(self.roidir, "levelone", "contrast")
 
     def init_subject(self, subject):
         """Initialize the object for a subject"""
         self.subject = subject
         self.sigpath = os.path.join(self.statsdir, self.analysis.maskpar,
                                    subject)
-        imagefname = self.cfg.contrasts(self.analysis.maskpar,
+        imagefname = cfg.contrasts(self.analysis.maskpar,
                                         "sig", ".nii")[self.analysis.maskcon]
         self.sigvol = os.path.join(self.sigpath, imagefname)
         self.sigsurf = os.path.join(self.sigpath, "%s." + imagefname)
         self.regmat = os.path.join(self.roidir, "reg", self.analysis.maskpar,
                                    subject, "func2orig.dat")
-        self.roistatdir = os.path.join(self.roidir, "levelone", "contrasts",
+        self.roistatdir = os.path.join(self.roidir, "levelone", "contrast",
                                        self.analysis.paradigm, subject)
 
         self._init_subject = True                                               
@@ -801,8 +802,38 @@ class InitError(Exception):
     def __str__(self):
         return "%s not initialized" % self.comp
 
+class PreprocessError(Exception):
 
-def init_atlas(cfg, atlasdict):
+    def __init__(self, file):
+        self.file = file
+
+    def __str__(self):
+        return "%s does not exist" % self.file
+
+
+def import_setup(module_name):
+    """Import a customized setup module into the cfg module.
+
+    It tries to import `configmodule_name`, then just `module_name`.
+    
+    Parameters
+    ----------
+    module_name : str
+        The name of the custom config file (sans .py extension).
+
+    """
+    if module_name.endswith(".py"):
+        module_name = module_name[:-3]
+    try:
+        setupmodule = __import__("config%s" % module_name)
+    except ImportError:
+        setupmodule = __import__(module_name)
+
+    cfg.setup = setupmodule
+    cfg.is_setup = True
+
+
+def init_atlas(atlasdict, **kwargs):
     """Initialize the proper atlas class with an atlas dictionary.
     
     Parameters
@@ -818,13 +849,13 @@ def init_atlas(cfg, atlasdict):
 
     """
     if atlasdict["source"] == "freesurfer": 
-        return FreesurferAtlas(cfg, atlasdict)
+        return FreesurferAtlas(atlasdict, **kwargs)
     elif atlasdict["source"] == "talairach": 
-        return TalairachAtlas(cfg, atlasdict)
+        return TalairachAtlas(atlasdict, **kwargs)
     elif atlasdict["source"] == "label": 
-        return LabelAtlas(cfg, atlasdict) 
+        return LabelAtlas(atlasdict, **kwargs) 
     elif atlasdict["source"] == "mask": 
-        return MaskAtlas(cfg, atlasdict)
+        return MaskAtlas(atlasdict, **kwargs)
 
 
 def init_stat_object(analysis):
@@ -839,13 +870,13 @@ def init_stat_object(analysis):
     FirstLevelStatis class object
     
     """
-    if analysis.extract == "betas":
+    if analysis.extract == "beta":
         return BetaImage(analysis)
-    elif analysis.extract == "contrasts":
+    elif analysis.extract == "contrast":
         return ContrastImage(analysis)
 
 
-def get_analysis_name_list(cfg, full=True):
+def get_analysis_name_list(full=True):
     """Return a list of analysis names in PyROI format.
 
     Parameters
@@ -863,11 +894,11 @@ def get_analysis_name_list(cfg, full=True):
     """
     analnames = []
     for anal in cfg.analysis():
-        analnames.append(get_analysis_name(cfg, anal, full))
+        analnames.append(get_analysis_name(anal, full))
     return analnames
 
         
-def get_analysis_name(cfg, analysis, full=True):
+def get_analysis_name(analysis, full=True):
     """Get an analysis name in PyROI format.
 
     Parameters
@@ -902,7 +933,7 @@ def get_analysis_name(cfg, analysis, full=True):
     else:
         return stem
 
-def trim_analysis_tree(cfg, analysis):
+def trim_analysis_tree(analysis):
     """Remove a analysis tree and all of its contents.
 
     
@@ -923,7 +954,7 @@ def trim_analysis_tree(cfg, analysis):
     projectdir = os.path.join(cfg.setup.basepath,
                                "roi", "analysis",
                                cfg.projectname())
-    analysisname = get_analysis_name(cfg, analysis)
+    analysisname = get_analysis_name(analysis)
     analysisdir = os.path.join(projectdir, analysisname)
 
     shutil.rmtree(analysisdir)
@@ -977,7 +1008,7 @@ def make_analysis_tree(cfg):
             os.mkdir(dir)
 
 def make_levelone_tree(cfg):
-    """Setup the Freesurfer atlas tree
+    """Setup the tree for level one data that will be extracted.
     
     Parameters
     ----------
@@ -990,7 +1021,7 @@ def make_levelone_tree(cfg):
 
     l1dirs = [roidir, l1dir]
 
-    for stat in ["betas", "contrasts", "timecourses"]:
+    for stat in ["beta", "contrast", "timecourse"]:
         statdir = os.path.join(l1dir, stat)
         l1dirs.append(statdir)
 

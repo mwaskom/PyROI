@@ -5,12 +5,44 @@
 """
 
 import os
+import re
+import imp
 import pyroilut as lut
 from glob import glob
 import nipype.interfaces.freesurfer as fs
 
+
+# Look for a file indicating the setup module and import that module if found
+if os.path.isfile(".roisetupfile"):
+    
+    fid = open(".roisetupfile","r")
+    setupmodule = fid.read()
+    fid.close()
+    
+    # Get rid of any extraneous whitespace
+    m = re.search("\w+", setupmodule)
+    if m:
+        setupmodule = m.group()
+    
+    # Trim the file extension if it exists
+    if setupmodule.endswith(".py"):
+        setupmodule = setupmodule[:-3]
+    
+    # Import the module
+    file, name, desc = imp.find_module(setupmodule)
+    try:
+        setup = imp.load_module("setup", file, name, desc)
+    finally:
+        file.close()
+    is_setup = True
+    
+    # Clean up
+    del fid, m, setupmodule, file, name, desc
+else:
+    is_setup = False
+
 def import_setup(module_name):
-    """Import a customized setup module.
+    """Import a customized setup module into the cfg module.
 
     It tries to import `configmodule_name`, then just `module_name`.
     
@@ -19,16 +51,16 @@ def import_setup(module_name):
     module_name : str
         The name of the custom config file (sans .py extension).
 
-    Returns
-    -------
-    module
     """
+    if module_name.endswith(".py"):
+        module_name = module_name[:-3]
     try:
         setupmodule = __import__("config%s" % module_name)
     except ImportError:
         setupmodule = __import__(module_name)
 
-    return setupmodule
+    cfg.setup = setupmodule
+    cfg.is_setup = True
 
 def projectname():
     """Return the project name string.
