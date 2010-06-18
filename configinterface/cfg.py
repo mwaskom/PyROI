@@ -11,25 +11,26 @@ import pyroilut as lut
 from glob import glob
 import nipype.interfaces.freesurfer as fs
 
+__module__ = "cfg"
 
 # Look for a file indicating the setup module and import that module if found
 if os.path.isfile(".roisetupfile"):
     
     fid = open(".roisetupfile","r")
-    setupmodule = fid.read()
+    module = fid.read()
     fid.close()
     
     # Get rid of any extraneous whitespace
-    m = re.search("\w+", setupmodule)
+    m = re.search("\w+", module)
     if m:
-        setupmodule = m.group()
+        module = m.group()
     
     # Trim the file extension if it exists
-    if setupmodule.endswith(".py"):
-        setupmodule = setupmodule[:-3]
+    if module.endswith(".py"):
+        module = pmodule[:-3]
     
     # Import the module
-    file, name, desc = imp.find_module(setupmodule)
+    file, name, desc = imp.find_module(module)
     try:
         setup = imp.load_module("setup", file, name, desc)
     finally:
@@ -37,30 +38,10 @@ if os.path.isfile(".roisetupfile"):
     is_setup = True
     
     # Clean up
-    del fid, m, setupmodule, file, name, desc
+    del fid, m, module, file, name, desc
 else:
     is_setup = False
 
-def import_setup(module_name):
-    """Import a customized setup module into the cfg module.
-
-    It tries to import `configmodule_name`, then just `module_name`.
-    
-    Parameters
-    ----------
-    module_name : str
-        The name of the custom config file (sans .py extension).
-
-    """
-    if module_name.endswith(".py"):
-        module_name = module_name[:-3]
-    try:
-        setupmodule = __import__("config%s" % module_name)
-    except ImportError:
-        setupmodule = __import__(module_name)
-
-    cfg.setup = setupmodule
-    cfg.is_setup = True
 
 def projectname():
     """Return the project name string.

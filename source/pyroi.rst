@@ -15,6 +15,7 @@ Contents:
 .. toctree::
    :maxdepth: 2
 
+   freesurfer_surf.rst
    getting_started.rst
 
 Indices and tables

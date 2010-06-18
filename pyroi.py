@@ -15,14 +15,16 @@ import nibabel as nib
 import nipype.interfaces.freesurfer as fs
 from nipype.interfaces.base import Bunch
 
+__module__ = "pyroi"
+
 class Analysis(Bunch):
     """Analysis object."""
     def __init__(self, analysis):
         
         if not cfg.is_setup:
-            raise InitError("Config setup module")
+            raise SetupError
         
-        make_analysis_tree(cfg)
+        make_analysis_tree(analysis)
         self.dict = analysis
         self.paradigm = analysis["par"]
         self.extract = analysis["extract"]
@@ -46,15 +48,19 @@ class Atlas(Bunch):
     
     def __init__(self, atlasdict, **kwargs):
 
+        if not cfg.is_setup:
+            raise SetupError
+
         self.roidir = os.path.join(cfg.setup.basepath,"roi") 
         self.subjdir = cfg.setup.subjdir
 
-        if not "setup" in cfg.__dict__.keys():
-            raise InitError("Config setup function")
-
-        cfg = cfg
         self.atlasdict = atlasdict
         self.atlasname = atlasdict["atlasname"]
+
+        if "regions" in atlasdict.keys():
+            self.regions = atlasdict["regions"]
+        else:
+            self.regions = range(1, len(atlasdict["sourcefiles"]) + 1)
 
         self._init_paradigm = False
         self._init_subject = False
@@ -101,10 +107,9 @@ class Atlas(Bunch):
             self.analysis.source = source.extractvol
 
 
-        analysisdir = os.path.join(self.basedir, "analyses", 
-                                   analysis.cfg.projectname(), 
-                                   get_analysis_name(analysis.cfg, 
-                                                     analysis.dict))
+        analysisdir = os.path.join(self.roidir, "analyses", 
+                                   cfg.projectname(), 
+                                   get_analysis_name(analysis.dict))
         if self.manifold == "surface":
             self.analysis.dir = os.path.join(analysisdir, self.atlasname, "%s")
         else:
@@ -117,9 +122,17 @@ class Atlas(Bunch):
         self.funcvol = os.path.join(self.analysis.dir, "extractvol",
                                     "%s.nii" % self.subject)
 
-        for file in [self.atlas, self.analysis.source, self.analysis.maskimg]:
-            if not os.path.isfile(file):
-                raise PreprocessError(file)
+        if not self.debug:
+            files = [self.atlas, self.analysis.source]
+            if self.mask: files.append(self.analysis.maskimg)
+            for file in files:
+                if self.manifold == "surface":
+                    for hemi in self.iterhemi:
+                        if not os.path.isfile(file % hemi):
+                            raise PreprocessError(file % hemi)
+                else:
+                    if not os.path.isfile(file):
+                        raise PreprocessError(file)
 
         self._init_analysis = True         
 
@@ -131,6 +144,15 @@ class Atlas(Bunch):
         else:
             shutil.copy(self.origatlas % self.hemi,
                         self.atlas % self.hemi)
+
+    def sourcefiles_to_dict(self, files):
+        """Turn a list of labels into a look-up dictionary"""
+        # Assuming the list of labels has been trimmed of hemisphere
+        # prefix and .label/.img extension
+
+        self.lut = {}
+        for i, file in enumerate(files):
+            self.lut[i+1] = file
 
     def _nipype_run(self, interface):
         """Run a program using its nipype interface"""
@@ -176,13 +198,24 @@ class Atlas(Bunch):
         cmd.append(hemi)
         cmd.append("inflated")
         cmd.append("-gray")
-        cmd.append("-annot %s" % self.atlas % (hemi, hemi))
+        cmd.append("-annot %s" % self.atlas % hemi)
 
         subprocess.call(cmd) 
 
     def __vol_display(self):
         """Display a volume atlas using Freeview"""
         cmd = ["freeview"]
+        cmd.append("-v")
+        if self.atlasdict["source"] == "freesurfer":
+            anat = os.path.join(self.subjdir, self.subject, "mri", "orig.mgz")
+        else:
+            anat = os.path.join(os.getenv("FSL_DIR"), "data", "standard",
+                                "avg152T2.nii.gz")
+        cmd.append("%s:%s" % (anat, "colormap=grayscale"))
+        cmd.append("-v")
+        cmd.append("%s:lut:lut=%s" % (self.atlas, self.lutfile))
+
+        subprocess.call(cmd)
 
     # Processing methods
     def stats(self):
@@ -224,9 +257,7 @@ class Atlas(Bunch):
 
     def extract(self):
         """Extract average functional data from select regions in an atlas."""
-        if not self._init_subject:
-            raise InitError("subject")
-        elif not self._init_analysis:
+        if not self._init_analysis:
             raise InitError("analysis")
 
         if self.manifold == "volume":
@@ -241,7 +272,7 @@ class Atlas(Bunch):
         """Internal function to extract from a surface"""
         funcex = fs.SegStats()
         
-        funcex.inputs.annot = [self.subject, hemi, self.fname[:-6]]
+        funcex.inputs.annot = [self.subject, hemi, self.fname[3:-6]]
         funcex.inputs.invol = self.analysis.source % hemi
         funcex.inputs.segid = self.regions
         if self.mask:
@@ -321,15 +352,6 @@ class SurfaceAtlas(Bunch):
             lutfile.write("0\n")
 
         lutfile.close()
-
-    def labels_to_dict(self, labels):
-        """Turn a list of labels into a look-up dictionary"""
-        # Assuming the list of labels has been trimmed of hemisphere
-        # prefix and .label extension
-
-        self.lut = {}
-        for i, label in enumerate(labels):
-            self.lut[i+1] = label
     
     def make_annotation(self):
         """Create an annotation from a list of labels"""
@@ -356,18 +378,18 @@ class FreesurferAtlas(Atlas, SurfaceAtlas):
     def __init__(self, atlasdict, **kwargs):
                
         Atlas.__init__(self, atlasdict, **kwargs)
-        make_fs_atlas_tree(cfg)
+        make_fs_atlas_tree()
         
         self.manifold = atlasdict["manifold"]
-        self.regions = atlasdict["regions"]
         if self.manifold == "surface":
             self.fname = atlasdict["fname"]
-            self.iterhemi = ("lh","rh")
+            self.iterhemi = ["lh","rh"]
         else:
             self.fname = atlasdict["fname"]
 
         #self.lut = lut.freesurfer(self.fname)
-
+        self.lutfile = os.path.join(os.getenv("FREESURFER_HOME"),
+                                    "FreeSurferColorLUT.txt")
         self.basedir = os.path.join(self.roidir, "atlases", "freesurfer")
 
     # Initialization methods
@@ -427,7 +449,7 @@ class FSRegister(FreesurferAtlas):
 
     def __init__(self, **kwargs):
 
-        make_reg_tree(cfg)
+        make_reg_tree()
         self.roidir = os.path.join(cfg.setup.basepath,"roi")
         subjdir = cfg.setup.subjdir
         
@@ -457,10 +479,28 @@ class FSRegister(FreesurferAtlas):
         return cmdline, res
 
 
+class HarvardOxfordAtlas(Atlas):
+
+    def __init__(self, atlasdict, **kwargs):
+
+        Atlas.__init__(self, atlasdict, **kwargs)
+     
+        self.manifold = "volume"
+        self.thresh = atlasdict["thresh"]
+        pckgdir = os.path.split(__file__)[0]
+        filename = "HarvardOxford-%d.nii" % self.thresh
+        self.atlas = os.path.join(pckgdir, "data", "HarvardOxford",
+                                  filename)
+
+
+    def init_subject(self, subject):
+       """Initialize the atlas for a subject"""
+       self.subject = subject
+   
+       self._init_subject = True
+
 class TalairachAtlas(Atlas):
 
-    def __init__(self, atlasdict, roidir):
-        
         pass
 
 class LabelAtlas(Atlas, SurfaceAtlas):
@@ -469,14 +509,15 @@ class LabelAtlas(Atlas, SurfaceAtlas):
         
         Atlas.__init__(self, atlasdict, **kwargs)
         
+        make_label_atlas_tree()
         self.manifold = "surface"
-        self.iterhemi = [atlasdict["hemi"]]
+        self.iterhemi =[atlasdict["hemi"]]
         self.hemi = atlasdict["hemi"]
         self.fname = "%s." + "%s.annot" % self.atlasname
+
         self.sourcefiles = atlasdict["sourcefiles"]
         self.sourcedir = atlasdict["sourcedir"]
-
-        self.labels_to_dict(atlasdict["sourcefiles"])
+        self.sourcefiles_to_dict(atlasdict["sourcefiles"])
         # XXX FIX: self.regions = self.lut.keys()
 
         self.basedir = os.path.join(self.roidir, "atlases", "label")
@@ -485,10 +526,10 @@ class LabelAtlas(Atlas, SurfaceAtlas):
     def init_subject(self, subject):
         """Initialize the atlas for a subject"""
         self.subject = subject
-        self.atlasdir = os.path.join(self.basedir, subject,
-                                     self.atlasname, "%s")
-        self.lutfile = os.path.join(self.atlasdir, "%s.lut" % self.atlasname)
-        self.atlas = os.path.join(self.atlasdir, self.fname)
+        atlasdir = os.path.join(self.basedir, subject,
+                                 self.atlasname)
+        self.lutfile = os.path.join(atlasdir, "%s.lut" % self.atlasname)
+        self.atlas = os.path.join(atlasdir, self.fname)
         self.origatlas = os.path.join(self.subjdir, subject, "label", self.fname)
         
         self._init_subject = True
@@ -538,16 +579,75 @@ class LabelAtlas(Atlas, SurfaceAtlas):
                                           res.runtime.stdout)
 
 class MaskAtlas(Atlas):
+    """Mask atlas class"""
+    def __init__(self, atlasdict, **kwargs):
+        
+        Atlas.__init__(self, atlasdict, **kwargs)
+        make_mask_atlas_tree()
+        
+        self.manifold = "volume"
 
-    def __init__(self, atlasdict, roidir):
-        pass
+        self.fname = "%s.mgz" % self.atlasname
+        self.sourcefiles = atlasdict["sourcefiles"]
+        self.sourcedir = atlasdict["sourcedir"]
+        self.sourcefiles_to_dict(atlasdict["sourcefiles"])
+
+        self.basedir = os.path.join(self.roidir, "atlases", "mask")
+        self.atlasdir = os.path.join(self.basedir, cfg.projectname(), 
+                                     self.atlasname)
+        self.atlas = os.path.join(self.basedir, self.fname)
+        self.lutfile = os.path.join(atlasdir, "%s.lut" % self.atlasname)
+
+    # Initialization methods
+    def init_subject(self, subject):
+        """Initialize the atlas for a subject"""
+        self.subject = subject
+        
+        self._init_subject = True
+
+    # Processing methods
+    def make_atlas(self):
+        """Make the single atlas image and look-up-table from a group of masks"""
+        self.sourcevolumes = []
+        for file in self.sourcefiles:
+            self.sourcevolumes.append(os.path.join(self.sourcedir, file))
+        self.tempdir = os.path.join(self.atlasdir, ".temp")
+        self.tempvols = []
+        for segnum in range(1, len(self.sourcefiles) + 1):
+            self.__adj_binary_segvol(segnum)
+        
+        self.__combine_segvols()
+
+    def __adj_binary_segvol(self, segnum):
+        """Adjust the segmentation value of a binary mask image"""
+        adjust = fs.Concatenate()
+
+        adjust.inputs.invol = self.sourcevolumes[segnum]
+        output = os.path.join(self.tempdir, "adj-%s" % self.sourcefiles[segnum])
+        self.tempvols.append(output)
+        adjust.inputs.outvol = output
+        adjust.inputs.mul = segnum
+
+        cmdline, res = self._nipype_run(adjust)
+
+    def __combine_segvols(self):
+        """Combine adjusted segvols into one atlas"""
+        combine = fs.Concatenate()
+
+        adjust.inputs.invol = self.tempvols
+        adjust.inputs.outvol = self.atlas
+        adjust.inputs.combine = True
+
+        cmdline, res = self._nipype_run(combine)
 
 class FirstLevelStats(Bunch):
-    """Docstring goes here"""
+    """Base First Level Stats class"""
     def __init__(self, analysis, **kwargs):
         
-        make_levelone_tree(analysis.cfg)
-        cfg = analysis.cfg
+        if not cfg.is_setup:
+            raise SetupError
+        
+        make_levelone_tree()
         self.analysis = analysis
         
         self.roidir = os.path.join(cfg.setup.basepath, "roi")
@@ -726,9 +826,9 @@ class TStatImage(FirstLevelStats):
     def init_subject(self, subject):
         """Initialize the object for a subject"""
         self.subject = subject
-        self.conpath = cfg.pathspec("contrast", self.analysis.maskpar,
+        conpath = cfg.pathspec("contrast", self.analysis.maskpar,
                                        subject, self.analysis.maskcon)
-        self.timg = os.path.join(self.conpath, 
+        self.timg = os.path.join(conpath, 
                                  self.imgdict[self.analysis.maskcon])
         self.sigpath = os.path.join(self.statsdir, self.analysis.maskpar,
                                    subject)
@@ -802,6 +902,11 @@ class InitError(Exception):
     def __str__(self):
         return "%s not initialized" % self.comp
 
+class SetupError(Exception):
+
+    def __str__(self):
+        return "Setup module has not been imported."
+
 class PreprocessError(Exception):
 
     def __init__(self, file):
@@ -863,11 +968,11 @@ def init_stat_object(analysis):
     
     Parameters
     ----------
-    analysis : Analysis class object
+    analysis : Analysis object
     
     Returns
     -------
-    FirstLevelStatis class object
+    FirstLevelStats object
     
     """
     if analysis.extract == "beta":
@@ -903,8 +1008,6 @@ def get_analysis_name(analysis, full=True):
 
     Parameters
     ----------
-    cfg : module
-        Initialized config module.
     analysis : dict
         Analysis dictionary.
     full : bool, optional
@@ -912,8 +1015,8 @@ def get_analysis_name(analysis, full=True):
  
     Returns
     -------
-    string
-       Properly fomatted analysis name
+    str
+       Properly fomatted analysis name.
 
     """
     analpar = cfg.paradigms(analysis["par"], "upper")
@@ -935,21 +1038,12 @@ def get_analysis_name(analysis, full=True):
 
 def trim_analysis_tree(analysis):
     """Remove a analysis tree and all of its contents.
-
     
     Parameters
     ----------
-    cfg: module
-        Initialized config module.
     analysis: dict
-        Analysis dictionary for the analysis to remove
+        Analysis dictionary.
     
-    Note
-    ----
-    This is not exactly an antonym of the make_analysis_tree()
-    function.  This function removes the directory for a specfifc
-    analysis, whereas the make function sets up the directory
-    structure for all analyses.
     """
     projectdir = os.path.join(cfg.setup.basepath,
                                "roi", "analysis",
@@ -959,14 +1053,14 @@ def trim_analysis_tree(analysis):
 
     shutil.rmtree(analysisdir)
 
-def make_analysis_tree(cfg):
-    """Set up the analysis directory tree for a project.
-
+def make_analysis_tree(analysis):
+    """Set up the directory tree for an analysis.
+    
     Parameters
     ----------
-    cfg : module
-        Initialized config module.
-
+    analysis: dict
+        Analysis dictionary.
+    
     """
     roidir = os.path.join(cfg.setup.basepath, "roi")
     analysisdir = os.path.join(roidir, "analysis")
@@ -974,48 +1068,38 @@ def make_analysis_tree(cfg):
     projdir = os.path.join(analysisdir, cfg.projectname())
     logdir = os.path.join(projdir, "logfiles")
     dbdir = os.path.join(projdir, "databases")
-
-    analdirs = [roidir, analysisdir, projdir, logdir, dbdir]
-
-    analnames = get_analysis_name_list(cfg)
-    for name in analnames:
-        analdir = os.path.join(projdir, name)
-        analdirs.append(analdir)
-        
-        for atlas in cfg.atlases().keys():
-            atlasdir = os.path.join(analdir, atlas)
-            analdirs.append(atlasdir)
-
-            if cfg.atlases(atlas)["manifold"] == "surface":
-                if cfg.atlases(atlas)["source"] == "freesurfer":
-                    hemis = ["lh","rh"]
-                else:
-                    hemis = [cfg.atlases(atlas)["hemi"]]
-                for hemi in hemis:
-                    hemidir = os.path.join(atlasdir, hemi)
-                    analdirs.append(hemidir)
-                    
-                    for res in ["extracttxt", "extractvol", "stats"]:
-                        resdir = os.path.join(hemidir, res)
-                        analdirs.append(resdir)
-            else:
-                for res in ["extracttxt", "extractvol", "stats"]:
-                    resdir = os.path.join(atlasdir, res)
-                    analdirs.append(resdir)
-
-    for dir in analdirs:
-        if not os.path.isdir(dir):
-            os.mkdir(dir)
-
-def make_levelone_tree(cfg):
-    """Setup the tree for level one data that will be extracted.
     
-    Parameters
-    ----------
-    cfg : module
-        Initialized config module.
-        
-    """
+    analdir = get_analysis_name(cfg)
+    
+    analdirs = [roidir, analysisdir, projdir, logdir, dbdir, analdir]
+
+    for atlas in cfg.atlases().keys():
+        atlasdir = os.path.join(analdir, atlas)
+        analdirs.append(atlasdir)
+
+        if cfg.atlases(atlas)["manifold"] == "surface":
+            if cfg.atlases(atlas)["source"] == "freesurfer":
+                hemis = ["lh","rh"]
+            else:
+                hemis = [cfg.atlases(atlas)["hemi"]]
+            for hemi in hemis:
+                hemidir = os.path.join(atlasdir, hemi)
+                analdirs.append(hemidir)
+                
+                for res in ["extracttxt", "extractvol", "stats"]:
+                    resdir = os.path.join(hemidir, res)
+                    analdirs.append(resdir)
+        else:
+            for res in ["extracttxt", "extractvol", "stats"]:
+                resdir = os.path.join(atlasdir, res)
+                analdirs.append(resdir)
+
+    for direct in analdirs:
+        if not os.path.isdir(direct):
+            os.mkdir(direct)
+
+def make_levelone_tree():
+    """Setup the tree for level one data that will be extracted."""
     roidir = os.path.join(cfg.setup.basepath, "roi")
     l1dir = os.path.join(roidir, "levelone")
 
@@ -1033,19 +1117,12 @@ def make_levelone_tree(cfg):
                 subjdir = os.path.join(pardir, subj)
                 l1dirs.append(subjdir)
 
-    for dir in l1dirs:
-        if not os.path.isdir(dir):
-            os.mkdir(dir)
+    for direct in l1dirs:
+        if not os.path.isdir(direct):
+            os.mkdir(direct)
 
-def make_fs_atlas_tree(cfg):
-    """Setup the Freesurfer atlas tree
-    
-    Parameters
-    ----------
-    cfg : module
-        Initialized config module.
-        
-    """
+def make_fs_atlas_tree():
+    """Setup the Freesurfer atlas tree."""
     roidir = os.path.join(cfg.setup.basepath, "roi")
     atlasdir = os.path.join(roidir, 'atlases')
     basedir = os.path.join(atlasdir, "freesurfer")
@@ -1067,27 +1144,20 @@ def make_fs_atlas_tree(cfg):
                 subjdir = os.path.join(pardir, subj)
                 fsdirs.append(subjdir)
 
-                for atlas in cfg.atlases():
-                    atlasdir = os.path.join(subjdir, atlas)
-                    fsdirs.append(atlasdir)
+                for atlas in cfg.atlases().keys():
+                    if cfg.atlases(atlas)["source"] == "freesurfer":
+                        atnamedir = os.path.join(subjdir, atlas)
+                        fsdirs.append(atnamedir)
                     
-    for dir in fsdirs:
-        if not os.path.isdir(dir):
-            os.mkdir(dir)
+    for direct in fsdirs:
+        if not os.path.isdir(direct):
+            os.mkdir(direct)
 
-def make_reg_tree(cfg):
-    """Setup the registration tree.
-
-    Parameters
-    ----------
-    cfg: module
-        Initialized config module
-
-     """
+def make_reg_tree():
+    """Setup the registration tree."""
     roidir = os.path.join(cfg.setup.basepath, "roi")
     basedir = os.path.join(roidir, "reg")
     regdirs = [roidir, basedir]
-
 
     for par in cfg.paradigms():
         pardir = os.path.join(basedir, par)
@@ -1100,6 +1170,31 @@ def make_reg_tree(cfg):
     for dir in regdirs:
         if not os.path.isdir(dir):
             os.mkdir(dir)
+
+def make_label_atlas_tree():
+    """Set up the atlas tree for label atlases."""
+    roidir = os.path.join(cfg.setup.basepath, "roi")
+    atlasdir = os.path.join(roidir, "atlases")
+    basedir = os.path.join(atlasdir, "label")
+    projectdir = os.path.join(basedir, cfg.projectname())
+    labeldirs = [roidir, atlasdir, basedir, projectdir]
+
+    for subj in cfg.subjects():
+        subjdir = os.path.join(projectdir, subj)
+        labeldirs.append(subjdir)
+
+        for atlas in cfg.atlases().keys():
+            if cfg.atlases(atlas)["source"] == "label":
+                atnamedir = os.path.join(subjdir, atlas)
+                labeldirs.append(atnamedir)
+
+    for dir in labeldirs:
+        if not os.path.isdir(dir):
+            os.mkdir(dir)
+
+def make_mask_atlas_tree():
+    """Set up the atlas tree for mask atlases"""
+    pass
 
 #If module is told to run, turn around and run _pyroi.py script
 if __name__ == "__main__":
