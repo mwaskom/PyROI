@@ -7,7 +7,7 @@
 import os
 import re
 import imp
-import pyroilut as lut
+#import pyroilut as lut
 from glob import glob
 import nipype.interfaces.freesurfer as fs
 
@@ -96,6 +96,12 @@ def atlases(atlas=None):
     
     for key in atlases.keys():
         atlases[key]["atlasname"] = key
+        if atlases[key]["source"] == "mask":
+            if not os.path.isabs(atlases[key]["sourcedir"]):
+                atlases[key]["sourcedir"] = os.path.join(setup.basepath,
+                                                         atlases[key]["sourcedir"])
+            if atlases[key]["sourcefiles"] == "all":
+                atlases[key]["sourcefiles"] = glob(os.path.join(atlases[key]["sourcedir"],"*"))
 
     if atlas is None:
         return atlases
