@@ -1,8 +1,3 @@
-__all__ = ["Atlas", "SurfaceAtlas", "FreesurferAtlas", "FSRegister", "LabelAtlas",
-           "MaskAtlas", "HarvardOxfordAtlas", "init_atlas"]
-
-__module__ = "atlases"
-
 import os
 import re
 import sys
@@ -10,7 +5,11 @@ import shutil
 import subprocess
 from glob import glob
 
-import cfg
+import configinterface as cfg
+import analysis as an
+import treeutils as tree
+import exceptions as ex
+import utils
 
 import numpy as np
 import scipy.stats as stats
@@ -18,15 +17,20 @@ import nibabel as nib
 import nipype.interfaces.freesurfer as fs
 from nipype.interfaces.base import Bunch
 
+__all__ = ["Atlas", "SurfaceAtlas", "FreesurferAtlas", "FSRegister", "LabelAtlas",
+           "MaskAtlas", "HarvardOxfordAtlas", "init_atlas"]
+
+__module__ = "atlases"
+
 class Atlas(Bunch):
     """Base atlas class."""
     
     def __init__(self, atlasdict, **kwargs):
 
         if not cfg.is_setup:
-            raise SetupError
+            raise ex.SetupError
 
-        self.roidir = os.path.join(cfg.setup.basepath,"roi") 
+        self.roidir = os.path.join(cfg.setup.basepath,"roi")
         self.subjdir = cfg.setup.subjdir
 
         self.atlasdict = atlasdict
@@ -58,12 +62,12 @@ class Atlas(Bunch):
     def init_analysis(self, analysis):
         """Initialize the atlas with an analysis."""
         if not self._init_subject:
-            raise InitError("Subject")
+            raise ex.InitError("Subject")
 
         self.analysis = analysis
         if analysis.mask:
             self.mask = True
-            mask = SigImage(analysis)
+            mask = an.SigImage(analysis)
             mask.init_subject(self.subject)
             if self.manifold == "surface":
                 mask.sigimg = mask.sigsurf
@@ -74,7 +78,7 @@ class Atlas(Bunch):
             self.analysis.masksign = analysis.masksign
         else:
             self.mask = False
-        source = init_stat_object(analysis)
+        source = an.init_stat_object(analysis)
         source.init_subject(self.subject)
         if self.manifold == "surface":
             self.analysis.source = source.extractsurf
@@ -82,9 +86,9 @@ class Atlas(Bunch):
             self.analysis.source = source.extractvol
 
 
-        analysisdir = os.path.join(self.roidir, "analyses", 
+        analysisdir = os.path.join(self.roidir, "analysis", 
                                    cfg.projectname(), 
-                                   get_analysis_name(analysis.dict))
+                                   utils.get_analysis_name(analysis.dict))
         if self.manifold == "surface":
             self.analysis.dir = os.path.join(analysisdir, self.atlasname, "%s")
         else:
@@ -104,10 +108,10 @@ class Atlas(Bunch):
                 if self.manifold == "surface":
                     for hemi in self.iterhemi:
                         if not os.path.isfile(file % hemi):
-                            raise PreprocessError(file % hemi)
+                            raise ex.PreprocessError(file % hemi)
                 else:
                     if not os.path.isfile(file):
-                        raise PreprocessError(file)
+                        raise ex.PreprocessError(file)
 
         self._init_analysis = True         
 
@@ -129,6 +133,20 @@ class Atlas(Bunch):
         for i, file in enumerate(files):
             self.lut[i+1] = file
 
+    def write_lut(self):
+        """Write a look up table to the roi atlas directory"""
+        if not self.debug:
+            lutfile = open(self.lutfile, "w")
+        else:
+            lutfile = open("/dev/null", "w")
+        for id in self.lut:
+            lutfile.write("%d\t%s\t\t\t" % (id, self.lut[id]))
+            for color in np.random.randint(0, 260, 3):
+                lutfile.write("%d\t" % color)
+            lutfile.write("0\n")
+
+        lutfile.close()
+
     def _nipype_run(self, interface):
         """Run a program using its nipype interface"""
         if self.debug:
@@ -149,11 +167,10 @@ class Atlas(Bunch):
             res = subprocess.call(cmd)
             return cmdline, res
 
-    # Operation methods
     def display(self):
         """Display the atlas"""
         if not self._init_subject:
-            raise InitError("Subject")
+            raise ex.InitError("Subject")
 
         if self.manifold == "surface":
             self.__surf_display()
@@ -185,18 +202,40 @@ class Atlas(Bunch):
             anat = os.path.join(self.subjdir, self.subject, "mri", "orig.mgz")
         else:
             anat = os.path.join(os.getenv("FSL_DIR"), "data", "standard",
-                                "avg152T2.nii.gz")
+                                "avg152T1.nii.gz")
         cmd.append("%s:%s" % (anat, "colormap=grayscale"))
-        cmd.append("-v")
-        cmd.append("%s:lut:lut=%s" % (self.atlas, self.lutfile))
+        cmd.append("%s:colormap=lut:lut=%s" % (self.atlas, self.lutfile))
 
-        subprocess.call(cmd)
+        if self.debug:
+            print cmd
+        else:
+            subprocess.call(cmd)
 
     # Processing methods
+    
+    def make_annotation(self):
+        """Create an annotation from a list of labels"""
+        cmd = ["mris_label2annot"]
+
+        cmd.append("--s %s" % self.subject)
+        cmd.append("--hemi %s" % self.hemi)
+        cmd.append("--ctab %s" % self.lutfile)
+        cmd.append("--a %s" % self.atlasname)
+        for label in self.sourcefiles:
+            filepath = os.path.join(self.sourcedir, "%s.label" % label)
+            cmd.append("--l %s" % filepath)
+
+        cmdline, res = self._manual_run(cmd)
+
+        if not self.debug: 
+            self.copy_atlas()
+        
+        return cmdline, res
+    
     def stats(self):
         """Generate a summary of voxel/vertex counts for all regions in an atlas."""
         if not self._init_subject:
-            raise InitError("Subject")
+            raise ex.InitError("Subject")
         
         if self.manifold == "volume":
             cmdline, res = self.__vol_stats()
@@ -233,7 +272,7 @@ class Atlas(Bunch):
     def extract(self):
         """Extract average functional data from select regions in an atlas."""
         if not self._init_analysis:
-            raise InitError("analysis")
+            raise ex.InitError("analysis")
 
         if self.manifold == "volume":
             cmdline, res = self.__vol_extract()
@@ -313,39 +352,7 @@ class Atlas(Bunch):
 
 class SurfaceAtlas(Bunch):
     """Additional base class that adds surface methods"""
-    
-    def write_lut(self):
-        """Write a look up table to the roi atlas directory"""
-        if not self.debug:
-            lutfile = open(self.lutfile, "w")
-        else:
-            lutfile = open("/dev/null", "w")
-        for id in self.lut.keys():
-            lutfile.write("%d\t%s\t\t\t" % (id, self.lut[id]))
-            for color in np.random.randint(0, 260, 3):
-                lutfile.write("%d\t" % color)
-            lutfile.write("0\n")
-
-        lutfile.close()
-    
-    def make_annotation(self):
-        """Create an annotation from a list of labels"""
-        cmd = ["mris_label2annot"]
-
-        cmd.append("--s %s" % self.subject)
-        cmd.append("--hemi %s" % self.hemi)
-        cmd.append("--ctab %s" % self.lutfile)
-        cmd.append("--a %s" % self.atlasname)
-        for label in self.sourcefiles:
-            filepath = os.path.join(self.sourcedir, "%s.label" % label)
-            cmd.append("--l %s" % filepath)
-
-        cmdline, res = self._manual_run(cmd)
-
-        if not self.debug: 
-            self.copy_atlas()
-        
-        return cmdline, res
+     
 
 
 class FreesurferAtlas(Atlas, SurfaceAtlas):
@@ -353,7 +360,7 @@ class FreesurferAtlas(Atlas, SurfaceAtlas):
     def __init__(self, atlasdict, **kwargs):
                
         Atlas.__init__(self, atlasdict, **kwargs)
-        make_fs_atlas_tree()
+        tree.make_fs_atlas_tree()
         
         self.manifold = atlasdict["manifold"]
         if self.manifold == "surface":
@@ -371,7 +378,7 @@ class FreesurferAtlas(Atlas, SurfaceAtlas):
     def init_subject(self, subject):
        """Initialize the atlas for a subject"""
        if self.manifold == "volume" and not self._init_paradigm:
-           raise InitError("Paradigm")
+           raise ex.InitError("Paradigm")
        self.subject = subject
        if self.manifold == "surface":
            fname = "%s." + self.fname
@@ -402,9 +409,9 @@ class FreesurferAtlas(Atlas, SurfaceAtlas):
     def resample(self):
         """Resample a freesurfer volume atlas into functional space"""
         if not self._init_paradigm:
-            raise InitError("paradigm")
+            raise ex.InitError("paradigm")
         elif not self._init_subject:
-            raise InitError("subject")
+            raise ex.InitError("subject")
 
         transform = fs.ApplyVolTransform()
 
@@ -424,7 +431,7 @@ class FSRegister(FreesurferAtlas):
 
     def __init__(self, **kwargs):
 
-        make_reg_tree()
+        tree.make_reg_tree()
         self.roidir = os.path.join(cfg.setup.basepath,"roi")
         subjdir = cfg.setup.subjdir
         
@@ -484,7 +491,7 @@ class LabelAtlas(Atlas, SurfaceAtlas):
         
         Atlas.__init__(self, atlasdict, **kwargs)
         
-        make_label_atlas_tree()
+        tree.make_label_atlas_tree()
         self.manifold = "surface"
         self.iterhemi =[atlasdict["hemi"]]
         self.hemi = atlasdict["hemi"]
@@ -501,10 +508,10 @@ class LabelAtlas(Atlas, SurfaceAtlas):
     def init_subject(self, subject):
         """Initialize the atlas for a subject"""
         self.subject = subject
-        atlasdir = os.path.join(self.basedir, subject,
+        self.atlasdir = os.path.join(self.basedir, subject,
                                  self.atlasname)
         self.lutfile = os.path.join(atlasdir, "%s.lut" % self.atlasname)
-        self.atlas = os.path.join(atlasdir, self.fname)
+        self.atlas = os.path.join(self.atlasdir, self.fname)
         self.origatlas = os.path.join(self.subjdir, subject, "label", self.fname)
         
         self._init_subject = True
@@ -558,20 +565,21 @@ class MaskAtlas(Atlas):
     def __init__(self, atlasdict, **kwargs):
         
         Atlas.__init__(self, atlasdict, **kwargs)
-        make_mask_atlas_tree()
+        tree.make_mask_atlas_tree()
         
         self.manifold = "volume"
 
         self.fname = "%s.mgz" % self.atlasname
         self.sourcefiles = atlasdict["sourcefiles"]
         self.sourcedir = atlasdict["sourcedir"]
-        self.sourcefiles_to_dict(atlasdict["sourcefiles"])
+        self.sourcevolumes = []
+        for vol in atlasdict["sourcefiles"]:
+            self.sourcevolumes.append(os.path.split(vol)[1])
+        self.sourcefiles_to_dict(self.sourcevolumes)
 
         self.basedir = os.path.join(self.roidir, "atlases", "mask")
-        self.atlasdir = os.path.join(self.basedir, cfg.projectname(), 
-                                     self.atlasname)
-        self.atlas = os.path.join(self.basedir, self.fname)
-        self.lutfile = os.path.join(atlasdir, "%s.lut" % self.atlasname)
+        self.atlas = os.path.join(self.basdir, self.fname)
+        self.lutfile = os.path.join(self.basedir, "%s.lut" % self.atlasname)
 
     # Initialization methods
     def init_subject(self, subject):
@@ -583,10 +591,8 @@ class MaskAtlas(Atlas):
     # Processing methods
     def make_atlas(self):
         """Make the single atlas image and look-up-table from a group of masks"""
-        self.sourcevolumes = []
-        for file in self.sourcefiles:
-            self.sourcevolumes.append(os.path.join(self.sourcedir, file))
-        self.tempdir = os.path.join(self.atlasdir, ".temp")
+        self.tempdir = os.path.join(self.basedir, ".temp")
+        if not os.path.isdir(self.tempdir): os.mkdir(self.tempdir)
         self.tempvols = []
         for segnum in range(1, len(self.sourcefiles) + 1):
             self.__adj_binary_segvol(segnum)
@@ -599,24 +605,27 @@ class MaskAtlas(Atlas):
         """Adjust the segmentation value of a binary mask image"""
         adjust = fs.Concatenate()
 
-        adjust.inputs.invol = self.sourcevolumes[segnum]
-        output = os.path.join(self.tempdir, "adj-%s" % self.sourcefiles[segnum])
+        adjust.inputs.invol = self.sourcefiles[segnum - 1]
+        output = os.path.join(self.tempdir, "adj-%s" % self.sourcevolumes[segnum-1])
         self.tempvols.append(output)
         adjust.inputs.outvol = output
         adjust.inputs.mul = segnum
 
         cmdline, res = self._nipype_run(adjust)
+        if self.debug:
+            print cmdline
 
     def __combine_segvols(self):
         """Combine adjusted segvols into one atlas"""
         combine = fs.Concatenate()
 
-        adjust.inputs.invol = self.tempvols
-        adjust.inputs.outvol = self.atlas
-        adjust.inputs.combine = True
+        combine.inputs.invol = self.tempvols
+        combine.inputs.outvol = self.atlas
+        combine.inputs.combine = True
 
         cmdline, res = self._nipype_run(combine)
-
+        if self.debug:
+            print cmdline
 
 def init_atlas(atlasdict, **kwargs):
     """Initialize the proper atlas class with an atlas dictionary.

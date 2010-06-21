@@ -73,7 +73,7 @@ def analysis():
     return analysis
 
 
-def atlases(atlas=None):
+def atlases(atlasname=None):
     """Return the atlas specifications.
     
     This function deals with the ROI atlas defintions. If the scope is 
@@ -83,7 +83,7 @@ def atlases(atlas=None):
 
     Parameters
     ----------
-    atlas : str, optional
+    atlasname : str, optional
         The atlas name, or None to return the full dictionary.
 
     Returns
@@ -94,19 +94,34 @@ def atlases(atlas=None):
     
     atlases = setup.atlases
     
-    for key in atlases.keys():
-        atlases[key]["atlasname"] = key
-        if atlases[key]["source"] == "mask":
-            if not os.path.isabs(atlases[key]["sourcedir"]):
-                atlases[key]["sourcedir"] = os.path.join(setup.basepath,
-                                                         atlases[key]["sourcedir"])
-            if atlases[key]["sourcefiles"] == "all":
-                atlases[key]["sourcefiles"] = glob(os.path.join(atlases[key]["sourcedir"],"*"))
+    for atlas in atlases:
+        atlases[atlas]["atlasname"] = atlas
+        atlases[atlas]["source"] = atlases[atlas]["source"].lower()
 
-    if atlas is None:
+
+
+    for atlas in atlases.values():
+        if atlas["source"] == "mask" or atlas["source"] == "label":
+            if not os.path.isabs(atlas["sourcedir"]):
+                atlas["sourcedir"] = os.path.join(setup.basepath, atlas["sourcedir"])
+            if atlas["sourcefiles"] == "all":
+                atlas["sourcefiles"] = glob(os.path.join(atlas["sourcedir"], "*"))
+            atlas["sourcefiles"] = [file for file in atlas["sourcefiles"] 
+                                      if not file.endswith(".hdr") and not file.endswith(".mat")]
+
+    if atlasname is None:
         return atlases
     else:
-        return atlases[atlas]
+        return atlases[atlasname]
+
+
+def __setup_label_atlas(atlasdict):
+
+    pass
+
+def __setup_mask_atlas(atlasdict):
+
+    pass
 
 
 def fssubjdir():
@@ -323,8 +338,9 @@ def meanfunc(paradigm, subject):
     """
 
     funcpath = pathspec("meanfunc", paradigm, subject)
-    niftis = glob(os.path.join(funcpath,"*.nii"))
-    meanfuncimg = niftis[0]
+    meanfuncimg = glob(funcpath)
+    # XXX Add excpetion if this globs more than one file
+    meanfuncimg = meanfuncimg[0]
     return meanfuncimg
 
 def pathspec(imgtype, paradigm=None, subject=None, contrast=None):

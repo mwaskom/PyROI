@@ -1,7 +1,13 @@
 """Package for functional neuroimaging region of interest analysis in Python"""
 
-from core import *
-import core.configinterface as cfg
+import configinterface as cfg
+from utils import *
+from atlases import *
+from analysis import *
+from treeutils import *
+from exceptions import *
+
+
 
 #If module is told to run, turn around and run _pyroi.py script
 if __name__ == "__main__":

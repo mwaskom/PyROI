@@ -1,9 +1,3 @@
-__all__ = ["Analysis", "FirstLevelStats", 
-           "BetaImage", "ContrastImage", "TStatImage", "SigImage"
-           "init_stat_object", "get_analysis_name_list", "get_analysis_name"]
-
-__module__ = "analysis"
-
 import os
 import re
 import sys
@@ -11,7 +5,10 @@ import shutil
 import subprocess
 from glob import glob
 
-import cfg
+import configinterface as cfg
+import treeutils as tree
+import exceptions as ex
+import utils
 
 import numpy as np
 import scipy.stats as stats
@@ -19,18 +16,24 @@ import nibabel as nib
 import nipype.interfaces.freesurfer as fs
 from nipype.interfaces.base import Bunch
 
+__all__ = ["Analysis", "FirstLevelStats", 
+           "BetaImage", "ContrastImage", "TStatImage", "SigImage",
+           "init_stat_object"]
+
+__module__ = "analysis"
+
 class Analysis(Bunch):
     """Analysis object."""
     def __init__(self, analysis):
         
         if not cfg.is_setup:
-            raise SetupError
+            raise ex.ex.SetupError
         
-        make_analysis_tree(analysis)
+        tree.make_analysis_tree(analysis)
         self.dict = analysis
         self.paradigm = analysis["par"]
         self.extract = analysis["extract"]
-        self.name = get_analysis_name(analysis)
+        self.name = utils.get_analysis_name(analysis)
         if "maskpar" in analysis.keys() and \
            analysis["maskpar"] != "nomask":
             self.mask = True
@@ -49,9 +52,9 @@ class FirstLevelStats(Bunch):
     def __init__(self, analysis, **kwargs):
         
         if not cfg.is_setup:
-            raise SetupError
+            raise ex.SetupError
         
-        make_levelone_tree()
+        tree.make_levelone_tree()
         self.analysis = analysis
         
         self.roidir = os.path.join(cfg.setup.basepath, "roi")
@@ -88,7 +91,7 @@ class FirstLevelStats(Bunch):
     def concatenate(self):
         """Concatenate the first level statistic images."""
         if not self._init_subject:
-            raise InitError("Subject")
+            raise ex.InitError("Subject")
         
         concat = fs.Concatenate()
 
@@ -101,7 +104,7 @@ class FirstLevelStats(Bunch):
     def sample_to_surface(self):
         """Sample an extraction volume to the surface."""
         if not self._init_subject:
-            raise InitError("Subject")
+            raise ex.InitError("Subject")
 
         surfs = {"lh": self.extractlhsurf,
                  "rh": self.extractrhsurf}
@@ -250,7 +253,7 @@ class TStatImage(FirstLevelStats):
     def convert_to_sig(self):
         """Read a T stat image in and write it to -log10(P)"""
         if not self._init_subject:
-            raise InitError("Subject")
+            raise ex.InitError("Subject")
         
         timg = nib.load(self.timg)
         dof = self.get_dof(timg)
@@ -314,60 +317,3 @@ def init_stat_object(analysis):
         return BetaImage(analysis)
     elif analysis.extract == "contrast":
         return ContrastImage(analysis)
-
-
-def get_analysis_name_list(full=True):
-    """Return a list of analysis names in PyROI format.
-
-    Parameters
-    ----------
-    cfg : module
-        Initialized config module.
-    full : bool, optional
-        If true, appends the extract value to the name.
-
-    Returns
-    -------
-    list of strings
-        List of analysis names
-
-    """
-    analnames = []
-    for anal in cfg.analysis():
-        analnames.append(get_analysis_name(anal, full))
-    return analnames
-
-        
-def get_analysis_name(analysis, full=True):
-    """Get an analysis name in PyROI format.
-
-    Parameters
-    ----------
-    analysis : dict
-        Analysis dictionary.
-    full : bool, optional
-        If true, appends the extract value to the name.
- 
-    Returns
-    -------
-    str
-       Properly fomatted analysis name.
-
-    """
-    analpar = cfg.paradigms(analysis["par"], "upper")
-    extract = analysis["extract"]
-    if "maskpar" in analysis.keys() and analysis["maskpar"] != "nomask":
-        maskpar = cfg.paradigms(analysis["maskpar"], "lower")
-        maskcon = analysis["maskcon"]
-        maskthresh = str(analysis["maskthresh"])
-
-        stem = "%s_%s-%s-%s" % (analpar, maskpar, maskcon, maskthresh)
-
-    else:
-        stem = "%s_nomask" % (analpar)
-
-    if full:
-        return "%s_%s" % (stem, extract)
-    else:
-        return stem
-

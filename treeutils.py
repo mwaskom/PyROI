@@ -1,12 +1,13 @@
-__all__ = ["trim_analysis_tree", "make_analysis_tree", 
-           "make_levelone_tree",
-           "make_fs_atlas_tree", "make_reg_tree", "make_label_atlas_tree", "make_mask_atlas_tree"]
-
 import os
 import shutil
 
-from analysis import *
 import configinterface as cfg
+import exceptions as ex
+import utils
+
+__all__ = ["trim_analysis_tree", "make_analysis_tree", 
+           "make_levelone_tree",
+           "make_fs_atlas_tree", "make_reg_tree", "make_label_atlas_tree", "make_mask_atlas_tree"]
 
 def trim_analysis_tree(analysis):
     """Remove a analysis tree and all of its contents.
@@ -20,7 +21,7 @@ def trim_analysis_tree(analysis):
     projectdir = os.path.join(cfg.setup.basepath,
                                "roi", "analysis",
                                cfg.projectname())
-    analysisname = get_analysis_name(analysis)
+    analysisname = utils.get_analysis_name(analysis)
     analysisdir = os.path.join(projectdir, analysisname)
 
     shutil.rmtree(analysisdir)
@@ -41,7 +42,7 @@ def make_analysis_tree(analysis):
     logdir = os.path.join(projdir, "logfiles")
     dbdir = os.path.join(projdir, "databases")
     
-    analdir = get_analysis_name(cfg)
+    analdir = utils.get_analysis_name(analysis)
     
     analdirs = [roidir, analysisdir, projdir, logdir, dbdir, analdir]
 
@@ -65,6 +66,7 @@ def make_analysis_tree(analysis):
             for res in ["extracttxt", "extractvol", "stats"]:
                 resdir = os.path.join(atlasdir, res)
                 analdirs.append(resdir)
+
 
     for direct in analdirs:
         if not os.path.isdir(direct):
@@ -174,7 +176,7 @@ def make_mask_atlas_tree():
 
     for atlas in cfg.atlases().keys():
         if cfg.atlases(atlas)["source"] == "mask":
-            atnamedir = os.path.join(subjdir, atlas)
+            atnamedir = os.path.join(projectdir, atlas)
             maskdirs.append(atnamedir)
 
     for direct in maskdirs:
