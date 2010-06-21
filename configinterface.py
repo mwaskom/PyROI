@@ -7,11 +7,12 @@
 import os
 import re
 import imp
-#import pyroilut as lut
+import warnings
 from glob import glob
 import nipype.interfaces.freesurfer as fs
+import exceptions as ex
 
-__module__ = "cfg"
+__module__ = "configinterface"
 
 # Look for a file indicating the setup module and import that module if found
 if os.path.isfile(".roisetupfile"):
@@ -79,7 +80,10 @@ def atlases(atlasname=None):
     This function deals with the ROI atlas defintions. If the scope is 
     empty when called, it will return the full atlas dictionary, where each
     entry specifies an atlas. If called with an atlas key as the argument,
-    it will return the attribute dictionary for that atlas.  
+    it will return the attribute dictionary for that atlas. The function 
+    performs a fair amount of checking and addition of obvious but neccessary
+    fields (via calls to private subfunctions), so always get atlas dictionaries
+    from this function, not directly from the setup module.
 
     Parameters
     ----------
@@ -91,38 +95,154 @@ def atlases(atlasname=None):
     dict
 
     """
-    
     atlases = setup.atlases
     
     for atlas in atlases:
         atlases[atlas]["atlasname"] = atlas
+        for k, v in atlases[atlas].items():
+            if not k.islower():
+                atlases[atlas][k.lower()] = v
+                del atlases[atlas][k]
+        if "source" not in atlases[atlas]:
+            raise ex.SetupError("Source missing from %s atlas dictionary" % atlas)
         atlases[atlas]["source"] = atlases[atlas]["source"].lower()
-
-
-
-    for atlas in atlases.values():
-        if atlas["source"] == "mask" or atlas["source"] == "label":
-            if not os.path.isabs(atlas["sourcedir"]):
-                atlas["sourcedir"] = os.path.join(setup.basepath, atlas["sourcedir"])
-            if atlas["sourcefiles"] == "all":
-                atlas["sourcefiles"] = glob(os.path.join(atlas["sourcedir"], "*"))
-            atlas["sourcefiles"] = [file for file in atlas["sourcefiles"] 
-                                      if not file.endswith(".hdr") and not file.endswith(".mat")]
+        if atlases[atlas]["source"] == "freesurfer":
+            atlases[atlas] = __prep_freesurfer_atlas(atlases[atlas])
+        elif atlases[atlas]["source"] == "fsl":
+            atlases[atlas] = __prep_fsl_atlas(atlases[atlas])
+        elif atlases[atlas]["source"] == "label":
+            atlases[atlas] = __prep_label_atlas(atlases[atlas])
+        elif atlases[atlas]["source"] == "mask":
+            atlases[atlas] = __prep_mask_atlas(atlases[atlas])
 
     if atlasname is None:
         return atlases
     else:
         return atlases[atlasname]
 
+def __check_fields(atlasfields, atlasdict):
+    """Check whether any fields are missing or unexpected in an atlas dictionary."""
+    extra = [k for k in atlasdict if k not in atlasfields]
+    missing = [f for f in atlasfields if f not in atlasdict]
+    atlasname = atlasdict["atlasname"]
+    if extra:
+        raise ex.SetupError("Unexpected field(s) %s found in %s dictionary"\
+                            % (extra, atlasname))
+    if missing:
+        raise ex.SetupError("Field(s) %s missing from %s dictionary"\
+                            % (missing, atlasname))
 
-def __setup_label_atlas(atlasdict):
+def __prep_freesurfer_atlas(atlasdict):
+    """Prepare a Freesurfer atlas dictionary."""
+    atlasfields = ["atlasname", "source", "fname", "manifold", "regions"]
+    __check_fields(atlasfields, atlasdict)
 
-    pass
+    atlasdict["manifold"] = atlasdict["manifold"].lower()
+    if atlasdict["manifold"] not in ["surface", "volume"]:
+        raise ex.SetupError("Manifold setting '%s' for %s atlas not understood"\
+                            % (atlasdict["manifold"], atlasdict["atlasname"]))
 
-def __setup_mask_atlas(atlasdict):
+    if not os.path.isdir(fssubjdir()):
+        raise ex.SetupError("Using Freesurfer atlas with illegitimite "
+                            "subjects directory path")
 
-    pass
+    if not isinstance(atlasdict["regions"], list):
+        atlasdict["regions"] = [atlasdict["regions"]]
 
+    return atlasdict                                
+
+def __prep_fsl_atlas(atlasdict):
+    """Prepare a HarvardOxford atlas dictionary."""
+    atlasfields = ["atlasname", "source", "prob", "regions"]
+    __check_fields(atlasfields, atlasdict)
+
+    atlasdict["manifold"] = "volume"
+
+    if atlasdict["prob"] not in [25, 50]:
+        raise ex.SetupError("HarvardOxford atlas prob setting must be either 25 or 50.")
+
+    if not isinstance(atlasdict["regions"], list):
+        atlasdict["regions"] = [atlasdict["regions"]]
+
+    return atlasdict                                
+
+def __prep_label_atlas(atlasdict):
+    """Prepare a label atlas dictionary"""
+    atlasfields = ["atlasname", "source", "hemi", "sourcedir", "sourcefiles"]
+    __check_fields(atlasfields, atlasdict)
+    
+    if not os.path.isdir(fssubjdir()):
+        raise ex.SetupError("Using label atlas with illegitimite "
+                            "Freesurfer Subjects Directory path")
+
+    if not os.path.isabs(atlasdict["sourcedir"]):
+        atlasdict["sourcedir"] = os.path.join(setup.basepath, atlasdict["sourcedir"])
+
+    atlasdict["manifold"] = "surface"
+
+    if atlasdict["sourcefiles"] == "all" or ["all"]:
+        atlasdict["sourcefiles"] = glob(os.path.join(atlasdict["sourcedir"], "*.label"))
+    
+    lfiles = atlasdict["sourcefiles"]
+    if not isinstance(lfiles, list):
+        lfiles = [lfiles]
+    lnames = []
+    for i, lfile in enumerate(lfiles):
+        path, lfile = os.path.split(lfile)
+        if lfile.endswith(".label"):
+            lfile, ext = os.path.splitext(lfile)
+        lfiles[i] = os.path.join(atlasdict["sourcedir"], lfile + ".label")
+        lnames.append(lfile)
+        if not os.path.isfile(lfiles[i]):
+            warnings.warn("%s does not exist." % lfiles[i])
+    atlasdict["sourcefiles"] = lfiles
+    atlasdict["sourcenames"] = lnames
+    return atlasdict
+
+def __prep_mask_atlas(atlasdict):
+    """Prepare a mask atlas dictionary"""
+    atlasfields = ["atlasname", "source", "sourcedir", "sourcefiles"]
+    __check_fields(atlasfields, atlasdict)
+
+    if not os.path.isabs(atlasdict["sourcedir"]):
+        atlasdict["sourcedir"] = os.path.join(setup.basepath, atlasdict["sourcedir"])
+
+    atlasdict["manifold"] = "volume"
+    
+    if atlasdict["sourcefiles"] == "all" or ["all"]:
+        atlasdict["sourcefiles"] = glob(os.path.join(atlasdict["sourcedir"],
+                                        "*[.img|.nii|.nii.gz|.mgh|.mgz]"))
+
+    lfiles = atlasdict["sourcefiles"]
+    if not isinstance(lfiles, list):
+        lfiles = [lfiles]
+
+    notimgs = [f for f in lfiles if not f.endswith((".img",".nii",".nii.gz",".mgh",".mgz"))]
+    if notimgs:
+        spl = lambda fpath: os.path.splitext(os.path.split(fpath)[1])[0]
+        repimgs = []
+        for img in notimgs:
+            imglob = glob(os.path.join(atlasdict["sourcedir"],
+                                       img + "*[.img|.nii|.nii.gz|.mgh|.mgz]"))
+            if len(imglob) == 1:
+                lfiles[lfiles.index(img)] = imglob[0]
+                repimgs.append(spl(imglob[0]))
+        if not len(notimgs) == len(repimgs):
+            raise ex.SetupError(
+                "File type of mask(s) %s could not be determined or is not supported"\
+                 % [img for img in notimgs if img not in repimgs])
+
+    lnames = []
+    for i, lfile in enumerate(lfiles):
+        path, lfile = os.path.split(lfile)
+        lfiles[i] = os.path.join(atlasdict["sourcedir"], lfile)
+        lfile, ext = os.path.splitext(lfile)
+        lnames.append(lfile)
+        if not os.path.isfile(lfiles[i]):
+            warnings.warn("%s does not exist." % lfiles[i])
+    atlasdict["sourcefiles"] = lfiles
+    atlasdict["sourcenames"] = lnames
+    return atlasdict
 
 def fssubjdir():
     """Set and return the path to the Freesurfer Subjects directory.
@@ -387,7 +507,7 @@ def pathspec(imgtype, paradigm=None, subject=None, contrast=None):
     
     varpath = os.path.join(basepath, imgdict[imgtype])
 
-    for var in vardict.keys():
+    for var in vardict:
         if var in varpath:
             varpath = varpath.replace(var,vardict[var])
 
@@ -417,20 +537,20 @@ def subjects(group = None, subject = None):
 
     subjects = setup.subjects
 
-    for grp in subjects.keys():
+    for grp in subjects:
         subjects[grp].sort()
 	
     if subject:
-        for grp in subjects.keys():
+        for grp in subjects:
            if subject in subjects[grp]:
               return grp
 
     if group is None:
         all = []
-        for grp in subjects.keys():
+        for grp in subjects:
 	        all = all + subjects[grp]
         return all
-    elif group in subjects.keys():
+    elif group in subjects:
         return subjects[group]
     elif group == "groups":
         return subjects.keys()

@@ -124,13 +124,10 @@ class Atlas(Bunch):
             shutil.copy(self.origatlas % self.hemi,
                         self.atlas % self.hemi)
 
-    def sourcefiles_to_dict(self, files):
+    def sourcenames_to_dict(self):
         """Turn a list of labels into a look-up dictionary"""
-        # Assuming the list of labels has been trimmed of hemisphere
-        # prefix and .label/.img extension
-
         self.lut = {}
-        for i, file in enumerate(files):
+        for i, file in enumerate(self.sourcenames):
             self.lut[i+1] = file
 
     def write_lut(self):
@@ -498,8 +495,8 @@ class LabelAtlas(Atlas, SurfaceAtlas):
         self.fname = "%s." + "%s.annot" % self.atlasname
 
         self.sourcefiles = atlasdict["sourcefiles"]
-        self.sourcedir = atlasdict["sourcedir"]
-        self.sourcefiles_to_dict(atlasdict["sourcefiles"])
+        self.sourcenames = atlasdict["sourcenames"]
+        self.sourcenames_to_dict()
         # XXX FIX: self.regions = self.lut.keys()
 
         self.basedir = os.path.join(self.roidir, "atlases", "label")
@@ -575,7 +572,7 @@ class MaskAtlas(Atlas):
         self.sourcevolumes = []
         for vol in atlasdict["sourcefiles"]:
             self.sourcevolumes.append(os.path.split(vol)[1])
-        self.sourcefiles_to_dict(self.sourcevolumes)
+        self.sourcenames_to_dict()
 
         self.basedir = os.path.join(self.roidir, "atlases", "mask")
         self.atlas = os.path.join(self.basdir, self.fname)

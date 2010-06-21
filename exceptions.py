@@ -10,8 +10,17 @@ class InitError(Exception):
 
 class SetupError(Exception):
 
+    def __init__(self, msg=None):
+        
+        self.msg = msg
+
     def __str__(self):
-        return "Setup module has not been imported."
+
+        if self.msg is None:
+            return "Setup module has not been imported."
+        else:
+            if not self.msg.endswith("."): self.msg  = self.msg + "."
+            return self.msg
 
 class PreprocessError(Exception):
 
