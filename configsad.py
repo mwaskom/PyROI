@@ -144,7 +144,7 @@ atlases = {"aseg":
                 },
            "harvard":
                {"source": "fsl",
-                "prob": 50,
+                "probthresh": 50,
                 "regions": [10,15,20]
                 },
            "pick_caudate":

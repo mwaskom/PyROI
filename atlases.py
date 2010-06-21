@@ -17,7 +17,7 @@ import nibabel as nib
 import nipype.interfaces.freesurfer as fs
 from nipype.interfaces.base import Bunch
 
-__all__ = ["Atlas", "SurfaceAtlas", "FreesurferAtlas", "FSRegister", "LabelAtlas",
+__all__ = ["Atlas", "FreesurferAtlas", "FSRegister", "LabelAtlas",
            "MaskAtlas", "HarvardOxfordAtlas", "init_atlas"]
 
 __module__ = "atlases"
@@ -40,6 +40,8 @@ class Atlas(Bunch):
             self.regions = atlasdict["regions"]
         else:
             self.regions = range(1, len(atlasdict["sourcefiles"]) + 1)
+
+        self.manifold = atlasdict["manifold"]
 
         self._init_paradigm = False
         self._init_subject = False
@@ -127,18 +129,18 @@ class Atlas(Bunch):
     def sourcenames_to_dict(self):
         """Turn a list of labels into a look-up dictionary"""
         self.lut = {}
-        for i, file in enumerate(self.sourcenames):
-            self.lut[i+1] = file
+        for i, name in enumerate(self.sourcenames):
+            self.lut[i+1] = name
 
     def write_lut(self):
         """Write a look up table to the roi atlas directory"""
-        if not self.debug:
-            lutfile = open(self.lutfile, "w")
-        else:
+        if self.debug:
             lutfile = open("/dev/null", "w")
+        else:
+            lutfile = open(self.lutfile, "w")
         for id in self.lut:
             lutfile.write("%d\t%s\t\t\t" % (id, self.lut[id]))
-            for color in np.random.randint(0, 260, 3):
+            for color in np.random.randint(0, 256, 3):
                 lutfile.write("%d\t" % color)
             lutfile.write("0\n")
 
@@ -347,24 +349,17 @@ class Atlas(Bunch):
                                           res.runtime.stdout,
                                           res.runtime.stdout)
 
-class SurfaceAtlas(Bunch):
-    """Additional base class that adds surface methods"""
-     
 
-
-class FreesurferAtlas(Atlas, SurfaceAtlas):
+class FreesurferAtlas(Atlas):
     """Atlas class for a Freesurfer atlas"""
     def __init__(self, atlasdict, **kwargs):
                
         Atlas.__init__(self, atlasdict, **kwargs)
         tree.make_fs_atlas_tree()
         
-        self.manifold = atlasdict["manifold"]
         if self.manifold == "surface":
-            self.fname = atlasdict["fname"]
             self.iterhemi = ["lh","rh"]
-        else:
-            self.fname = atlasdict["fname"]
+        self.fname = atlasdict["fname"]
 
         #self.lut = lut.freesurfer(self.fname)
         self.lutfile = os.path.join(os.getenv("FREESURFER_HOME"),
@@ -464,10 +459,10 @@ class HarvardOxfordAtlas(Atlas):
 
         Atlas.__init__(self, atlasdict, **kwargs)
      
-        self.manifold = "volume"
-        self.thresh = atlasdict["thresh"]
+        self.thresh = atlasdict["probthresh"]
         pckgdir = os.path.split(__file__)[0]
         filename = "HarvardOxford-%d.nii" % self.thresh
+        self.lutfile = os.path.join(pckgdir, "data", "HarvardOxford", "HarvardOxford-LUT.txt")
         self.atlas = os.path.join(pckgdir, "data", "HarvardOxford",
                                   filename)
 
@@ -482,14 +477,13 @@ class TalairachAtlas(Atlas):
 
         pass
 
-class LabelAtlas(Atlas, SurfaceAtlas):
+class LabelAtlas(Atlas):
     """Atlas class for an atlas construced from surface labels"""
     def __init__(self, atlasdict, **kwargs):
         
         Atlas.__init__(self, atlasdict, **kwargs)
         
         tree.make_label_atlas_tree()
-        self.manifold = "surface"
         self.iterhemi =[atlasdict["hemi"]]
         self.hemi = atlasdict["hemi"]
         self.fname = "%s." + "%s.annot" % self.atlasname
@@ -564,8 +558,6 @@ class MaskAtlas(Atlas):
         Atlas.__init__(self, atlasdict, **kwargs)
         tree.make_mask_atlas_tree()
         
-        self.manifold = "volume"
-
         self.fname = "%s.mgz" % self.atlasname
         self.sourcefiles = atlasdict["sourcefiles"]
         self.sourcedir = atlasdict["sourcedir"]

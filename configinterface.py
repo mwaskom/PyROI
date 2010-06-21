@@ -153,13 +153,13 @@ def __prep_freesurfer_atlas(atlasdict):
 
 def __prep_fsl_atlas(atlasdict):
     """Prepare a HarvardOxford atlas dictionary."""
-    atlasfields = ["atlasname", "source", "prob", "regions"]
+    atlasfields = ["atlasname", "source", "probthresh", "regions"]
     __check_fields(atlasfields, atlasdict)
 
     atlasdict["manifold"] = "volume"
 
-    if atlasdict["prob"] not in [25, 50]:
-        raise ex.SetupError("HarvardOxford atlas prob setting must be either 25 or 50.")
+    if atlasdict["probthresh"] not in [25, 50]:
+        raise ex.SetupError("HarvardOxford atlas probthresh setting must be either 25 or 50.")
 
     if not isinstance(atlasdict["regions"], list):
         atlasdict["regions"] = [atlasdict["regions"]]
