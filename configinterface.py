@@ -8,6 +8,7 @@ import os
 import re
 import imp
 import warnings
+from copy import deepcopy
 from glob import glob
 import nipype.interfaces.freesurfer as fs
 import exceptions as ex
@@ -66,12 +67,12 @@ def analysis():
 
     """
 
-    analysis = setup.analysis
+    analyses = setup.analysis
 
-    if isinstance(analysis, dict):
-        analysis = [analysis]
+    if isinstance(analyses, dict):
+        analyses = [analyses]
 
-    return analysis
+    return analyses
 
 
 def atlases(atlasname=None):
@@ -95,30 +96,33 @@ def atlases(atlasname=None):
     dict
 
     """
-    atlases = setup.atlases
-    
-    for atlas in atlases:
-        atlases[atlas]["atlasname"] = atlas
-        for k, v in atlases[atlas].items():
+    atlasdicts = deepcopy(setup.atlases)
+
+    for name, dictionary in atlasdicts.items():
+        dictionary["atlasname"] = name
+        for k, v in dictionary.items():
             if not k.islower():
-                atlases[atlas][k.lower()] = v
-                del atlases[atlas][k]
-        if "source" not in atlases[atlas]:
-            raise ex.SetupError("Source missing from %s atlas dictionary" % atlas)
-        atlases[atlas]["source"] = atlases[atlas]["source"].lower()
-        if atlases[atlas]["source"] == "freesurfer":
-            atlases[atlas] = __prep_freesurfer_atlas(atlases[atlas])
-        elif atlases[atlas]["source"] == "fsl":
-            atlases[atlas] = __prep_fsl_atlas(atlases[atlas])
-        elif atlases[atlas]["source"] == "label":
-            atlases[atlas] = __prep_label_atlas(atlases[atlas])
-        elif atlases[atlas]["source"] == "mask":
-            atlases[atlas] = __prep_mask_atlas(atlases[atlas])
+                dictionary[k.lower()] = v
+                del dictionary[k]
+        if "source" not in dictionary:
+            raise ex.SetupError("Source missing from %s atlas dictionary" % name)
+        dictionary["source"] = dictionary["source"].lower()
+        if dictionary["source"] == "freesurfer":
+            dictionary = __prep_freesurfer_atlas(dictionary)
+        elif dictionary["source"] == "fsl":
+            dictionary = __prep_fsl_atlas(dictionary)
+        elif dictionary["source"] == "label":
+            dictionary = __prep_label_atlas(dictionary)
+        elif dictionary["source"] == "mask":
+            dictionary = __prep_mask_atlas(dictionary)
+        else:
+            raise ex.SetupError("Source setting '%s' for %s atlas not understood"
+                                % (dictionary["source"], name))
 
     if atlasname is None:
-        return atlases
+        return atlasdicts
     else:
-        return atlases[atlasname]
+        return atlasdicts[atlasname]
 
 def __check_fields(atlasfields, atlasdict):
     """Check whether any fields are missing or unexpected in an atlas dictionary."""
@@ -126,10 +130,10 @@ def __check_fields(atlasfields, atlasdict):
     missing = [f for f in atlasfields if f not in atlasdict]
     atlasname = atlasdict["atlasname"]
     if extra:
-        raise ex.SetupError("Unexpected field(s) %s found in %s dictionary"\
+        raise ex.SetupError("Unexpected field(s) %s found in %s dictionary"
                             % (extra, atlasname))
     if missing:
-        raise ex.SetupError("Field(s) %s missing from %s dictionary"\
+        raise ex.SetupError("Field(s) %s missing from %s dictionary"
                             % (missing, atlasname))
 
 def __prep_freesurfer_atlas(atlasdict):
@@ -139,8 +143,11 @@ def __prep_freesurfer_atlas(atlasdict):
 
     atlasdict["manifold"] = atlasdict["manifold"].lower()
     if atlasdict["manifold"] not in ["surface", "volume"]:
-        raise ex.SetupError("Manifold setting '%s' for %s atlas not understood"\
+        raise ex.SetupError("Manifold setting '%s' for %s atlas not understood"
                             % (atlasdict["manifold"], atlasdict["atlasname"]))
+
+    if atlasdict["manifold"] == "surface" and not atlasdict["fname"].endswith(".annot"):
+        atlasdict["fname"] = "%s.annot" % atlasdict["fname"]
 
     if not os.path.isdir(fssubjdir()):
         raise ex.SetupError("Using Freesurfer atlas with illegitimite "
@@ -182,7 +189,10 @@ def __prep_label_atlas(atlasdict):
 
     if atlasdict["sourcefiles"] == "all" or ["all"]:
         atlasdict["sourcefiles"] = glob(os.path.join(atlasdict["sourcedir"], "*.label"))
-    
+        if not atlasdict["sourcefiles"]:
+            raise ex.SetupError("Using 'all' for %s atlas found no label images"
+                                % atlasdict["atlasname"])
+
     lfiles = atlasdict["sourcefiles"]
     if not isinstance(lfiles, list):
         lfiles = [lfiles]
@@ -209,28 +219,39 @@ def __prep_mask_atlas(atlasdict):
 
     atlasdict["manifold"] = "volume"
     
+    imgregexp = re.compile("[\w\.-]+\.(img)|(nii)|(nii\.gz)|(mgh)|(mgz)$")
+
     if atlasdict["sourcefiles"] == "all" or ["all"]:
-        atlasdict["sourcefiles"] = glob(os.path.join(atlasdict["sourcedir"],
-                                        "*[.img|.nii|.nii.gz|.mgh|.mgz]"))
+        refiles = []
+        gfiles = glob(os.path.join(atlasdict["sourcedir"],"*"))
+        for gfile in gfiles:
+            m = imgregexp.search(gfile)
+            if m:
+                refiles.append(m.group())
+        if refiles:
+            atlasdict["sourcefiles"] = refiles
+        else:
+            raise ex.SetupError("Using 'all' for %s atlas found no mask images" 
+                                % atlasdict["atlasname"])
 
     lfiles = atlasdict["sourcefiles"]
     if not isinstance(lfiles, list):
         lfiles = [lfiles]
 
-    notimgs = [f for f in lfiles if not f.endswith((".img",".nii",".nii.gz",".mgh",".mgz"))]
+    notimgs = [f for f in lfiles if not imgregexp.search(f)]
     if notimgs:
         spl = lambda fpath: os.path.splitext(os.path.split(fpath)[1])[0]
         repimgs = []
         for img in notimgs:
-            imglob = glob(os.path.join(atlasdict["sourcedir"],
-                                       img + "*[.img|.nii|.nii.gz|.mgh|.mgz]"))
-            if len(imglob) == 1:
-                lfiles[lfiles.index(img)] = imglob[0]
-                repimgs.append(spl(imglob[0]))
+            imglob = glob(os.path.join(atlasdict["sourcedir"], img + "*"))
+            imreg = [f for f in imglob if imgregexp.search(f)]
+            if len(imreg) == 1:
+                lfiles[lfiles.index(img)] = imreg[0]
+                repimgs.append(spl(imreg[0]))
         if not len(notimgs) == len(repimgs):
             raise ex.SetupError(
-                "File type of mask(s) %s could not be determined or is not supported"\
-                 % [img for img in notimgs if img not in repimgs])
+                "File type of mask(s) %s could not be determined or is not supported"
+                 % [f for f in notimgs if f not in repimgs])
 
     lnames = []
     for i, lfile in enumerate(lfiles):
@@ -294,7 +315,7 @@ def paradigms(parname=None, case="upper"):
         elif case == "upper":
             return pardict[parname].upper()
         else:
-            raise Exception("Case argument \"%s\" to " % case +\
+            raise Exception("Case argument '%s' to " % case +
 	                        "config.Paradigms not understood.") 
 
 
@@ -343,7 +364,7 @@ def betas(par=None, retval=None):
     try:
         dump = conditions[par]
     except KeyError:
-        raise Exception("Paradigm \"%s\" not found in conditions dictionary"\
+        raise Exception("Paradigm '%s' not found in conditions dictionary"
                         % par)
 
     # Wrap betastoextract in a list if it"s just an int
@@ -434,8 +455,8 @@ def contrasts(par=None, type="con-img", format=".nii"):
     elif type == "con-img":
         return contrasts_con
     else:
-        raise Exception("Image type '%s' " %type +\
-	                "not understood: use 'T-map', 'sig', or 'con-img'")
+        raise Exception("Image type '%s' " % type +
+                        "not understood: use 'T-map', 'sig', or 'con-img'")
 
 def meanfunc(paradigm, subject):
     """Return the path to a mean functional image.

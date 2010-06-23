@@ -5,17 +5,17 @@ import shutil
 import subprocess
 from glob import glob
 
-import configinterface as cfg
-import analysis as an
-import treeutils as tree
-import exceptions as ex
-import utils
-
 import numpy as np
 import scipy.stats as stats
 import nibabel as nib
 import nipype.interfaces.freesurfer as fs
 from nipype.interfaces.base import Bunch
+
+import configinterface as cfg
+import analysis as an
+import treeutils as tree
+import exceptions as ex
+import utils
 
 __all__ = ["Atlas", "FreesurferAtlas", "FSRegister", "LabelAtlas",
            "MaskAtlas", "HarvardOxfordAtlas", "init_atlas"]
@@ -35,11 +35,6 @@ class Atlas(Bunch):
 
         self.atlasdict = atlasdict
         self.atlasname = atlasdict["atlasname"]
-
-        if "regions" in atlasdict.keys():
-            self.regions = atlasdict["regions"]
-        else:
-            self.regions = range(1, len(atlasdict["sourcefiles"]) + 1)
 
         self.manifold = atlasdict["manifold"]
 
@@ -126,11 +121,11 @@ class Atlas(Bunch):
             shutil.copy(self.origatlas % self.hemi,
                         self.atlas % self.hemi)
 
-    def sourcenames_to_dict(self):
-        """Turn a list of labels into a look-up dictionary"""
-        self.lut = {}
+    def sourcenames_to_lutdict(self):                        
+        """Turn the list of sourcenames from the atlas dictionary into a lookup dict."""
+        self.lutdict = {}
         for i, name in enumerate(self.sourcenames):
-            self.lut[i+1] = name
+            self.lutdict[i+1] = name
 
     def write_lut(self):
         """Write a look up table to the roi atlas directory"""
@@ -138,8 +133,8 @@ class Atlas(Bunch):
             lutfile = open("/dev/null", "w")
         else:
             lutfile = open(self.lutfile, "w")
-        for id in self.lut:
-            lutfile.write("%d\t%s\t\t\t" % (id, self.lut[id]))
+        for id, name in self.lutdict.items():
+            lutfile.write("%d\t%s\t\t\t" % (id, name))
             for color in np.random.randint(0, 256, 3):
                 lutfile.write("%d\t" % color)
             lutfile.write("0\n")
@@ -250,7 +245,7 @@ class Atlas(Bunch):
 
         segstats.inputs.annot = [self.subject, hemi, self.fname[:-6]]
         segstats.inputs.invol = self.atlas % hemi
-        segstats.inputs.segid = self.lut.keys()
+        segstats.inputs.segid = self.all_regions
         segstats.inputs.sumfile = self.statsfile % hemi
 
         cmdline, res = self._nipype_run(segstats)
@@ -262,7 +257,7 @@ class Atlas(Bunch):
 
         segstats.inputs.annot = self.atlas
         segstats.inputs.invol = self.atlas
-        segstats.inputs.segid = self.lut.keys()
+        segstats.inputs.segid = self.all_regions
         segstats.inputs.sumfile = self.statsfile
 
         cmdline, res = self._nipype_run(segstats)
@@ -361,9 +356,25 @@ class FreesurferAtlas(Atlas):
             self.iterhemi = ["lh","rh"]
         self.fname = atlasdict["fname"]
 
-        #self.lut = lut.freesurfer(self.fname)
-        self.lutfile = os.path.join(os.getenv("FREESURFER_HOME"),
-                                    "FreeSurferColorLUT.txt")
+        self.lutfile = os.path.join(os.getenv("FREESURFER_HOME"), 
+                                 "FreeSurferColorLUT.txt")
+
+        
+        convtable = {1:(10,49), 2:(11,50), 2:(12,51), 3:(13,52), 
+                     4:(17,53), 5:(18,54), 6:(26,58), 7:(28,60)}
+        if self.fname == "aseg.mgz":
+            self.regions = ([convtable[id][0] for id in self.atlasdict["regions"]] + 
+                            [convtable[id][1] for id in self.atlasdict["regions"]])
+        else:
+            self.regions = self.atlasdict["regions"]
+
+        dictdict = {"aseg.mgz": "aseg-lut.txt",
+                    "aparc.annot": "aparc-lut.txt",
+                    "aparc.a2009s": "aparc-aparc.a2009s-lut.txt"}
+        datadir = os.path.join(os.path.split(__file__)[0], "data", "Freesurfer")
+        dictfile = os.path.join(datadir, dictdict[self.fname])
+
+
         self.basedir = os.path.join(self.roidir, "atlases", "freesurfer")
 
     # Initialization methods
@@ -462,9 +473,9 @@ class HarvardOxfordAtlas(Atlas):
         self.thresh = atlasdict["probthresh"]
         pckgdir = os.path.split(__file__)[0]
         filename = "HarvardOxford-%d.nii" % self.thresh
-        self.lutfile = os.path.join(pckgdir, "data", "HarvardOxford", "HarvardOxford-LUT.txt")
-        self.atlas = os.path.join(pckgdir, "data", "HarvardOxford",
-                                  filename)
+        self.atlas = os.path.join(pckgdir, "data", "HarvardOxford", filename)
+        self.lutfile = os.path.join(os.path.split(__file__)[0], "data", 
+                                 "HarvardOxford", "HarvardOxford-LUT.txt")
 
 
     def init_subject(self, subject):
@@ -473,9 +484,6 @@ class HarvardOxfordAtlas(Atlas):
    
        self._init_subject = True
 
-class TalairachAtlas(Atlas):
-
-        pass
 
 class LabelAtlas(Atlas):
     """Atlas class for an atlas construced from surface labels"""
@@ -490,10 +498,13 @@ class LabelAtlas(Atlas):
 
         self.sourcefiles = atlasdict["sourcefiles"]
         self.sourcenames = atlasdict["sourcenames"]
-        self.sourcenames_to_dict()
-        # XXX FIX: self.regions = self.lut.keys()
+        self.sourcenames_to_lutdict()
 
         self.basedir = os.path.join(self.roidir, "atlases", "label")
+        
+        self.lutfile = os.path.join(self.basedir, "%s.lut" % self.atlasname)
+        self.regions = self.lutdict.keys()
+        self.all_regions = self.regions
 
     # Initialization methods
     def init_subject(self, subject):
@@ -501,7 +512,6 @@ class LabelAtlas(Atlas):
         self.subject = subject
         self.atlasdir = os.path.join(self.basedir, subject,
                                  self.atlasname)
-        self.lutfile = os.path.join(atlasdir, "%s.lut" % self.atlasname)
         self.atlas = os.path.join(self.atlasdir, self.fname)
         self.origatlas = os.path.join(self.subjdir, subject, "label", self.fname)
         
@@ -560,15 +570,16 @@ class MaskAtlas(Atlas):
         
         self.fname = "%s.mgz" % self.atlasname
         self.sourcefiles = atlasdict["sourcefiles"]
-        self.sourcedir = atlasdict["sourcedir"]
-        self.sourcevolumes = []
-        for vol in atlasdict["sourcefiles"]:
-            self.sourcevolumes.append(os.path.split(vol)[1])
-        self.sourcenames_to_dict()
+        self.sourcenames = atlasdict["sourcenames"]
+        self.sourcenames_to_lutdict()
 
         self.basedir = os.path.join(self.roidir, "atlases", "mask")
-        self.atlas = os.path.join(self.basdir, self.fname)
+        
         self.lutfile = os.path.join(self.basedir, "%s.lut" % self.atlasname)
+        self.regions = self.lutdict.keys()
+        self.all_regions = self.regions
+        
+        self.atlas = os.path.join(self.basedir, self.fname)
 
     # Initialization methods
     def init_subject(self, subject):
@@ -615,6 +626,7 @@ class MaskAtlas(Atlas):
         cmdline, res = self._nipype_run(combine)
         if self.debug:
             print cmdline
+        
 
 def init_atlas(atlasdict, **kwargs):
     """Initialize the proper atlas class with an atlas dictionary.

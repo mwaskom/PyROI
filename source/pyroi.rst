@@ -1,13 +1,13 @@
 PyROI Home
 ==========
 
-PyROI is a Python package for region of interest extraction and
-analysis in functional neuroimaging.  It currently interfaces with
+PyROI is a Python package for functional neuroimaging region of interest
+extraction and analysis.  It currently interfaces with
 `SPM <http://www.fil.ion.ucl.ac.uk/spm/>`_ first-level functional
 data, and it can extract data from a variety of atlases, including
 those created by `Freesurfer <http://surfer.nmr.mgh.harvard.edu/>`_,
-the `Talairach Daemon <http://www.talairach.org/>`_, or from regions
-defined by the user.
+the Harvard-Oxford Atlas from `FSL <http://www.fmrib.ox.ac.uk/fsl//>`_, 
+or from regions created by the user.
 
 
 Contents:
@@ -16,7 +16,7 @@ Contents:
    :maxdepth: 2
 
    freesurfer_surf.rst
-   getting_started.rst
+
 
 Indices and tables
 ==================

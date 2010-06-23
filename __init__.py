@@ -1,11 +1,11 @@
 """Package for functional neuroimaging region of interest analysis in Python"""
 
-import configinterface as cfg
 from utils import *
 from atlases import *
 from analysis import *
 from treeutils import *
 from exceptions import *
+import configinterface as cfg
 
 
 
