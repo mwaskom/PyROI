@@ -50,7 +50,7 @@ class RoiBase(object):
                                     stdout=subprocess.PIPE,
                                     stderr=subprocess.PIPE,
                                     env=deepcopy(os.environ.data),
-                                    shell=True:)
+                                    shell=True)
             stdout, stderr = proc.communicate()
             result(cmdline, [stdout, stderr])
         return result

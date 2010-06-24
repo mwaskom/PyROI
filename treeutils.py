@@ -3,7 +3,7 @@ import shutil
 
 import configinterface as cfg
 import exceptions as ex
-import utils
+import core
 
 __all__ = ["trim_analysis_tree", "make_analysis_tree", 
            "make_levelone_tree",
@@ -21,7 +21,7 @@ def trim_analysis_tree(analysis):
     projectdir = os.path.join(cfg.setup.basepath,
                                "roi", "analysis",
                                cfg.projectname())
-    analysisname = utils.get_analysis_name(analysis)
+    analysisname = core.get_analysis_name(analysis)
     analysisdir = os.path.join(projectdir, analysisname)
 
     shutil.rmtree(analysisdir)
@@ -42,7 +42,7 @@ def make_analysis_tree(analysis):
     logdir = os.path.join(projdir, "logfiles")
     dbdir = os.path.join(projdir, "databases")
     
-    analdir = utils.get_analysis_name(analysis)
+    analdir = os.path.join(projdir, core.get_analysis_name(analysis))
     
     analdirs = [roidir, analysisdir, projdir, logdir, dbdir, analdir]
 
@@ -67,7 +67,7 @@ def make_analysis_tree(analysis):
                 resdir = os.path.join(atlasdir, res)
                 analdirs.append(resdir)
 
-
+    print analdirs
     for direct in analdirs:
         if not os.path.isdir(direct):
             os.mkdir(direct)

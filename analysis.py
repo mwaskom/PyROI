@@ -5,16 +5,16 @@ import shutil
 import subprocess
 from glob import glob
 
-import configinterface as cfg
-import treeutils as tree
-import exceptions as ex
-import utils
-
 import numpy as np
 import scipy.stats as stats
 import nibabel as nib
 import nipype.interfaces.freesurfer as fs
-from nipype.interfaces.base import Bunch
+
+import configinterface as cfg
+import treeutils as tree
+import exceptions as ex
+import core
+from core import RoiBase, RoiResult
 
 __all__ = ["Analysis", "FirstLevelStats", 
            "BetaImage", "ContrastImage", "TStatImage", "SigImage",
@@ -22,10 +22,17 @@ __all__ = ["Analysis", "FirstLevelStats",
 
 __module__ = "analysis"
 
-class Analysis(Bunch):
+class Analysis(RoiBase):
     """Analysis object."""
     def __init__(self, analysis):
+        """Initialize an analysis object.
+
+        Parameter
+        ---------
+        analysis : dict
+            Analysis dictionary from config module.
         
+        """
         if not cfg.is_setup:
             raise ex.ex.SetupError
         
@@ -33,7 +40,7 @@ class Analysis(Bunch):
         self.dict = analysis
         self.paradigm = analysis["par"]
         self.extract = analysis["extract"]
-        self.name = utils.get_analysis_name(analysis)
+        self.name = core.get_analysis_name(analysis)
         if "maskpar" in analysis.keys() and \
            analysis["maskpar"] != "nomask":
             self.mask = True
@@ -47,13 +54,16 @@ class Analysis(Bunch):
         else:
             self.mask = False
 
-class FirstLevelStats(Bunch):
+class FirstLevelStats(RoiBase):
     """Base First Level Stats class"""
     def __init__(self, analysis, **kwargs):
         
         if not cfg.is_setup:
             raise ex.SetupError
         
+        if isinstance(analysis, dict):
+            analysis = Analysis(analysis)
+
         tree.make_levelone_tree()
         self.analysis = analysis
         
@@ -65,28 +75,7 @@ class FirstLevelStats(Bunch):
 
         if "debug" not in self.__dict__:
             self.debug = False
-
-    # Operation methods
-    def _nipype_run(self, interface):
-        """Run a program using its nipype interface"""
-        if self.debug:
-            return interface.cmdline, None
-        else:
-            res = interface.run()
-            return interface.cmdline, res
     
-    def _manual_run(self, cmd):
-        """Run a freesurfer program that lacks a nipype interface"""
-        cmdline = cmd[0]
-        for i, component in enumerate(cmd):
-            if i != 0:
-                cmdline = "%s %s" % (cmdline, component)
-        if self.debug:
-            return cmdline, None
-        else:
-            res = subprocess.call(cmd)
-            return cmdline, res
-
     # Processing methods
     def concatenate(self):
         """Concatenate the first level statistic images."""
@@ -98,8 +87,7 @@ class FirstLevelStats(Bunch):
         concat.inputs.invol = self.extractlist
         concat.inputs.outvol = self.extractvol
 
-        cmdline, res = self._nipype_run(concat)
-        return cmdline, res
+        return self._nipype_run(concat)
 
     def sample_to_surface(self):
         """Sample an extraction volume to the surface."""
@@ -109,8 +97,7 @@ class FirstLevelStats(Bunch):
         surfs = {"lh": self.extractlhsurf,
                  "rh": self.extractrhsurf}
 
-        cmdlines = []
-        results = []
+        res = RoiResult()
 
         for hemi in ["lh","rh"]:
             cmd = ["mri_vol2surf"]    
@@ -120,11 +107,10 @@ class FirstLevelStats(Bunch):
             cmd.append("--hemi %s" % hemi)
             cmd.append("--noreshape")
 
-            cmdline, res = self._manual_run(cmd)
-            cmdlines.append(cmdline)
-            results.append(res)
+            result = self._manual_run(cmd)
+            res(result)
 
-        return cmdlines, results
+        return res
 
     def group_concatenate(self, subjects=None):
         """Concatenate stat images for a group of subjects."""
@@ -132,13 +118,8 @@ class FirstLevelStats(Bunch):
             subjects = cfg.subjects()
         for subj in subjects:
             self.init_subject(subj)
-            cmdline, res = self.concatenate()
-            if self.debug:
-                print "\n%s\n\n" % cmdline
-            else:
-                print "\n%s\n\n%s\n%s" % (cmdline, 
-                                          res.runtime.stdout,
-                                          res.runtime.stdout)
+            res = self.concatenate()
+            print res
 
     def group_sample_to_surface(self, subjects=None):
         """Sample stat volumes to the surface for a group."""
@@ -146,14 +127,8 @@ class FirstLevelStats(Bunch):
             subjects = cfg.subjects()
         for subj in subjects:
             self.init_subject(subj)
-            cmdlines, results = self.sample_to_surface()
-            for i in range(1):
-                if self.debug:
-                    print "\n%s\n\n" % cmdlines[i]
-                else:
-                    print "\n%s\n\n%s\n%s" % (cmdlines[i], 
-                                          results[i].runtime.stdout,
-                                          results[i].runtime.stdout)
+            res = self.sample_to_surface()
+            print res
 
 class BetaImage(FirstLevelStats):
     """Docstring goes here"""
@@ -188,7 +163,7 @@ class ContrastImage(FirstLevelStats):
     def __init__(self, analysis, **kwargs):
 
         FirstLevelStats.__init__(self, analysis, **kwargs)
-        self.imgdict = cfg.contrasts(analysis.maskpar, "con-img", ".img")
+        self.imgdict = cfg.contrasts(self.analysis.maskpar, "con-img", ".img")
         self.statsdir = os.path.join(self.roidir, "levelone", "contrast")
 
     # Initialization methods
@@ -216,7 +191,7 @@ class TStatImage(FirstLevelStats):
     def __init__(self, analysis, **kwargs):
         
         FirstLevelStats.__init__(self, analysis, **kwargs)
-        self.imgdict = cfg.contrasts(analysis.maskpar, "T-map", ".img")
+        self.imgdict = cfg.contrasts(self.analysis.maskpar, "T-map", ".img")
         self.statsdir = os.path.join(self.roidir, "levelone", "contrast")
 
     # Operation methods
@@ -240,11 +215,13 @@ class TStatImage(FirstLevelStats):
         self.sigpath = os.path.join(self.statsdir, self.analysis.maskpar,
                                    subject)
         imagefname = cfg.contrasts(self.analysis.maskpar,
-                                        "sig", ".nii")[analysis.maskcon]
+                                        "sig", ".nii")[self.analysis.maskcon]
         self.sigimg = os.path.join(self.sigpath, imagefname)
 
         self.regmat = os.path.join(self.roidir, "reg", self.analysis.maskpar,
                                    subject, "func2orig.dat")
+        self.roistatdir = os.path.join(self.roidir, "levelone", "contrast",
+                                       self.analysis.paradigm, subject)
         self.sigsurf = os.path.join(self.roistatdir, "%s." + imagefname)
 
         self._init_subject = True                                               
@@ -267,6 +244,9 @@ class TStatImage(FirstLevelStats):
         sigimg = nib.Nifti1Image(sigvol, sigaffine)
 
         nib.save(sigimg, self.sigimg)
+        res = RoiResult()
+        res("Writing to %s" % self.sigimg)
+        return res
 
     def group_convert_to_sig(self, subjects=None):
         """Convert a t statistic image to a sig image for a group of subjects"""  
@@ -282,7 +262,7 @@ class SigImage(FirstLevelStats):
     def __init__(self, analysis, **kwargs):
         
         FirstLevelStats.__init__(self, analysis, **kwargs)
-        self.imgdict = cfg.contrasts(analysis.maskpar, "sig", ".nii")
+        self.imgdict = cfg.contrasts(self.analysis.maskpar, "sig", ".nii")
         self.statsdir = os.path.join(self.roidir, "levelone", "contrast")
 
     def init_subject(self, subject):
@@ -313,6 +293,8 @@ def init_stat_object(analysis):
     FirstLevelStats object
     
     """
+    if isinstance(analysis, dict):
+        analysis = Analysis(analysis)
     if analysis.extract == "beta":
         return BetaImage(analysis)
     elif analysis.extract == "contrast":
