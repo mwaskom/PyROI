@@ -1,0 +1,41 @@
+K 25
+svn:wc:ra_dav:version-url
+V 54
+/svnroot/nipy/!svn/ver/1631/nipype/trunk/doc/sphinxext
+END
+docscrape_sphinx.py
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svnroot/nipy/!svn/ver/1631/nipype/trunk/doc/sphinxext/docscrape_sphinx.py
+END
+numpydoc.py
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/svnroot/nipy/!svn/ver/1631/nipype/trunk/doc/sphinxext/numpydoc.py
+END
+ipython_console_highlighting.py
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svnroot/nipy/!svn/ver/1631/nipype/trunk/doc/sphinxext/ipython_console_highlighting.py
+END
+only_directives.py
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svnroot/nipy/!svn/ver/1631/nipype/trunk/doc/sphinxext/only_directives.py
+END
+docscrape.py
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/svnroot/nipy/!svn/ver/1631/nipype/trunk/doc/sphinxext/docscrape.py
+END
+README.txt
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/svnroot/nipy/!svn/ver/239/nipype/trunk/doc/sphinxext/README.txt
+END
