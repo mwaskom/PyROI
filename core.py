@@ -57,11 +57,14 @@ class RoiBase(object):
 
 class RoiResult(object):
     """Result class to return PyROI processing command lines and results"""
-    def __init__(self):
+    def __init__(self, cmdline=None, res=None):
         
         self.cmdline = []
         self.stdout = []
         self.stderr = []
+
+#        if any([cmdline, res]):
+#            self(cmdline, res)
 
     def __call__(self, cmdline, res=None):
         """Call the object with a cmdline and optionally a processing result.""" 
@@ -81,13 +84,27 @@ class RoiResult(object):
             else:
                 self.stdout.append("")
                 self.stderr.append("")
+        self.latest_entry = RoiResult(cmdline, res)
 
-    def __repr__(self):
+    def __str__(self):
 
         strrep = ""
         for i, cmditem in enumerate(self.cmdline):
             strrep = "\n".join([strrep, cmditem, self.stdout[i], self.stderr[i]])
         return strrep
+
+    def add(self, cmdline, res=None):
+
+        self(cmdline, res)
+        self.latest_entry = RoiResult(cmdline, res)
+
+    def last(self):
+
+        print "\n".join([self.cmdline[-1], self.stdout[-1], self.stderr[-1]])
+
+    def latest(self):
+
+        print self.latest_entry
 
 def import_setup(module_name):
     """Import a customized setup module into the cfg module.
@@ -130,7 +147,6 @@ def get_analysis_name_list(full=True):
     for anal in cfg.analysis():
         analnames.append(get_analysis_name(anal, full))
     return analnames
-
         
 def get_analysis_name(analysis, full=True):
     """Get an analysis name in PyROI format.

@@ -67,7 +67,6 @@ def make_analysis_tree(analysis):
                 resdir = os.path.join(atlasdir, res)
                 analdirs.append(resdir)
 
-    print analdirs
     for direct in analdirs:
         if not os.path.isdir(direct):
             os.mkdir(direct)
@@ -151,7 +150,8 @@ def make_label_atlas_tree():
     atlasdir = os.path.join(roidir, "atlases")
     basedir = os.path.join(atlasdir, "label")
     projectdir = os.path.join(basedir, cfg.projectname())
-    labeldirs = [roidir, atlasdir, basedir, projectdir]
+    lutfiledir = os.path.join(projectdir, "lookup_tables")
+    labeldirs = [roidir, atlasdir, basedir, projectdir, lutfiledir]
 
     for subj in cfg.subjects():
         subjdir = os.path.join(projectdir, subj)

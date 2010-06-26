@@ -19,7 +19,6 @@ class SetupError(Exception):
         if self.msg is None:
             return "Setup module has not been imported."
         else:
-            if not self.msg.endswith("."): self.msg  = self.msg + "."
             return self.msg
 
 class PreprocessError(Exception):

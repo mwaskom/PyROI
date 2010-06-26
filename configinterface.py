@@ -11,7 +11,7 @@ import warnings
 from copy import deepcopy
 from glob import glob
 import nipype.interfaces.freesurfer as fs
-import exceptions as ex
+from exceptions import *
 
 __module__ = "configinterface"
 
@@ -56,14 +56,18 @@ def projectname():
     return setup.projname
 
 
-def analysis():
+def analysis(dictnumber=None):
     """Return the analysis list.  
     
-    If the variable type of analysis is a dictionary, it wraps it in a list.
-   
+    Parameter
+    ---------
+    dictnumber : int, optional
+        If included, the function returns the dictionary at this index.
+        Otherwise, it returns the full list.
+
     Returns
     -------
-    list of dicts
+    dict or list of dicts
 
     """
 
@@ -72,7 +76,10 @@ def analysis():
     if isinstance(analyses, dict):
         analyses = [analyses]
 
-    return analyses
+    if dictnumber is None:
+        return analyses
+    else:
+        return analyses[dictnumber]
 
 
 def atlases(atlasname=None):
@@ -532,7 +539,18 @@ def pathspec(imgtype, paradigm=None, subject=None, contrast=None):
         if var in varpath:
             varpath = varpath.replace(var,vardict[var])
 
-    return varpath
+    if imgtype in ["beta", "contrast"]:
+        return varpath
+    else:
+        imgs = glob(varpath)
+        if len(imgs) > 1:
+            raise SetupError("Found more than one %s image." % imgtype)
+        else:
+            try:
+                return imgs[0]
+            except IndexError:
+                raise SetupError("Found no %s images." % imgtype)
+                
 
 def subjects(group = None, subject = None):
     """Return a list of subjects or subject group membership.
