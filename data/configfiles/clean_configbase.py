@@ -45,7 +45,7 @@ paradigms = {"": "",
 
 hrfcomponents = 1
 
-betastoextract = ""
+betastoextract = []
 
 conditions = {"":   ["",""],
               "":   ["",""]}
@@ -74,16 +74,6 @@ subjects  =  {"":
               "":
 
                  [ ]}
-
-overwrite = {"task_betas" : True,
-             "registration" : True,
-             "resampled_volumes" : True,
-             "freesurfer_annots" : True,
-             "full_atlas_stats" : True,
-             "label_atlases" : True,
-             "spm_sig_images" : True,
-             "functional_extracts" : True}
-
 
 #==========================================================================#    
 #==========================================================================#    

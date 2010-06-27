@@ -1,6 +1,5 @@
 import os
 import re
-import pyroi
 
 confid = open("full_configbase.py", "r")
 docfid = open("config_doc.rst", "w")
