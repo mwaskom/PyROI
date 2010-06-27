@@ -1,3 +1,5 @@
+.. _config_doc
+
    May/June 2010 update of ROI pypeline.  A work in progress.
 
    Michael Waskom -- mwaskom@mit.edu
