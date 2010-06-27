@@ -287,7 +287,7 @@ class Atlas(RoiBase):
         """
         if subjects is None:
             subjects = cfg.subjects()
-        elif isinstance(subjects, str)
+        elif isinstance(subjects, str):
             subjects = cfg.subjects(subjects)
         result = RoiResult()
         for subject in subjects:
@@ -555,7 +555,7 @@ class Atlas(RoiBase):
         """
         if subjects is None:
             subjects = cfg.subjects()
-        elif isinstance(subjects, str)
+        elif isinstance(subjects, str):
             subjects = cfg.subjects(subjects)
         result = RoiResult()
         for subject in subjects:
@@ -656,7 +656,7 @@ class Atlas(RoiBase):
         """
         if subjects is None:
             subjects = cfg.subjects()
-        elif isinstance(subjects, str)
+        elif isinstance(subjects, str):
             subjects = cfg.subjects(subjects)
         if isinstance(analysis, dict):
             analysis = anal.Analysis(analysis)
