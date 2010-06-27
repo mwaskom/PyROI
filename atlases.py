@@ -148,7 +148,21 @@ class Atlas(RoiBase):
 
     # Display methods
     def display(self):
-        """Display the atlas."""
+        """Display the atlas.
+        
+        This method will launch a viewing program that will display
+        the atlas.  For native-space atlases, the atlas must be
+        initialized with a subject.  Volume atlases are displayed
+        with Freeview, while surface atlases are displayed on the
+        inflated surface with tksurfer.
+
+        Examples
+        --------
+        >>> atlas = roi.init_atlas("atlasname", "subj_id")
+        >>> atlas.make_atlas()
+        >>> atlas.display()
+
+        """
         if not self._init_subject and self.source in ["freesurfer", "label"]:
             raise InitError("Subject")
 
@@ -215,18 +229,17 @@ class Atlas(RoiBase):
     def make_atlas(self, reg=False):
         """Run the neccessary preprocessing steps to make a mask or label atlas.
         
-        Prerequisites
-        -------------
-        For native-space atlases (Freesurfer and Label atlases), a subject must be
-        initialized.  For standard-space atlases, (Mask and Sphere atlases), this is
-        uneccessary.
+        For native-space atlases (Freesurfer and Label atlases), a subject
+        must be initialized.  This is uneccesary for standard-space atlases.
+
 
         Parameters
         ----------
         reg : bool, optional
-            If true, Freesurfer's bbregister program will be run to register the mean
-            functional volume to the anatomical.  This is only relevant for Freesurfer
-            atlases.  It is false by default because registration can take a while.
+            If true, Freesurfer's bbregister program will be run to register
+            the mean functional volume to the anatomical.  This is only rele-
+            vant for Freesurfer atlases.  It is false by default because 
+            registration can take a while.
         
         Returns
         -------
@@ -248,7 +261,8 @@ class Atlas(RoiBase):
             res(self.__make_freesurfer_atlas(reg))
             res(self.__stats())
         else:
-            res("No make_atlas processing neccessary for %s atlases." % self.source)
+            res("No make_atlas processing neccessary for %s atlases." 
+                % self.source)
         return res
 
     def group_make_atlas(self, subjects=None):
@@ -468,8 +482,6 @@ class Atlas(RoiBase):
     def prepare_source_images(self, reg=False):
         """Prepare the functional and statistical images for extraction.
         
-        Prerequisites
-        -------------
         An analysis must be initialized in the atlas
 
         Parameters
@@ -487,10 +499,12 @@ class Atlas(RoiBase):
         """
         if not self._init_analysis:
             raise InitError("Analysis")
-        if self.manifold == "surface" and not os.path.isfile(self.regmat) and not reg:
-            print ("\nRegistration matrix not found."
-                   "\nCall method with the argument 'reg=True' to create.")
-            return
+        if not reg:
+            if self.manifold == "surface" and not os.path.isfile(self.regmat):
+                print ("\nRegistration matrix not found."
+                       "\nCall method with the argument 'reg=True' to create.")
+                return
+
         res = RoiResult()
         if self.manifold == "surface" and reg:
             reg = FSRegister()
@@ -549,6 +563,12 @@ class Atlas(RoiBase):
     def extract(self):
         """Extract average functional data from select regions in an atlas.
         
+        This prints a text file with the average statistic for each region
+        to the $main_dir/roi/analysis/ directory structure.  It also saves
+        a binary "volume" where each voxel represents a region in the atlas.
+        See the database functions to collect this data for statistical anal-
+        ysis.
+
         Returns
         -------
         RoiResult object.
@@ -616,6 +636,8 @@ class Atlas(RoiBase):
     def group_extract(self, analysis, subjects=None):
         """Extract functional data for a group of subjects.
         
+        See the docstring for the extract() method for more information.
+        
         Parameters
         ----------
         analysis : Analysis object or dict
@@ -667,8 +689,8 @@ class FreesurferAtlas(Atlas):
     >>> res = aseg.group_prepare_source_images(analysis)
     >>> res = aseg.group_extract(analysis)
 
-    Atlas Source
-    ------------
+    Atlas Information
+    -----------------
     The FreesurferAtlas class can be used for the Freesurfer aseg (automatic
     subcortical segmentation) or either flavour of aparc (automatic cortical
     parcellation).  In theory, any "Freesurfer style" atlas should work with
@@ -789,7 +811,7 @@ class FreesurferAtlas(Atlas):
             self._init_subject = True
 
 class FSRegister(FreesurferAtlas):
-    """Subclasss of FreesurferAtlas for intramodal registration.
+    """Extension of FreesurferAtlas for intramodal registration.
     
     This class is used internally by the make_atlas() and prepare_source_image()
     methods, so it is usually not neccesary for a user to interface with it.
@@ -883,14 +905,16 @@ class HarvardOxfordAtlas(Atlas):
     >>> res = fslatlas.group_prepare_source_images(analysis)
     >>> res = fslatlas.group_extract()
 
-    Atlas Source
-    ------------
+    Atlas Information
+    -----------------
+    The HarvardOxford Atlas is a probabilistic standard-space atlas 
+    drawn from data collected at the Harvard Center for Morphometric
+    Analysis and Oxford's FMRIB.  Two versions are provided with PyROI,
+    corresponding to thresholding the probabilistic atlas at 25% or 50%.
     See http://www.fmrib.ox.ac.uk/fsl/fslview/atlas-descriptions.html
-    for information on this atlas.  Two versions of this atlas set are
-    included with PyROI, corresponding to the 25% probability threshold
-    and 50% probability threshold atlases.  The FSL volumes were mod-
-    ified slightly using scripts written by Russ Poldrack to give diff-
-    erent segmentation values for left and right hemisphere structures.
+    for more information.  The FSL volumes were modified slightly using
+    scripts written by Russ Poldrack to give different segmentation 
+    values for left and right hemisphere structures.
 
     """
     def __init__(self, atlas, subject=None, **kwargs):
@@ -930,32 +954,37 @@ class LabelAtlas(Atlas):
         The name of an atlas defined in your setup module, or a dictionary
         of atlas parameters.
     subject : str, optional
-        The name of a subject to initialize the atlas for.  If not included,
-        you will have to call the init_subject() method.
+        The name of a subject to initialize the atlas for.
 
     Examples
     --------
 
     Single subject:
     
-    >>> mem = roi.LabelAtlas("working_mem", "subj_id")
-    >>> mem.make_atlas()
+    >>> labls = roi.LabelAtlas("social_labels", "subj_id")
+    >>> labls.make_atlas()
     >>> analysis = roi.cfg.analysis(0)
-    >>> mem.init_analysis(analysis)
-    >>> mem.extract()
+    >>> labls.init_analysis(analysis)
+    >>> labls.extract()
 
     Group:
     
-    >>> mem = roi.LabelAtlas("working_mem")
-    >>> mem.group_make_atlas()
+    >>> labls = roi.LabelAtlas("social_labels")
+    >>> labls.group_make_atlas()
     >>> analysis = roi.cfg.analysis(0)
-    >>> mem.group_extract(analysis)
+    >>> labls.group_extract(analysis)
 
-    Atlas Source
-    ------------
-    The LabelAtlas class can construct and analyze an atlas composed
-    of any number of non-overlapping Freesurfer surface label files.
-
+    Atlas Information
+    -----------------
+    The LabelAtlas class can construct and extract from an atlas 
+    composed of any number of non-overlapping Freesurfer surface 
+    label files defined on the fsaverage standard-space subject.  
+    These labels will be resampled back to each subject's native
+    surface space via a spherical transform.  This class should 
+    not be used for labels derived from Freesurfer's automatic
+    parcellations that are produced during the reconstruction
+    process.  See the FreesurferAtlas class to extract data
+    from those regions.
 
     """
     def __init__(self, atlas, subject, **kwargs):
@@ -979,7 +1008,8 @@ class LabelAtlas(Atlas):
 
         self.basedir = os.path.join(self.roidir, "atlases", "label")
         
-        self.lutfile = os.path.join(self.basedir, cfg.projectname(), "lookup_tables",
+        self.lutfile = os.path.join(self.basedir, cfg.projectname(), 
+                                    "lookup_tables",
                                     "%s.lut" % self.atlasname)
         self.regions = {}
         self.regions[self.hemi] = self.lutdict.keys()
@@ -992,8 +1022,8 @@ class LabelAtlas(Atlas):
     def init_subject(self, subject):
         """Initialize the atlas for a subject"""
         self.subject = subject
-        self.atlasdir = os.path.join(self.basedir, cfg.projectname(), subject,
-                                 self.atlasname)
+        self.atlasdir = os.path.join(self.basedir, cfg.projectname(),
+                                     subject, self.atlasname)
         self.statsfile = os.path.join(self.atlasdir,
                                       "%s." + self.atlasname + ".stats")
         self.atlas = os.path.join(self.atlasdir, "%s." + self.fname)
@@ -1004,7 +1034,48 @@ class LabelAtlas(Atlas):
 
 
 class MaskAtlas(Atlas):
-    """Mask atlas class"""
+    """Class for atlases constructed from binary volume masks.
+
+    Parameters
+    ----------
+    atlas : str or dict
+        The name of an atlas defined in your setup module, or a dictionary
+        of atlas parameters.
+    subject : str, optional
+        The name of a subject to initialize the atlas for.
+
+    Examples
+    --------
+
+    Single subject:
+    
+    >>> masks = roi.MaskAtlas("social_masks", "subj_id")
+    >>> masks.make_atlas()
+    >>> analysis = roi.cfg.analysis(0)
+    >>> masks.init_analysis(analysis)
+    >>> masks.extract()
+
+    Group:
+    
+    >>> masks = roi.LabelAtlas("social_masks")
+    >>> masks.group_make_atlas()
+    >>> analysis = roi.cfg.analysis(0)
+    >>> masks.group_extract(analysis)
+
+    Atlas Information
+    -----------------
+    The MaskAtlas class can construct and extract from an atlas 
+    defined by any number of non-overlapping binary mask images
+    in standard volume space.  
+    
+    Note
+    ----
+    This has not yet been tested for masks in Analyze format, and
+    it is quite likely that using Analyze masks will cause orienta-
+    tion problems. If at all possible, use Nifti (both .nii single
+    volumes and .img/.hdr pairs should work).
+
+    """
     def __init__(self, atlasdict, **kwargs):
 
         if isinstance(atlasdict, str):
@@ -1019,7 +1090,8 @@ class MaskAtlas(Atlas):
         self.sourcenames = atlasdict["sourcenames"]
         self.sourcenames_to_lutdict()
 
-        self.basedir = os.path.join(self.roidir, "atlases", "mask", cfg.projectname())
+        self.basedir = os.path.join(self.roidir, "atlases",
+                                    "mask", cfg.projectname())
         
         self.lutfile = os.path.join(self.basedir, "%s.lut" % self.atlasname)
         self.regions = self.lutdict.keys()
