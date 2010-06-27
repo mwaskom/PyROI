@@ -42,4 +42,4 @@ Config file content
 
 The following duplicates the internal config file documentation:
 
-.. literalinclude config_doc.rst
+.. literalinclude:: config_doc.rst
