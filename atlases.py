@@ -275,9 +275,10 @@ class Atlas(RoiBase):
 
         Parameters
         ----------
-        subjects : list, optional
-            List of subjects to preprocess. Runs subject list from config
-            if ommitted.
+        subjects : list, or str, optional
+            List of subjects to preprocess. If a string, it runs the
+            group defined by that name in the config file. Will run
+            the full subject list from config if ommitted.
            
         Returns
         -------
@@ -286,6 +287,8 @@ class Atlas(RoiBase):
         """
         if subjects is None:
             subjects = cfg.subjects()
+        elif isinstance(subjects, str)
+            subjects = cfg.subjects(subjects)
         result = RoiResult()
         for subject in subjects:
             self.init_subject(subject)
@@ -538,8 +541,10 @@ class Atlas(RoiBase):
         Parameters
         ----------
         analysis : dict or Analysis object
-        subjects : str, optional
-            If omitted, runs subject list from config setup module
+        subjects : list, or str, optional
+            List of subjects to preprocess. If a string, it runs the
+            group defined by that name in the config file. Will run
+            the full subject list from config if ommitted.
         reg : bool, optional
             Perform intramodal registration, if applicable.  False by default.
 
@@ -550,6 +555,8 @@ class Atlas(RoiBase):
         """
         if subjects is None:
             subjects = cfg.subjects()
+        elif isinstance(subjects, str)
+            subjects = cfg.subjects(subjects)
         result = RoiResult()
         for subject in subjects:
             self.init_subject(subject)
@@ -641,13 +648,16 @@ class Atlas(RoiBase):
         Parameters
         ----------
         analysis : Analysis object or dict
-        subjects : list, optional
-            If omitted, runs analysis on subject list as defined in
+        subjects : list, or str, optional
+            List of subjects to preprocess. If a string, it runs the
+            group defined by that name in the config file. Will run
             the config setup module.
             
         """
         if subjects is None:
             subjects = cfg.subjects()
+        elif isinstance(subjects, str)
+            subjects = cfg.subjects(subjects)
         if isinstance(analysis, dict):
             analysis = anal.Analysis(analysis)
         for subj in subjects:
