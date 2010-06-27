@@ -1,3 +1,4 @@
+===============
 Getting Started
 ===============
 
@@ -14,7 +15,7 @@ $ export PATH=/repos:$PATH
 
 PyROI relies on quite a few dependencies both in the form of Python
 packages and external binaries.  All required Python packages run in
-the NiPype environment, which can be accessed with the following code::
+the NiPype environment, which can be accessed with the following command::
 
 $ source /software/python/SetupNiPy26.sh
 
@@ -22,7 +23,7 @@ Much of the underlying processing takes place with Freesurfer binaries.
 Although Mindhive users should have Freesurfer set up automatically,
 those running older versions may experience strange behavior.  PyROI
 was developed and tested with Freesurfer 4.5, which can be set up with
-this code::
+these commands::
 
 $ export FREESURFER_HOME=/software/Freesurfer/current
 $ source $FREESURFER_HOME/SetUpFreeSurfer.sh
