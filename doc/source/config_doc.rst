@@ -1,8 +1,8 @@
 .. _config_doc
 
+=========================
 Config File Documentation
--------------------------
-
+=========================
 
    May/June 2010 update of ROI pypeline.  A work in progress.
 
