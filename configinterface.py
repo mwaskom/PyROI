@@ -16,9 +16,9 @@ from exceptions import *
 __module__ = "configinterface"
 
 # Look for a file indicating the setup module and import that module if found
-if os.path.isfile(".roisetupfile"):
+if os.path.isfile(".roiconfigfile"):
     
-    fid = open(".roisetupfile","r")
+    fid = open(".roiconfigfile","r")
     module = fid.read()
     fid.close()
     

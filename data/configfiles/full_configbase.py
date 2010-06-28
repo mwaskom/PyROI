@@ -13,9 +13,14 @@ Michael Waskom -- mwaskom@mit.edu
 Specify the name your analysis will be associated with. All analysis
 results will be printed to roi/analyses/$projname.
 
-Format: string
+Format
+------
+string
 
-Variable Name: ``projname``
+Variable Name
+-------------
+``projname``
+
 """
 
 projname = ""
@@ -42,7 +47,8 @@ ROI.  NB: Mask thresh is in -log10(P).
 Format: list of dictionaries, with each dictionary in the list specifying
 a separate analysis
 
-Entries: 
+Entries
+-------
 par : full name of main analysis paradigm
 extract: betas, contrasts, or timecourse
 maskpar : full name of functional mask paradigm 
@@ -50,7 +56,10 @@ maskcon : abbreviated name of functional mask contrast
 maskthresh : threshold for functional mask (in -log10(P))
 masksign : pos, neg, or abs
 
-Variable Name: ``analysis``
+Variable Name
+-------------
+``analysis``
+
 """
 
 analysis = [{"par": "", "extract": ""},
@@ -85,22 +94,28 @@ path to the directory where your masks/labels are stored and a list of
 the names for the masks/labels in that atlas. ROI names will be derived
 from these file names.
 
-Format: dictionary with internal dictionaries for each atlas
+Format
+------
+dictionary with internal dictionaries for each atlas
 
-Parameters:
-All
+Parameters
+----------
+All:
 - source : freesurfer, talairach, label, mask
 - manifold : volume or surface
-Freesurfer or Talairach Daemon source
+Freesurfer or Talairach Daemon source:
 - fname : file name of atlas
 - regions : list of numerical ids to regions under investigation
-Label Source
+Label Source:
 - hemi : hemisphere
-Label or Mask source
+Label or Mask source:
 - sourcedir : directory with source images
 - sourcefiles : list label or mask image file names 
 
-Variable Name: ``atlases``
+Variable Name
+-------------
+``atlases``
+
 """
 
 atlases = {"": 
@@ -127,9 +142,14 @@ Specify the path to your Freesurfer Subjects directory. If you are not
 using any Freesurfer-based atlases, just specify an arbitry path.  
 Do not delete the variable, as it will cause the program to crash.
 
-Format: string
+Format
+------
+string
 
-Variable Name: ``subjdir``
+Variable Name
+-------------
+``subjdir``
+
 """
 
 subjdir = ""
@@ -143,9 +163,14 @@ associated with the paradigm in your file directory (case-sensitive),
 while shorthand names should be a two-letter code that will identify 
 the paradigm in your database.
 
-Format: dictionary
+Format
+------
+dictionary
 
-Variable Name: ``paradigms``
+Variable Name
+--------------
+``paradigms``
+
 """
 
 paradigms = {"": "",
@@ -168,15 +193,18 @@ Note that although the hrfcomponents variable is added for forward
 compatability, the ROI pypeline has not been tested on any data
 with multiple HRF comopnents for each task condition.
 
-Formats:
+Formats
+-------
 integer
 "all" or list of integers
 dictionary where each key is a string and each value is a list of strings
 
-Variable Names:
+Variable Names
+--------------
 ``hrfcomponents``
 ``betastoextract``
 ``conditions``
+
 """
 
 hrfcomponents = 1
@@ -197,11 +225,15 @@ for that contrast.
 Note that if you are not going to be using any functional masks, you can
 leave this as an empty dictionary.
 
-Format: 
+Format
+------
 dictionary where each key is a string and each value is a dictionary
 inner dictionary: each key is a string and each value is an integer
 
-Variable Name: ``contrasts``
+Variable Name
+-------------
+``contrasts``
+
 """
 
 contrasts = {"" :  {"": ,
@@ -221,14 +253,18 @@ directory of the meanfunc path.  This is the standard setup for the out-
 put of NiPype first-level workflows, but if you are working with a diff-
 erent first-level analysis, you may need to create this path/file yourself.
 
-Format: string
+Format
+------
+string
 
 Variable Names
+--------------
 ``basepath``
 ``timecoursepath``
 ``meanfuncpath``
 ``betapath``
 ``contrastpath``
+
 """
 
 basepath = ""
@@ -250,9 +286,14 @@ ID, etc.). Maintain this format even if you have only one group; simply
 use the name of your experiment, or other, as the single key to the dict-
 ionary in that case.
 
-Format: dictionary with strings as each key and a list of strings as each value
+Format
+------
+dictionary with strings as each key and a list of strings as each value
 
-Variable Name: ``subjects``
+Variable Name
+-------------
+``subjects``
+
 """    
 
 subjects  =  {"": 

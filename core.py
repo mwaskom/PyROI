@@ -1,4 +1,5 @@
 import os
+import shutil
 import subprocess
 from copy import deepcopy
 import configinterface as cfg
@@ -63,9 +64,6 @@ class RoiResult(object):
         self.stdout = []
         self.stderr = []
 
-#        if any([cmdline, res]):
-#            self(cmdline, res)
-
     def __call__(self, cmdline, res=None):
         """Call the object with a cmdline and optionally a processing result.""" 
         if isinstance(cmdline, self.__class__):
@@ -84,7 +82,6 @@ class RoiResult(object):
             else:
                 self.stdout.append("")
                 self.stderr.append("")
-        self.latest_entry = RoiResult(cmdline, res)
 
     def __str__(self):
 
@@ -96,21 +93,14 @@ class RoiResult(object):
     def add(self, cmdline, res=None):
 
         self(cmdline, res)
-        self.latest_entry = RoiResult(cmdline, res)
 
     def last(self):
 
         print "\n".join([self.cmdline[-1], self.stdout[-1], self.stderr[-1]])
 
-    def latest(self):
+def import_config(module_name):
+    """Import a customized config setup module into the cfg module.
 
-        print self.latest_entry
-
-def import_setup(module_name):
-    """Import a customized setup module into the cfg module.
-
-    It tries to import `configmodule_name`, then just `module_name`.
-    
     Parameters
     ----------
     module_name : str
@@ -119,14 +109,49 @@ def import_setup(module_name):
     """
     if module_name.endswith(".py"):
         module_name = module_name[:-3]
-    try:
-        setupmodule = __import__("config%s" % module_name)
-    except ImportError:
-        setupmodule = __import__(module_name)
+    setupmodule = __import__(module_name)
 
     cfg.setup = setupmodule
     cfg.is_setup = True
 
+def write_config_base(filename, force=False, clean=False):
+    """Write a config file skeleton.
+
+    Calling this function
+
+    Parameters
+    ----------
+    filename : str
+        What to call the file.  If a path is given, writes to that path.
+        Otherwise, writes to the working directory.
+    force : bool, optional
+        If true, overwrites a .roiconfigfile file if it exists in the target
+        directory.  False by default.
+    clean : bool, optional
+        If true, writes the config file skeleton without any documentation.
+        False by default.
+    
+    """
+    if not filename.endswith(".py"):
+        filename = "%s.py" % filename
+    targpath = os.path.abspath(os.path.split(filename)[0])
+    if os.path.isfile(os.path.join(targpath, ".roiconfigfile")) and not force:
+        print ("\nWarning: found '.roiconfigfile' in target directory."
+               "\nYour config file will not automatically import."
+               "\n(But someone else's might.)")
+    else:
+        f = open(os.path.join(targpath, ".roiconfigfile"), "w")
+        w.write(os.path.split(filename)[1])
+
+    sourcepath = os.path.join(os.path.split(__file__)[0], "data", "configfiles")
+    if clean:
+        sourceprefix = "clean"
+    else:
+        sourceprefix = "full"
+    sourcefile = os.path.join(sourcepath, "%s_configbase.py" % sourceprefix)
+
+    shutil.copy(sourcefile, filename)
+    
 def get_analysis_name_list(full=True):
     """Return a list of analysis names in PyROI format.
 
