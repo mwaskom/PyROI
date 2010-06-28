@@ -1,15 +1,10 @@
-.. _config_doc:
+   May/June 2010 update of ROI pypeline.  A work in progress.
 
-Config Documentation
---------------------
-
-May/June 2010 update of ROI pypeline.  A work in progress.
-
-Michael Waskom -- mwaskom@mit.edu
+   Michael Waskom -- mwaskom@mit.edu
 
 
 Project Name
-^^^^^^^^^^^^
+------------
 
 Specify the name your analysis will be associated with. All analysis
 results will be printed to roi/analyses/$projname.
@@ -20,7 +15,7 @@ Variable Name: ``projname``
 
 
 Analysis Parameters
-^^^^^^^^^^^^^^^^^^^
+-------------------
 
 Specify the parameters for an arbitrary number of analyses. Task-related
 betas from the main analysis paradigm will be extraced from each ROI. 
@@ -54,7 +49,7 @@ Variable Name: ``analysis``
 
 
 Atlases
-^^^^^^^
+-------
 
 Specify the atlases that will define your ROIs, and which ROIs from
 those atlases you will investigate. The format is of a dictionary
@@ -101,7 +96,7 @@ Variable Name: ``atlases``
 
 
 Freesurfer Subject Directory
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+----------------------------
 
 Specify the path to your Freesurfer Subjects directory. If you are not
 using any Freesurfer-based atlases, just specify an arbitry path.  
@@ -113,7 +108,7 @@ Variable Name: ``subjdir``
 
 
 Paradigms
-^^^^^^^^^
+---------
 
 Specify the full and shorthand names for the paradigms involved in you
 analyses. The format is a dictionary where keys are full names and
@@ -128,7 +123,7 @@ Variable Name: ``paradigms``
 
 
 First Level Design
-^^^^^^^^^^^^^^^^^^
+------------------
 
 Specify the task-related elements of your first-level design matrix.
 The hrfcomponents variable specifies how many different beta images
@@ -157,7 +152,7 @@ Variable Names:
 
 
 Contrasts
-^^^^^^^^^
+---------
 
 Specify the contrasts for each paradigm involved in your analysis. The 
 format is a dictionary where the keys are full paradigm names (as they
@@ -176,7 +171,7 @@ Variable Name: ``contrasts``
 
 
 First Level Datapaths
-^^^^^^^^^^^^^^^^^^^^^
+---------------------
 
 Specify the absolute path to your main directory and relative paths from
 that directory to those containing timecourses, mean functionals, first-
@@ -200,7 +195,7 @@ Variable Names
 
 
 Subjects
-^^^^^^^^
+--------
 
 Specify the subjects to use in your analyses.  The format is a dictionary
 where keys are the names of your groups and values are lists of your

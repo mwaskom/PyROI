@@ -1,8 +1,21 @@
+#! /usr/bin/env python
+
+"""
+This script will extract the documentation from the full_configbase.py
+module, write it as a reST document, and then append that document to the 
+end of config_into.rst in the documentation directory.
+"""
+
 import os
 import re
+from shutil import copyfileobj
+import pyroi
 
-confid = open("full_configbase.py", "r")
-docfid = open("config_doc.rst", "w")
+path = os.path.split(pyroi.__file__)[0]
+docpath = os.path.join(path, "doc", "source")
+
+confid = open(os.path.join(path, "data/configfiles/full_configbase.py"), "r")
+docfid = open(os.path.join(docpath, "config_doc.rst"), "w")
 
 write = False
 
@@ -25,7 +38,7 @@ def get_head(line):
     length = len(head)
     head = "\n\n%s\n" % head
     for i in range(length):
-        head = "%s^" % head
+        head = "%s-" % head
     head = "%s\n\n" % head
 
     return head
@@ -45,3 +58,7 @@ for num, line in enumerate(confid):
 confid.close()
 docfid.close()
 
+final = open(os.path.join(docpath, "config_file.rst"), "w")
+copyfileobj(open(os.path.join(docpath, "config_intro.rst"), "rb"), final)
+copyfileobj(open(os.path.join(docpath, "config_doc.rst"), "rb"), final)
+final.close()
