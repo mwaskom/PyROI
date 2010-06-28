@@ -2,7 +2,7 @@ py#! /usr/bin/env python
 """
    May/June 2010 update of ROI pypeline.  A work in progress.
 
-   Michael Waskom -- mwaskom@mit.edu
+   Michael Waskom -- mwaskom<at>mit<dot>edu
 
 """
 
