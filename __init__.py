@@ -1,5 +1,5 @@
 """Package for functional neuroimaging region of interest analysis in Python"""
-from core import write_config_base
+from core import *
 from utils import *
 from atlases import *
 from analysis import *

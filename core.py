@@ -1,10 +1,11 @@
 import os
+import sys
 import shutil
 import subprocess
 from copy import deepcopy
 import configinterface as cfg
 
-__all__ = ["import_setup"]
+__all__ = ["import_config", "write_config_base"]
 
 __module__ = "core"
 
@@ -101,15 +102,40 @@ class RoiResult(object):
 def import_config(module_name):
     """Import a customized config setup module into the cfg module.
 
+    Note that this allows import by filename (i.e. you can give a
+    path to python module not in your working directory or on your
+    Python path.
+
+    You can check whether the file imported correctly with the
+    ``is_setup`` attribute of the config interface module::
+
+        >>> import pyroi as roi
+        >>> roi.cfg.is_setup
+        False
+
+        >>> roi.import_config("/mindhive/gablab/myconfigfile.py")
+        >>> roi.cfg.is_setup
+        True
+
+    You can also double-check which module is actually being
+    used for configuration with the __file__ attribute of the
+    setup module within the config interface::
+
+    >>> roi.cfg.setup.__file__
+    '/mindhive/gablab/myconfigfile.pyc'
+
     Parameters
     ----------
     module_name : str
-        The name of the custom config file (sans .py extension).
+        The filename of the custom config file.
 
     """
     if module_name.endswith(".py"):
         module_name = module_name[:-3]
-    setupmodule = __import__(module_name)
+    if os.path.split(module_name)[0]:
+        sys.path.append(os.path.abspath(os.path.split(module_name)[0]))
+
+    setupmodule = __import__(os.path.split(module_name)[1])
 
     cfg.setup = setupmodule
     cfg.is_setup = True
@@ -117,7 +143,15 @@ def import_config(module_name):
 def write_config_base(filename, force=False, clean=False):
     """Write a config file skeleton.
 
-    Calling this function
+    If a file with the filename you give exists, it will be overwritten.
+    This function also attempts to write a file called ``.roiconfigfile``
+    to the target directory, the contents of which are the name of your
+    config file.  When you import PyROI, it will look for this file
+    and attempt to import the config file specified within.  If this
+    file exists in your target directory, however, this function will
+    not overwrite it by default (it will however warn you about its
+    existence).  Include the argument ``force = True`` to overwrite
+    a .roiconfigfile file in the target directory.
 
     Parameters
     ----------

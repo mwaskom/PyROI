@@ -7,5 +7,6 @@ Documentation Contents
 .. toctree::
    :maxdepth: 2
 
-   getting_started
-   config_file
+   getting_started.rst
+   config_file.rst
+   extracting_data.rst

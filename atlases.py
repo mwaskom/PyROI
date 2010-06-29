@@ -27,10 +27,16 @@ class Atlas(RoiBase):
     
     See the docstrings of atlas subclasses for usage and examples.
     Subclasses currently offered:
+
     - FreesurferAtlas
+    
     - HarvardOxfordAtlas
+    
     - LabelAtlas
+    
     - MaskAtlas
+
+    - SphereAtlas [Not quite ready yet]
 
     """    
     def __init__(self, atlasdict, **kwargs):
@@ -46,6 +52,11 @@ class Atlas(RoiBase):
         self.source = atlasdict["source"]
         self.manifold = atlasdict["manifold"]
 
+        if "sourcefiles" in atlasdict:
+            self.sourcefiles = atlasdict["sourcefiles"]
+            self.sourcenames = atlasdict["sourcenames"]
+            self.__sourcenames_to_lutdict()
+
         self._init_paradigm = False
         self._init_subject = False
         self._init_analysis = False
@@ -53,6 +64,23 @@ class Atlas(RoiBase):
         self.__dict__.update(**kwargs)
         if "debug" not in self.__dict__:
             self.debug = False
+
+    def __call__(self, analysis):
+        """Calling the atlas object on an analysis will initialize it.
+
+        Parameters
+        ----------
+        analysis : Analysis object or dict
+
+        """
+        if isinstance(analysis, dict):
+            analysis = anal.Analysis(analysis)
+        self.init_analysis(analysis)
+
+    def __str__(self):
+        """String representation."""
+
+
 
     # Initialization methods
     def init_paradigm(self, paradigm):
@@ -67,17 +95,6 @@ class Atlas(RoiBase):
         self.paradigm = paradigm
         self._init_paradigm = True
 
-    def __call__(self, analysis):
-        """Calling the atlas object on an analysis will initialize it.
-
-        Parameters
-        ----------
-        analysis : Analysis object or dict
-
-        """
-        if isinstance(analysis, dict):
-            analysis = anal.Analysis(analysis)
-        self.init_analysis(analysis)
 
     def init_analysis(self, analysis):
         """Initialize the atlas with an analysis.
@@ -140,7 +157,7 @@ class Atlas(RoiBase):
             shutil.copy(self.origatlas % self.hemi,
                         self.atlas % self.hemi)
 
-    def sourcenames_to_lutdict(self):                        
+    def __sourcenames_to_lutdict(self):                        
         """Turn the list of sourcenames into a lookup dict."""
         self.lutdict = {}
         for i, name in enumerate(self.sourcenames):
@@ -765,6 +782,7 @@ class FreesurferAtlas(Atlas):
             self.regions = ([convtable[id][0] for id in self.atlasdict["regions"]] + 
                             [convtable[id][1] for id in self.atlasdict["regions"]])
             self.all_regions = self.lutdict.keys()
+            self.regionnames = [self.lutdict[id] for id in self.regions]
         else:
             self.regions = {}
             self.all_regions = {}
@@ -778,8 +796,10 @@ class FreesurferAtlas(Atlas):
                 self.regions["rh"] = self.atlasdict["regions"]
                 self.all_regions["lh"] = self.lutdict.keys()
                 self.all_regions["rh"] = self.lutdict.keys()
+            self.regionnames = (["lh-" + self.lutdict[id] for id in self.atlasdict["regions"]] +
+                                ["rh-" + self.lutdict[id] for id in self.atlasdict["regions"]])
+        self.regionnames.sort()                                
 
-        
 
         self.basedir = os.path.join(self.roidir, "atlases", "freesurfer")
 
@@ -946,6 +966,9 @@ class HarvardOxfordAtlas(Atlas):
                                  "HarvardOxford", "HarvardOxford-LUT.txt")
         self.regions = atlasdict["regions"]
 
+        self.regionnames = [self.lutdict[id] for id in self.regions]
+        self.regionnames.sort()                                
+
         if subject is not None: self.init_subject(subject)
 
     def init_subject(self, subject):
@@ -1012,10 +1035,6 @@ class LabelAtlas(Atlas):
         self.iterhemi = [self.hemi]
         self.fname = "%s.annot" % self.atlasname
 
-        self.sourcefiles = self.atlasdict["sourcefiles"]
-        self.sourcenames = self.atlasdict["sourcenames"]
-        self.sourcenames_to_lutdict()
-
         self.basedir = os.path.join(self.roidir, "atlases", "label")
         
         self.lutfile = os.path.join(self.basedir, cfg.projectname(), 
@@ -1025,6 +1044,8 @@ class LabelAtlas(Atlas):
         self.regions[self.hemi] = self.lutdict.keys()
         self.all_regions = {}
         self.all_regions[self.hemi] = self.regions
+        self.regionnames = [self.lutdict[id] for id in self.regions["hemi"]]
+        self.regionnames.sort()                                
 
         if subject is not None: self.init_subject(subject)
 
@@ -1096,9 +1117,6 @@ class MaskAtlas(Atlas):
         tree.make_mask_atlas_tree()
         
         self.fname = "%s.mgz" % self.atlasname
-        self.sourcefiles = atlasdict["sourcefiles"]
-        self.sourcenames = atlasdict["sourcenames"]
-        self.sourcenames_to_lutdict()
 
         self.basedir = os.path.join(self.roidir, "atlases",
                                     "mask", cfg.projectname())
@@ -1106,8 +1124,11 @@ class MaskAtlas(Atlas):
         self.lutfile = os.path.join(self.basedir, "%s.lut" % self.atlasname)
         self.regions = self.lutdict.keys()
         self.all_regions = self.regions
+        self.regionnames = [self.lutdict[id] for id in self.regions]
+        self.regionnames.sort()                                
         
         self.atlas = os.path.join(self.basedir, self.fname)
+
 
         if subject is not None: self.init_subject(subject)
 

@@ -1,7 +1,7 @@
 """
    May/June 2010 update of ROI pypeline.  A work in progress.
 
-   Michael Waskom -- mwaskom@mit.edu
+   Michael Waskom -- mwaskom<at>mit<dot>edu
 """
 
 import os
@@ -32,15 +32,18 @@ if os.path.isfile(".roiconfigfile"):
         module = pmodule[:-3]
     
     # Import the module
-    file, name, desc = imp.find_module(module)
     try:
-        setup = imp.load_module("setup", file, name, desc)
-    finally:
-        file.close()
-    is_setup = True
+        f, name, desc = imp.find_module(module)
+        setup = imp.load_module("setup", f, name, desc)
+        is_setup = True
+        f.close()
+        del f, name, desc
+    except ImportError:
+        print "\nFound .roiconfigfile, but config module import failed."
+        is_setup = False
     
     # Clean up
-    del fid, m, module, file, name, desc
+    del fid, m, module
 else:
     is_setup = False
 
