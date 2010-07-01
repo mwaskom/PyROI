@@ -536,7 +536,7 @@ class Atlas(RoiBase):
         if not self._init_analysis:
             raise InitError("Analysis")
         if not reg:
-            if self.manifold == "surface" 
+            if self.manifold == "surface" :
                 if not os.path.isfile(self.regmat) and not reg:
                     print ("\nRegistration matrix not found for %s %s to orig."
                            "\nCall method with a different `reg` setting to create."
@@ -560,7 +560,7 @@ class Atlas(RoiBase):
                 reg.init_subject(self.subject)
                 res(reg.register())
                 if self.mask and self.analysis.maskpar != self.analysis.paradigm:
-                    if reg==2 or (reg==1 and not os.path.isfile(self.regmat):
+                    if reg==2 or (reg==1 and not os.path.isfile(self.regmat)):
                         reg = FSRegister()
                         reg.init_paradigm(self.analysis.maskpar)
                         reg.init_subject(self.subject)

@@ -32,7 +32,7 @@ If you feel like you understand the format each of these types
 requires, you should be all set.  Just make sure to pay close 
 attention to things like the order of quotation marks, commas,
 and the difference between square brackets -- ``[ ]``, braces -- 
-``{ }``, and parentheses -- ``( )``).  Using an editor that
+``{ }``, and parentheses -- ``( )``.  Using an editor that
 highlights syntax to prepare this file is *strongly* encouraged,
 as it can help you catch a lot of mistakes.
 
