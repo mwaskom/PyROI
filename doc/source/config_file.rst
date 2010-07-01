@@ -47,4 +47,5 @@ Config file content
 
 The following duplicates the internal config file documentation:
 
-.. include:: config_doc_
+.. include:: config_doc.rst
+

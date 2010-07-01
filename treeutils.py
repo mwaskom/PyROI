@@ -167,7 +167,7 @@ def make_label_atlas_tree():
             os.mkdir(direct)
 
 def make_mask_atlas_tree():
-    """Set up the atlas tree for mask atlases"""
+    """Set up the atlas tree for mask atlases."""
     roidir = os.path.join(cfg.setup.basepath, "roi")
     atlasdir = os.path.join(roidir, "atlases")
     basedir = os.path.join(atlasdir, "mask")
@@ -183,3 +183,19 @@ def make_mask_atlas_tree():
         if not os.path.isdir(direct):
             os.mkdir(direct)
 
+def make_sphere_atlas_tree():
+    """Set upthe atlas tree for sphere atlases."""
+    roidir = os.path.join(cfg.setup.basepath, "roi")
+    atlasdir = os.path.join(roidir, "atlases")
+    basedir = os.path.join(atlasdir, "sphere")
+    projectdir = os.path.join(basedir, cfg.projectname())
+    spheredirs = [roidir, atlasdir, basedir, projectdir]
+
+    for atlas in cfg.atlases().keys():
+        if cfg.atlases(atlas)["source"] == "sphere":
+            atnamedir = os.path.join(projectdir, atlas)
+            spheredirs.append(atnamedir)
+
+    for direct in spheredirs:
+        if not os.path.isdir(direct):
+            os.mkdir(direct)

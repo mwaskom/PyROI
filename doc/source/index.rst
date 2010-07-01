@@ -17,9 +17,8 @@ Contents:
 .. toctree::
    :maxdepth: 2
 
-   contents.rst
-   freesurfer_surf.rst
-
+   contents
+   atlas_reference
 
 Indices and tables
 ==================

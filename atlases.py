@@ -1,4 +1,5 @@
 import os
+
 import re
 import sys
 import shutil
@@ -107,7 +108,7 @@ class Atlas(RoiBase):
         if not self._init_subject:
             raise InitError("Subject")
 
-        if isinstance(analysis, dict):
+        if isinstance(analysis, dict) or isinstance(analysis, num):
             analysis = anal.Analysis(analysis)
 
         self.analysis = analysis
@@ -607,7 +608,9 @@ class Atlas(RoiBase):
 
         """
         if not self._init_analysis:
-            raise InitError("analysis")
+            raise InitError("Analysis")
+        elif not self._atlas_exists:
+            raise PreprocessError(self.atlas)
 
         if self.manifold == "volume":
             return self.__vol_extract()
@@ -834,6 +837,7 @@ class FreesurferAtlas(Atlas):
             self.origatlas = os.path.join(self.subjdir, subject, origdir, fname)
             self.atlas = os.path.join(self.basedir, self.manifold, pardir, subject,
                                       self.atlasname, "%s.%s" % (atlasname, ext))
+            self._atlas_exists = os.path.isfile(self.atlas)
             self.statsfile = os.path.join(self.basedir, self.manifold, pardir,
                                           subject, self.atlasname,
                                           "%s.stats" % atlasname)
@@ -962,6 +966,7 @@ class HarvardOxfordAtlas(Atlas):
         pckgdir = os.path.split(__file__)[0]
         filename = "HarvardOxford-%d.nii" % self.thresh
         self.atlas = os.path.join(pckgdir, "data", "HarvardOxford", filename)
+        self._atlas_exists = os.path.isfile(self.atlas)
         self.lutfile = os.path.join(os.path.split(__file__)[0], "data", 
                                  "HarvardOxford", "HarvardOxford-LUT.txt")
         self.regions = atlasdict["regions"]
@@ -1035,11 +1040,10 @@ class LabelAtlas(Atlas):
         self.iterhemi = [self.hemi]
         self.fname = "%s.annot" % self.atlasname
 
-        self.basedir = os.path.join(self.roidir, "atlases", "label")
+        self.basedir = os.path.join(self.roidir, "atlases", "label", 
+                                    cfg.projectname())
         
-        self.lutfile = os.path.join(self.basedir, cfg.projectname(), 
-                                    "lookup_tables",
-                                    "%s.lut" % self.atlasname)
+        self.lutfile = os.path.join(self.basedir,"%s.lut" % self.atlasname)
         self.regions = {}
         self.regions[self.hemi] = self.lutdict.keys()
         self.all_regions = {}
@@ -1053,11 +1057,11 @@ class LabelAtlas(Atlas):
     def init_subject(self, subject):
         """Initialize the atlas for a subject"""
         self.subject = subject
-        self.atlasdir = os.path.join(self.basedir, cfg.projectname(),
-                                     subject, self.atlasname)
+        self.atlasdir = os.path.join(self.basedir, subject, self.atlasname)
         self.statsfile = os.path.join(self.atlasdir,
                                       "%s." + self.atlasname + ".stats")
         self.atlas = os.path.join(self.atlasdir, "%s." + self.fname)
+        self._atlas_exists = os.path.isfile(self.atlas)
         self.origatlas = os.path.join(self.subjdir, subject, 
                                       "label", "%s." + self.fname)
         
@@ -1128,7 +1132,51 @@ class MaskAtlas(Atlas):
         self.regionnames.sort()                                
         
         self.atlas = os.path.join(self.basedir, self.fname)
+        self._atlas_exists = os.path.isfile(self.atlas)
 
+
+        if subject is not None: self.init_subject(subject)
+
+    # Initialization methods
+    def init_subject(self, subject):
+        """Initialize the atlas for a subject"""
+        self.subject = subject
+        
+        self._init_subject = True
+
+class SphereAtlas(Atlas):
+
+    def __init__(self, atlasdict, subject=None, **kwargs):
+
+
+        if isinstance(atlasdict, str):
+            atlasdict = cfg.atlases(atlasdict)
+        
+        Atlas.__init__(self, atlasdict, **kwargs)
+
+        tree.make_sphere_atlas_tree()
+        
+        self.fname = "%s.mgz" % self.atlasname
+
+        self.basedir = os.path.join(self.roidir, "atlases",
+                                    "sphere", cfg.projectname())
+        
+        self.radius = atlasdict["radius"]
+        self.coordsys = atlasdict["coordsys"]
+        self.lutfile = os.path.join(self.basedir, "%s.lut" % self.atlasname)
+        self.lutdict = {}
+        self.centers = {}
+        self.regionnames = []
+        for i, name in enumerate(atlasdict["centers"]):
+            self.lutdict[i+1] = name
+            self.centers[i+1] = atlasdict["centers"][name]
+            self.regionnames.append(name)
+        self.regions = self.lutdict.keys()
+        self.all_regions = self.regions
+        self.regionnames.sort()                                
+        
+        self.atlas = os.path.join(self.basedir, self.fname)
+        self._atlas_exists = os.path.isfile(self.atlas)
 
         if subject is not None: self.init_subject(subject)
 
@@ -1168,4 +1216,6 @@ def init_atlas(atlasdict, subject=None, paradigm=None, **kwargs):
         return LabelAtlas(atlasdict, subject, **kwargs) 
     elif atlasdict["source"] == "mask": 
         return MaskAtlas(atlasdict, subject, **kwargs)
+    elif atlasdict["source"] == "sphere":
+        return SphereAtlas(atlasdict, subject, **kwargs)
 

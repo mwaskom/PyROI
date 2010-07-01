@@ -47,25 +47,14 @@ the ``__file__`` attribute of the internal ``roi.cfg.setup`` module::
 Using the Config File
 ---------------------
 
-Although you can access all of the config setup attributes through ``roi.cfg.setup``, 
-it is best to use the functions in ``roi.cfg`` to interact with the information.  See
-the :ref:`configinterface` module reference for full information, but generally you will
-just interact with the ``analysis()`` and ``atlases()`` functions.
+For standard processing streams in PyROI, you will not need to interact
+directly with the information from the config file.  If you do wish to
+access the data, however, you should do so through the ``roi.cfg``
+module.  See the :ref:`config_interface` reference for full information
+about the functions afforded by that module.
 
-To access a specific analysis dictionary, call the ``roi.cfg.analysis()`` function with
-the dictionary index in the analysis list as an argument (remember that Python is 0-based)::
-
-    >>> analysis = roi.cfg.analysis(0)
-    >>> analysis
-    {'par': 'social', 'extract': 'beta'}
-
-You would then pass this dictionary to an atlas object (see below).  To get the whole
-list of analyses to then iterate over, just call the function with an empty scope::
-
-    >>> analyses = roi.cfg.analysis()
-    >>> analysis
-    [{'par': 'social', 'extract': 'beta'},
-     {'par': 'novelfaces', 'extract': contrast'}]
+Extracting Data
+---------------
 
 
 

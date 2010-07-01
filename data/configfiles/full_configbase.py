@@ -1,9 +1,9 @@
 # emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
-# vi: set ft=python sts=4 ts=4 sw=4 et:
-"""
-May/June 2010 update of ROI pypeline.  A work in progress.
+# vi: set ft=python sts=4 ts=4 sw=4
 
-Michael Waskom -- mwaskom@mit.edu
+"""
+This is a skeleton config file for the PyROI package.
+
 """
 
 
@@ -11,7 +11,9 @@ Michael Waskom -- mwaskom@mit.edu
 #----------------------------<Project Name>--------------------------------#
 """
 Specify the name your analysis will be associated with. All analysis
-results will be printed to roi/analyses/$projname.
+results will be printed to roi/analyses/$projname.  In addition, all
+user-defined atlases (mask, label, and sphere atlases) will be
+associated with this name.
 
 Format
 ------
@@ -34,27 +36,32 @@ which will be applied before extraction. The mask will restrict extraction
 to those voxels/vertices that are active in the mask contrast above the 
 mask threshold, with the direction specified by mask sign. If analysis is
 being done in the volume, mask paradigms must be in the same space as the
-analysis paradigm.  This should not matter on the surface.
+analysis paradigm.  
 
-See the "Entries" section below for the key names to use.  Values
-should be set according to the paradigm and contrast names you specify
-below in this setup functino.
+See the "Entries" section below for the key names to use and their meanings.
+Values should be set according to the paradigm and contrast names you specify
+in the appropriate sections below in this config file.
 
 All of the mask parameters are optional. If left unset, analysis will 
 be specified as "nomask" and statistics will be extracted from the full
 ROI.  NB: Mask thresh is in -log10(P).
 
-Format: list of dictionaries, with each dictionary in the list specifying
-a separate analysis
+Format: list of dictionaries, with each dictionary in the
+list specifying a separate analysis
 
 Entries
 -------
-par : full name of main analysis paradigm
-extract: betas, contrasts, or timecourse
-maskpar : full name of functional mask paradigm 
-maskcon : abbreviated name of functional mask contrast 
-maskthresh : threshold for functional mask (in -log10(P))
-masksign : pos, neg, or abs
+- par : full name of main analysis paradigm
+
+- extract: betas, contrasts, or timecourse
+
+- maskpar : full name of functional mask paradigm 
+
+- maskcon : abbreviated name of functional mask contrast 
+
+- maskthresh : threshold for functional mask in -log10(P)
+
+- masksign : pos, neg, or abs
 
 Variable Name
 -------------
@@ -73,44 +80,37 @@ those atlases you will investigate. The format is of a dictionary
 where each key is a shorthand name for an atlas and the value is
 a dictionary of attributes for that atlas.
 
-For all atlases, you must specify the source and space. 
-
 Source can be "freesurfer", for freesurfer segmentations/parcellations
-in native space; "talairach", for a modified version of the talairach
-daemon used by the WFU Pick Atlas that is provided with this software;
-"mask", for an atlas composed of an arbitrary number of non-overlap-
-ping binary image files in the same space, or "label", for an atlas
-composed of an arbitrary number of non-overlapping Freesurfer labels
-in fsaverage space. Space is either "volume" or "surface"; if the atlas
-is surface-based, you should also provide the hemisphere in the atlas
-dictionary with the "hemi" key.
+in native space; "fsl", for the Harvard Oxford probabilistic atlas from
+FSL, "mask", for an atlas composed of an arbitrary number of non 
+overlapping binary image files in the same space,"label", for an atlas
+composed of an arbitrary number of non-overlapping Freesurfer surface
+labels in fsaverage space, or "sphere", for an atlas composed of an
+arbitrary number of spheres. 
 
-If source is "freesurfer", just provide the filename (this requires your
-Freesurfer subject directory to be set below). If source is "talairach",
-give the path to the image file. For both of these sources, also specify
-a list of the numerical IDs to investigate from that atlas. For label or
-mask sources, you will need to provide two pieces of information: the 
-path to the directory where your masks/labels are stored and a list of
-the names for the masks/labels in that atlas. ROI names will be derived
-from these file names.
+Entries
+-------
+- source: ``freesurfer``, ``fsl``, ``mask``, ``label``, or ``sphere``
+- regions: a list of integer ids for the regions you want to extract from
+- manifold: ``volume`` or ``surface``
+- hemi: ``lh`` or ``rh``
+- coordsys: ``mni``, ``tal``, or ``vox``
+- radius: an integer -- in mm if coordsys is mni or tal, or in vox
+- centers: a dictionary mapping region name to a tuple of center coordinates
+- sourcedir: the path to the directory where the source images are located
+- sourcefiles: a list of the source file names, or ``all`` to use all image
+or label files in the source directory
 
-Format
-------
-dictionary with internal dictionaries for each atlas
 
-Parameters
-----------
-All:
-- source : freesurfer, talairach, label, mask
-- manifold : volume or surface
-Freesurfer or Talairach Daemon source:
-- fname : file name of atlas
-- regions : list of numerical ids to regions under investigation
-Label Source:
-- hemi : hemisphere
-Label or Mask source:
-- sourcedir : directory with source images
-- sourcefiles : list label or mask image file names 
+
+Required Entries
+----------------
+Note: source is required for all atlas types
+- freesurfer: manifold, fname, regions
+- fsl: probthresh, regions
+- mask: sourcedir, sourcelabels
+- label: sourcedir, sourcelabels
+- sphere: coordsys, radius, centers
 
 Variable Name
 -------------
@@ -119,28 +119,34 @@ Variable Name
 """
 
 atlases = {"": 
-               {"source": "freesurfer",
+               {"source":  "freesurfer",
                "manifold": "volume",
-               "fname": ".mgz",
+               "fname":    ".mgz",
                "regions": [ ]},
            "": 
-               {"source": "freesurfer",
+               {"source":   "freesurfer",
                 "manifold": "surface",
-                "fname": ".annot",
+                "fname":    ".annot",
                 "regions": [ ]},
            "":
-               {"source": "label",
-                "manifold": "surface",
+               {"source":    "label",
                 "hemi": "",
                 "sourcedir": "",
-                "sourcefiles": ["", ""]}
+                "sourcefiles": ["", ""],
+           "":
+               {"source":   "sphere",
+                "coordsys": "MNI",
+                "radius":   "10",
+                "centers":
+                  {"one" : (34, 98, 9),
+                   "two" : (45, 20, 4)}
+                }
    
 
 #--------------------<Freesurfer Subject Directory>------------------------#
 """
-Specify the path to your Freesurfer Subjects directory. If you are not
-using any Freesurfer-based atlases, just specify an arbitry path.  
-Do not delete the variable, as it will cause the program to crash.
+Specify the path to your Freesurfer Subjects directory. If your data has not
+been processed in Freesurfer, leave this variable as an empty string.
 
 Format
 ------
@@ -189,21 +195,22 @@ paradigm names (as specified above) to a list of short names (ideally
 condition names in these lists should correspond to the order in your
 beta images.
 
-Note that although the hrfcomponents variable is added for forward
-compatability, the ROI pypeline has not been tested on any data
-with multiple HRF comopnents for each task condition.
-
 Formats
 -------
-integer
-"all" or list of integers
-dictionary where each key is a string and each value is a list of strings
+
+- integer
+
+- "all" or list of integers
+
+- dictionary where each key is a string and each value is a list of strings
 
 Variable Names
 --------------
-``hrfcomponents``
-``betastoextract``
-``conditions``
+- ``hrfcomponents``
+
+- ``betastoextract``
+
+- ``conditions``
 
 """
 
@@ -219,11 +226,11 @@ conditions = {"":   ["",""],
 Specify the contrasts for each paradigm involved in your analysis. The 
 format is a dictionary where the keys are full paradigm names (as they
 are specified above) and values are dictionaries mapping an abbreviation
-for the contrast (typically in FsFast style) to the number of con image
-for that contrast.
+for the contrast the number of con image number for that contrast.
 
-Note that if you are not going to be using any functional masks, you can
-leave this as an empty dictionary.
+This section is only relevant if you are using functional masks in your
+analyses or extracting from contrast effect-size images.  Otherwise,
+you can leave the dictionary empty.
 
 Format
 ------
@@ -244,38 +251,51 @@ contrasts = {"" :  {"": ,
 """
 Specify the absolute path to your main directory and relative paths from
 that directory to those containing timecourses, mean functionals, first-
-level betas, and contrast images.  You may include $paradigm, $subject,
-and $contrast wildcards in the path strings, which will be replaced 
+level betas, and first-level contrast images (currently, PyROI assumes that
+contrast-effect size and T statistic images are in the same directory for 
+each paradigm/subject).  You may include ``$paradigm``, ``$subject``, and 
+``$contrast`` wildcards in the path strings, which will be replaced
 appropriately as the program runs. 
 
-NOTE: For now, PyROI just looks for a single .nii image in the terminal
-directory of the meanfunc path.  This is the standard setup for the out-
-put of NiPype first-level workflows, but if you are working with a diff-
-erent first-level analysis, you may need to create this path/file yourself.
 
 Format
 ------
-string
+
+strings
+
 
 Variable Names
 --------------
 ``basepath``
+
 ``timecoursepath``
+
 ``meanfuncpath``
+
 ``betapath``
+
 ``contrastpath``
 
 """
 
 basepath = ""
 
+betapath = ""   
+
+contrastpath = ""
+
+"""
+For the timecoursepath and meanfuncpath variables, specify the path to
+your images as above, but also include a file template with a wildcard
+character (*) in the file name.  As there should only be one of each 
+image type for each paradigm/subject, the wildcard should be choosen
+to match only one file in the directory.
+"""
+
 timecoursepath = ""
 
 meanfuncpath = ""
 
-betapath = ""    
-
-contrastpath = ""
 
 #----------------------------<Subjects>------------------------------------#
 """
@@ -288,7 +308,7 @@ ionary in that case.
 
 Format
 ------
-dictionary with strings as each key and a list of strings as each value
+dictionary with a string as each key and a list of strings as each value
 
 Variable Name
 -------------

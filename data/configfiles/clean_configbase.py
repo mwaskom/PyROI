@@ -1,9 +1,9 @@
 # emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
-# vi: set ft=python sts=4 ts=4 sw=4 et:
-"""
-May/June 2010 update of ROI pypeline.  A work in progress.
+# vi: set ft=python sts=4 ts=4 sw=4
 
-Michael Waskom -- mwaskom@mit.edu
+"""
+This is a skeleton config file for the PyROI package.
+
 """
 
 
@@ -58,13 +58,15 @@ contrasts = {"" :  {"": ,
 
 basepath = ""
 
+betapath = ""   
+
+contrastpath = ""
+
+
 timecoursepath = ""
 
 meanfuncpath = ""
 
-betapath = ""    
-
-contrastpath = ""
 
 
 subjects  =  {"": 

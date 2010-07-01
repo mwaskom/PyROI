@@ -1,3 +1,5 @@
+.. _freesurfer_surf:
+
 Freesurfer Surface Atlases
 ==========================
 

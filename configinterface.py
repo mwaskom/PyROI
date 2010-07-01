@@ -115,7 +115,7 @@ def atlases(atlasname=None):
                 dictionary[k.lower()] = v
                 del dictionary[k]
         if "source" not in dictionary:
-            raise ex.SetupError("Source missing from %s atlas dictionary" % name)
+            raise SetupError("Source missing from %s atlas dictionary" % name)
         dictionary["source"] = dictionary["source"].lower()
         if dictionary["source"] == "freesurfer":
             dictionary = __prep_freesurfer_atlas(dictionary)
@@ -125,8 +125,10 @@ def atlases(atlasname=None):
             dictionary = __prep_label_atlas(dictionary)
         elif dictionary["source"] == "mask":
             dictionary = __prep_mask_atlas(dictionary)
+        elif dictionary["source"] == "sphere":
+            dictionary = __prep_sphere_atlas(dictionary)
         else:
-            raise ex.SetupError("Source setting '%s' for %s atlas not understood"
+            raise SetupError("Source setting '%s' for %s atlas not understood"
                                 % (dictionary["source"], name))
 
     if atlasname is None:
@@ -140,10 +142,10 @@ def __check_fields(atlasfields, atlasdict):
     missing = [f for f in atlasfields if f not in atlasdict]
     atlasname = atlasdict["atlasname"]
     if extra:
-        raise ex.SetupError("Unexpected field(s) %s found in %s dictionary"
+        raise SetupError("Unexpected field(s) %s found in %s dictionary"
                             % (extra, atlasname))
     if missing:
-        raise ex.SetupError("Field(s) %s missing from %s dictionary"
+        raise SetupError("Field(s) %s missing from %s dictionary"
                             % (missing, atlasname))
 
 def __prep_freesurfer_atlas(atlasdict):
@@ -153,14 +155,14 @@ def __prep_freesurfer_atlas(atlasdict):
 
     atlasdict["manifold"] = atlasdict["manifold"].lower()
     if atlasdict["manifold"] not in ["surface", "volume"]:
-        raise ex.SetupError("Manifold setting '%s' for %s atlas not understood"
+        raise SetupError("Manifold setting '%s' for %s atlas not understood"
                             % (atlasdict["manifold"], atlasdict["atlasname"]))
 
     if atlasdict["manifold"] == "surface" and not atlasdict["fname"].endswith(".annot"):
         atlasdict["fname"] = "%s.annot" % atlasdict["fname"]
 
     if not os.path.isdir(fssubjdir()):
-        raise ex.SetupError("Using Freesurfer atlas with illegitimite "
+        raise SetupError("Using Freesurfer atlas with illegitimite "
                             "subjects directory path")
 
     if not isinstance(atlasdict["regions"], list):
@@ -176,7 +178,7 @@ def __prep_fsl_atlas(atlasdict):
     atlasdict["manifold"] = "volume"
 
     if atlasdict["probthresh"] not in [25, 50]:
-        raise ex.SetupError("HarvardOxford atlas probthresh setting must be either 25 or 50.")
+        raise SetupError("HarvardOxford atlas probthresh setting must be either 25 or 50.")
 
     if not isinstance(atlasdict["regions"], list):
         atlasdict["regions"] = [atlasdict["regions"]]
@@ -189,7 +191,7 @@ def __prep_label_atlas(atlasdict):
     __check_fields(atlasfields, atlasdict)
     
     if not os.path.isdir(fssubjdir()):
-        raise ex.SetupError("Using label atlas with illegitimite "
+        raise SetupError("Using label atlas with illegitimite "
                             "Freesurfer Subjects Directory path")
 
     if not os.path.isabs(atlasdict["sourcedir"]):
@@ -200,7 +202,7 @@ def __prep_label_atlas(atlasdict):
     if atlasdict["sourcefiles"] == "all" or ["all"]:
         atlasdict["sourcefiles"] = glob(os.path.join(atlasdict["sourcedir"], "*.label"))
         if not atlasdict["sourcefiles"]:
-            raise ex.SetupError("Using 'all' for %s atlas found no label images"
+            raise SetupError("Using 'all' for %s atlas found no label images"
                                 % atlasdict["atlasname"])
 
     lfiles = atlasdict["sourcefiles"]
@@ -241,7 +243,7 @@ def __prep_mask_atlas(atlasdict):
         if refiles:
             atlasdict["sourcefiles"] = refiles
         else:
-            raise ex.SetupError("Using 'all' for %s atlas found no mask images" 
+            raise SetupError("Using 'all' for %s atlas found no mask images" 
                                 % atlasdict["atlasname"])
 
     lfiles = atlasdict["sourcefiles"]
@@ -259,7 +261,7 @@ def __prep_mask_atlas(atlasdict):
                 lfiles[lfiles.index(img)] = imreg[0]
                 repimgs.append(spl(imreg[0]))
         if not len(notimgs) == len(repimgs):
-            raise ex.SetupError(
+            raise SetupError(
                 "File type of mask(s) %s could not be determined or is not supported"
                  % [f for f in notimgs if f not in repimgs])
 
@@ -274,6 +276,10 @@ def __prep_mask_atlas(atlasdict):
     atlasdict["sourcefiles"] = lfiles
     atlasdict["sourcenames"] = lnames
     return atlasdict
+
+def __prep_sphere_atlas(atlasdict):
+    """Prepare the atlas dictionary for a sphere atlas."""
+    atlasdict["manifold"] = "volume"
 
 def fssubjdir():
     """Set and return the path to the Freesurfer Subjects directory.

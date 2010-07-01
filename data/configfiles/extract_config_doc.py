@@ -18,6 +18,8 @@ confid = open(os.path.join(
 docfid = open(os.path.join(
     roipath, "doc", "source", "config_doc.rst"), "w")
 
+docfid.write(".. _config_doc:\n\n")
+
 write = False
 space = False
 

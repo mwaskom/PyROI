@@ -35,6 +35,9 @@ class Analysis(RoiBase):
         """
         if not cfg.is_setup:
             raise SetupError
+
+        if isinstance(analysis, int):
+            analysis = cfg.analysis(analysis)
         
         tree.make_analysis_tree(analysis)
         self.dict = analysis
