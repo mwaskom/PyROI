@@ -1,19 +1,58 @@
 .. _config_doc:
 
-This is a skeleton config file for the PyROI package.
+This is a skeleton config file for the PyROI package.  It consists of 
+several sections where you first specify the elements of your ROI
+analysis and then you give information about your first-level design
+and directory structure so the program knows what to look for and 
+where to find it.
+
+Although the idea behind PyROI is that it gives you the flexibity
+and power of Python without requiring any programming ability, some
+familiarity with the basic Python data types will be useful when you
+set up this config file, to avoid annoying -- and potentiall confusing
+-- syntax errors when the module is imported.  Each section has notes
+on the format for the variable settings required.  The `Python tutorial
+<http://docs.python.org/tutorial/index.html>`_ is an excellent place
+to learn about the language, but the material required to use this 
+file efficiently is somewhat spread out in it.  Take a few minutes
+to familiarize yourself with the definitions for the following data
+types, which will save a few headaches in the long run:
+
+- dictionaries
+
+- lists
+
+- strings
+
+- integers and floats
+
+If you feel like you understand the format each of these types
+requires, you should be all set.  Just make sure to pay close 
+attention to things like the order of quotation marks, commas,
+and the difference between square brackets (``[ ]``), braces 
+(``{ }``), and parentheses (``( )``).  Using an editor that
+highlights syntax to prepare this file is *strongly* encouraged,
+as it can help you catch a lot of mistakes.
+
+Without further preamble, onto your project.
 
 
 
 Project Name
 ------------
 
-Specify the name your analysis will be associated with. All analysis
-results will be printed to roi/analyses/$projname.
+Give your project a name that will be associated with the analysis 
+databases and any user-defined atlases you create.  The sense of a
+*project* in PyROI is somewhat narrower than the traditional sense
+of a research project: each config file should have a unique project
+name, but multiple config files may be associated with the collection
+of subjects and functional paradigms that constitute your research
+project.
 
 Format
 ^^^^^^
 
-``string``
+string
 
 
 Variable Name
@@ -27,41 +66,54 @@ Variable Name
 Analysis Parameters
 -------------------
 
-Specify the parameters for an arbitrary number of analyses. Task-related
-betas from the main analysis paradigm will be extraced from each ROI. 
-You may also specify a functional mask defined by a first-level paradigm
-which will be applied before extraction. The mask will restrict extraction
-to those voxels/vertices that are active in the mask contrast above the 
-mask threshold, with the direction specified by mask sign. If analysis is
-being done in the volume, mask paradigms must be in the same space as the
-analysis paradigm.  This should not matter on the surface.
+An *analysis* consists of the functional paradigm for which data will 
+be extracted, which type of image the data will be extracted from, and,
+optionally, the parameters for a functional mask that will be applied
+to the image before extraction.  Here, you specify a list of these such
+analyses that will be used in your project.  
 
-See the "Entries" section below for the key names to use.  Values
-should be set according to the paradigm and contrast names you specify
-below in this setup functino.
+Note that the "masking" considered part of an analysis is wholly 
+separate from the definition ROIs, which is part of the concept of an 
+*atlas,* and specified below.
 
 All of the mask parameters are optional. If left unset, analysis will 
 be specified as "nomask" and statistics will be extracted from the full
-ROI.  NB: Mask thresh is in -log10(P).
+ROI. 
 
-Format: ``list`` of ``dictionaries``, with each ``dictionary`` in the
-``list`` specifying a separate analysis
+In your operation of the program, analyses will be referred to by their
+index in the list (i.e. analysis 1, analysis 2, etc.), so you may want
+to take some note of the order.  In the databases, the analyses are
+referred to by a code in the form EE_mmCvC_stat, where `EE` is the code
+for the paradigm that statistics are extracted from `mm` is the mask
+paradigm, `CvC` is the mask contrast, and `stat` is the type of image
+that is extracted.  See the paradigms_ section below to specify these
+codes.
+
+See the "Entries" notes for the key names to use and their meanings.  
+Values should be set according to the paradigm and contrast names you
+specify  in the appropriate sections below in this config file.
+
+Format
+^^^^^^
+
+A list of dictionaries
+
 
 Entries
 ^^^^^^^
 
+- par : string -- full name of main analysis paradigm
 
--par : full name of main analysis paradigm
 
--extract: betas, contrasts, or timecourse
+- extract: "beta," "contrast," or "timecourse"
 
--maskpar : full name of functional mask paradigm 
+- maskpar : string -- the full name of the mask paradigm 
 
--maskcon : abbreviated name of functional mask contrast 
+- maskcon : string -- the name of the mask contrast 
 
--maskthresh : threshold for functional mask (in -log10(P))
+- maskthresh : float -- threshold for the mask in -log10(p)
 
--masksign : pos, neg, or abs
+- masksign : "pos", "neg", or "abs" -- how to threshold
 
 Variable Name
 ^^^^^^^^^^^^^
@@ -74,62 +126,62 @@ Variable Name
 Atlases
 -------
 
-Specify the atlases that will define your ROIs, and which ROIs from
-those atlases you will investigate. The format is of a ``dictionary``
-where each key is a shorthand name for an atlas and the value is
-a ``dictionary`` of attributes for that atlas.
+An *atlas* is the concept that lets you define the regions PyROI will
+extract data from.  There currently five broad atlas types: Freesurfer
+atlases, the Harvard-Oxford probabilistic atlas distributed with FSL,
+and atlases composed of regions defined by the user in the form of 
+Freesurfer surface labels, binary mask volumes, or spheres.
 
-For all atlases, you must specify the source and space. 
-
-Source can be "freesurfer", for freesurfer segmentations/parcellations
-in native space; "talairach", for a modified version of the talairach
-daemon used by the WFU Pick Atlas that is provided with this software;
-"mask", for an atlas composed of an arbitrary number of non-overlap-
-ping binary image files in the same space, or "label", for an atlas
-composed of an arbitrary number of non-overlapping Freesurfer labels
-in fsaverage space. Space is either "volume" or "surface"; if the atlas
-is surface-based, you should also provide the hemisphere in the atlas
-``dictionary`` with the "hemi" key.
-
-If source is "freesurfer", just provide the filename (this requires your
-Freesurfer subject directory to be set below). If source is "talairach",
-give the path to the image file. For both of these sources, also specify
-a ``list`` of the numerical IDs to investigate from that atlas. For label or
-mask sources, you will need to provide two pieces of information: the 
-path to the directory where your masks/labels are stored and a ``list`` of
-the names for the masks/labels in that atlas. ROI names will be derived
-from these file names.
+See the atlas reference pages in the online documentation for a full
+description of the various atlases you can use and how to set them up.
 
 Format
 ^^^^^^
 
-``dictionary`` with internal ``dictionaries`` for each atlas
+A dictionary of dictionaries.  The key in each inner dictionary is a string,
+
+and the value formats are given below.
 
 
-Parameters
-^^^^^^^^^^
+Entry Formats
+^^^^^^^^^^^^^^
 
-All:
+- source: "freesurfer", "fsl", "mask", "label", or "sphere"
 
-- source : freesurfer, talairach, label, mask
+- regions: list of integers
 
-- manifold : volume or surface
+- manifold: "volume" or "surface"
 
-Freesurfer or Talairach Daemon source:
+- hemi: "lh" or "rh"
 
-- fname : file name of atlas
+- coordsys: "mni", "tal", or "vox"
 
-- regions : ``list`` of numerical ids to regions under investigation
+- radius: integer
 
-Label Source:
+- centers: dictionary with a string keys and tuples of integers as values 
 
-- hemi : hemisphere
+- probthresh: integer
 
-Label or Mask source:
+- sourcedir: string
 
-- sourcedir : directory with source images
+- sourcefiles: "all" or list of strings 
 
-- sourcefiles : ``list`` label or mask image file names 
+
+
+Required Entries
+^^^^^^^^^^^^^^^^
+
+Note: source is required for all atlas types
+
+- freesurfer: manifold, fname, regions
+
+- fsl: probthresh, regions
+
+- mask: sourcedir, sourcelabels
+
+- label: sourcedir, sourcelabels
+
+- sphere: coordsys, radius, centers
 
 
 Variable Name
@@ -140,33 +192,12 @@ Variable Name
 
 
 
-Freesurfer Subject Directory
-----------------------------
-
-Specify the path to your Freesurfer Subjects directory. If you are not
-using any Freesurfer-based atlases, just specify an arbitry path.  
-Do not delete the variable, as it will cause the program to crash.
-
-Format
-^^^^^^
-
-``string``
-
-
-Variable Name
-^^^^^^^^^^^^^
-
-``subjdir``
-
-
-
-
 Paradigms
 ---------
 
-Specify the full and shorthand names for the paradigms involved in you
-analyses. The format is a ``dictionary`` where keys are full names and
-values are short names. Full names should correspond to the name 
+These are the full and shorthand names for the paradigms involved in 
+your analyses. The format is a dictionary where keys are full names 
+and values are short names. Full names should correspond to the name 
 associated with the paradigm in your file directory (case-sensitive),
 while shorthand names should be a two-letter code that will identify 
 the paradigm in your database.
@@ -174,7 +205,7 @@ the paradigm in your database.
 Format
 ^^^^^^
 
-``dictionary``
+dictionary
 
 
 Variable Name
@@ -192,54 +223,53 @@ Specify the task-related elements of your first-level design matrix.
 The hrfcomponents variable specifies how many different beta images
 are associated with each task condition. The betastoextract variable 
 specifies which regressors to extract if multiple regressors are
-associated with each task condition.  It can be "all" or a ``list`` of 
+associated with each task condition.  It can be "all" or a list of 
 integers corresponding to the components. The conditions variable links
-paradigm names (as specified above) to a ``list`` of short names (ideally
+paradigm names (as specified above) to a list of short names (ideally
 4 or 5 letters) for the task conditions in that paradigm. The order of
-condition names in these ``lists`` should correspond to the order in your
+condition names in these lists should correspond to the order in your
 beta images.
 
 Formats
 ^^^^^^^
 
 
--``integer``
+- integer
 
--"all" or ``list`` of integers
+- "all" or list of integers
 
--``dictionary`` where each key is a ``string`` and each value is a 
- ``list`` of ``strings``
+- dictionary where each key is a string and each value is a list of strings
 
 Variable Names
 ^^^^^^^^^^^^^^
 
--``hrfcomponents``
+- ``hrfcomponents``
 
 
--``betastoextract``
+- ``betastoextract``
 
--``conditions``
+- ``conditions``
 
 
 
 Contrasts
 ---------
 
-Specify the contrasts for each paradigm involved in your analysis. The 
-format is a ``dictionary`` where the keys are full paradigm names (as they
-are specified above) and values are ``dictionaries`` mapping an abbreviation
-for the contrast (typically in FsFast style) to the number of con image
-for that contrast.
+Here you name the contrasts for each paradigm involved in your analysis.
+The format is a dictionary where the keys are full paradigm names (as they
+are specified above) and values are dictionaries mapping an abbreviation
+for the contrast the number of con image number for that contrast.
 
-Note that if you are not going to be using any functional masks, you can
-leave this as an empty ``dictionary``.
+This section is only relevant if you are using functional masks in your
+analyses or extracting from contrast effect-size images.  Otherwise,
+you can leave the dictionary empty.
 
 Format
 ^^^^^^
 
-``dictionary`` where each key is a ``string`` and each value is a ``dictionary``
+dictionary where each key is a string and each value is a dictionary
 
-inner ``dictionary``: each key is a ``string`` and each value is an integer
+inner dictionary: each key is a string and each value is an integer
 
 
 Variable Name
@@ -253,42 +283,43 @@ Variable Name
 First Level Datapaths
 ---------------------
 
-Specify the absolute path to your main directory and relative paths from
-that directory to those containing timecourses, mean functionals, first-
-level betas, and first-level contrast images (currently, PyROI assumes that
-contrast-effect size and T statistic images are in the same directory for 
-each paradigm/subject).  You may include ``$paradigm``, ``$subject``, and 
-``$contrast`` wildcards in the path ``strings``, which will be replaced
-appropriately as the program runs. 
+Specify the absolute path to your main directory and relative paths
+from that directory to those containing certain types of images.  You 
+may include ``$paradigm``, ``$subject``, and ``$contrast`` wildcards in
+the path strings, which will be replaced appropriately as the program runs.
+After replacement,each variable should pick out a single directory in your
+file system.
+
+The betapath variable gives the path to parameter estimates for regressors
+from your first-level model.  The contrastpath variable gives the path to
+contrast effect size estimates and T stastic images (currently, PyROI 
+assumes these are in the same directory).  The timecourse path leads to
+functional timecourses at your desired level of preprocessing, and the 
+meanfunctionalpath should lead to a single-frame mean image created from
+your timecouse.  See the note below on the special usage for the timecourse
+and mean functional variables.
 
 
 Format
 ^^^^^^
 
+strings
 
-``string``
 
-``string``
 
-``string``
-
-``string``
-
-``string``
-
-Variable Name
-^^^^^^^^^^^^^
+Variable Names
+^^^^^^^^^^^^^^
 
 ``basepath``
 
 
-``timecoursepath``
-
-``meanfuncpath``
-
 ``betapath``
 
 ``contrastpath``
+
+``timecoursepath``
+
+``meanfuncpath``
 
 For the timecoursepath and meanfuncpath variables, specify the path to
 your images as above, but also include a file template with a wildcard
@@ -297,11 +328,31 @@ image type for each paradigm/subject, the wildcard should be choosen
 to match only one file in the directory.
 
 
+Freesurfer Subject Directory
+----------------------------
+
+Set the path to your Freesurfer Subjects directory. If your data has not
+been processed in Freesurfer, leave this variable as an empty string.
+
+Format
+^^^^^^
+
+string
+
+
+Variable Name
+^^^^^^^^^^^^^
+
+``subjdir``
+
+
+
+
 Subjects
 --------
 
-Specify the subjects to use in your analyses.  The format is a ``dictionary``
-where keys are the names of your groups and values are ``lists`` of your
+Here you name the subjects in your project.  The format is a dictionary
+where keys are the names of your groups and values are lists of your
 subjects, specified by how they are stored in your filesystem (Freesurfer
 ID, etc.). Maintain this format even if you have only one group; simply 
 use the name of your experiment, or other, as the single key to the dict-
@@ -310,9 +361,7 @@ ionary in that case.
 Format
 ^^^^^^
 
-````dictionary```` with ``strings`` as each key and a ``list`` of ``strings`` 
-
-as each value
+dictionary with a string as each key and a list of strings as each value
 
 
 Variable Name

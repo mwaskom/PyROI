@@ -1,3 +1,5 @@
+#! /usr/bin/env python
+
 import os
 
 fullfid = open(os.path.join(os.path.split(__file__)[0],
@@ -17,7 +19,7 @@ def flip(value):
 for num, line in enumerate(fullfid):
     
     if not line.startswith("#--"):
-        if line.startswith("\"\"\"") and num > 8:
+        if line.startswith("\"\"\"") and num > 45:
             write = flip(write)
             lastflip = num
 

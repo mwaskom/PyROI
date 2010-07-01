@@ -45,7 +45,5 @@ call.  This is not recommended for beginners.
 Config file content
 -------------------
 
-The following duplicates the internal config file documentation:
-
 .. include:: config_doc.rst
 

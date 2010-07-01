@@ -1,3 +1,5 @@
+#! /usr/bin/env python
+
 import os
 
 os.system("python ../data/configfiles/make_clean_config.py")

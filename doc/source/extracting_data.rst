@@ -26,8 +26,8 @@ Note that this allows import by filename, so you can give a path to a config
 file that is not in the working directory.
 
 Either method imports your config file into the ``setup`` module of the
-config interface module, which is imported as ``roi.cfg`` automatically
-when you import pyroi.  You can always check whether a config file has
+config interface module, which is loaded as ``roi.cfg`` automatically
+when you start pyroi.  You can always check whether a config file has
 been imported with the ``is_setup`` attribute of the config interface 
 module::
 
@@ -50,7 +50,7 @@ Using the Config File
 For standard processing streams in PyROI, you will not need to interact
 directly with the information from the config file.  If you do wish to
 access the data, however, you should do so through the ``roi.cfg``
-module.  See the :ref:`config_interface` reference for full information
+module.  See the :ref:`config_interface`_  reference for full information
 about the functions afforded by that module.
 
 Extracting Data

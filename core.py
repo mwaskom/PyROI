@@ -5,7 +5,7 @@ import subprocess
 from copy import deepcopy
 import configinterface as cfg
 
-__all__ = ["import_config", "write_config_base"]
+__all__ = ["RoiResult", "import_config", "write_config_base"]
 
 __module__ = "core"
 
@@ -58,12 +58,30 @@ class RoiBase(object):
         return result
 
 class RoiResult(object):
-    """Result class to return PyROI processing command lines and results"""
+    """Result class to return PyROI processing command lines and results.
+    
+    An object of this class is returned any time a method runs an external
+    binary for processing.  It has three main attributes: cmdline, stdout,
+    and stderr.  Each is a list of strings, with the same index in each
+    list corresponding to the command line that was called and any infor-
+    mation from the stdout and stderr system pipes.  The class has a
+    __str__ method that turns these lists into a readable string that will
+    duplicate what you would have seen on your terminal.
+
+    By calling or using the add() method on another RoiResult object,
+    it will add that object's information to its internal result lists.  
+    In this way, it can be used to create a log object, which can then
+    be written to text at the end of an analysis script.
+    
+    """
     def __init__(self, cmdline=None, res=None):
         
         self.cmdline = []
         self.stdout = []
         self.stderr = []
+
+        if cmdline is not None:
+            self(cmdline, res)
 
     def __call__(self, cmdline, res=None):
         """Call the object with a cmdline and optionally a processing result.""" 
@@ -71,6 +89,10 @@ class RoiResult(object):
             self.cmdline.extend(cmdline.cmdline)
             self.stdout.extend(cmdline.stdout)
             self.stderr.extend(cmdline.stderr)
+        elif cmdline is None:
+            self.cmdline.append("")
+            self.stdout.append("")
+            self.stderr.append("")
         else:
             self.cmdline.append(cmdline)
 
@@ -175,7 +197,7 @@ def write_config_base(filename, force=False, clean=False):
                "\n(But someone else's might.)")
     else:
         f = open(os.path.join(targpath, ".roiconfigfile"), "w")
-        w.write(os.path.split(filename)[1])
+        f.write(os.path.split(filename)[1])
 
     sourcepath = os.path.join(os.path.split(__file__)[0], "data", "configfiles")
     if clean:

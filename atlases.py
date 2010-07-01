@@ -1,5 +1,4 @@
 import os
-
 import re
 import sys
 import shutil
@@ -81,7 +80,9 @@ class Atlas(RoiBase):
     def __str__(self):
         """String representation."""
 
-
+    def _atlas_exists(self):
+        """Return whether the atlas file exists."""
+        return os.path.isfile(self.atlas)
 
     # Initialization methods
     def init_paradigm(self, paradigm):
@@ -102,13 +103,13 @@ class Atlas(RoiBase):
         
         Parameters
         ----------
-        analysis : Analysis object or dict
+        analysis : int, dict, or Analysis object
         
         """
         if not self._init_subject:
             raise InitError("Subject")
 
-        if isinstance(analysis, dict) or isinstance(analysis, num):
+        if isinstance(analysis, dict) or isinstance(analysis, int):
             analysis = anal.Analysis(analysis)
 
         self.analysis = analysis
@@ -244,21 +245,22 @@ class Atlas(RoiBase):
         
 
     # Processing methods
-    def make_atlas(self, reg=False):
+    def make_atlas(self, reg=1):
         """Run the neccessary preprocessing steps to make a mask or label atlas.
         
         For native-space atlases (Freesurfer and Label atlases), a subject
         must be initialized.  This is uneccesary for standard-space atlases.
 
-
         Parameters
         ----------
-        reg : bool, optional
-            If true, Freesurfer's bbregister program will be run to register
-            the mean functional volume to the anatomical.  This is only rele-
-            vant for Freesurfer atlases.  It is false by default because 
-            registration can take a while.
-        
+        reg : int, optional
+            This option controls whether Freesurfer's bbregister program will 
+            be run to register the mean functional volume to the anatomical.  
+            This is only relevant for Freesurfer atlases.  It has three settings:
+            0 : do not create registration matrices
+            1 : create registration matrices if they do not exist -- default
+            2 : create registration matricies for all subjects
+
         Returns
         -------
         RoiResult object
@@ -267,23 +269,23 @@ class Atlas(RoiBase):
         res = RoiResult()
         if self.source == "mask":
             res(self.__make_mask_atlas())
-            res(self.__stats())
+            if self._atlas_exists(): res(self.__stats())
         elif self.source == "label":
             if not self._init_subject:
                 raise InitError("Subject")
             res(self.__make_label_atlas())
-            res(self.__stats())
+            if self._atlas_exists(): res(self.__stats())
         elif self.source == "freesurfer":
             if not self._init_subject:
                 raise InitError("Subject")
             res(self.__make_freesurfer_atlas(reg))
-            res(self.__stats())
+            if self._atlas_exists(): res(self.__stats())
         else:
             res("No make_atlas processing neccessary for %s atlases." 
                 % self.source)
         return res
 
-    def group_make_atlas(self, subjects=None):
+    def group_make_atlas(self, subjects=None, reg=1):
         """Run atlas preprocessing steps for a list of subjects.
         
         Prerequisite
@@ -297,6 +299,11 @@ class Atlas(RoiBase):
             List of subjects to preprocess. If a string, it runs the
             group defined by that name in the config file. Will run
             the full subject list from config if ommitted.
+        reg : int, optional
+            See make_atlas() docstring for more info
+            0 : do not create registration matrices
+            1 : create registration matrices if they do not exist -- default
+            2 : create registration matricies for all subjects
            
         Returns
         -------
@@ -308,11 +315,15 @@ class Atlas(RoiBase):
         elif isinstance(subjects, str):
             subjects = cfg.subjects(subjects)
         result = RoiResult()
-        for subject in subjects:
-            self.init_subject(subject)
-            res = self.make_atlas()
-            print res
-            result(res)
+        if self.space == "standard":
+            result(self.make_atlas(reg))
+        else:
+            for subject in subjects:
+                self.init_subject(subject)
+                res = self.make_atlas(reg)
+
+                print res
+                result(res)
         return result
 
     def __make_mask_atlas(self):
@@ -422,12 +433,13 @@ class Atlas(RoiBase):
     def __make_freesurfer_atlas(self, reg=False):
         """Run atlas preprocessing steps for a Freesurfer atlas."""
         if not os.path.isfile(self.regmat) and not reg:
-            print ("\nRegistration matrix not found."
-                   "\nCall method with the argument 'reg=True' to create.")
+            print ("\nRegistration matrix not found for %s."
+                   "\nCall method with a different setting for the `reg` argument to create."
+                   % self.subject)
             return
         result = RoiResult()
         if self.manifold == "volume":
-            if reg:
+            if reg==2 or (reg==1 and not os.path.isfile(self.regmat)):
                 reg = FSRegister()
                 reg.init_paradigm(self.paradigm)
                 reg.init_subject(self.subject)
@@ -507,11 +519,14 @@ class Atlas(RoiBase):
 
         Parameters
         ----------
-        reg = bool, optional
-            If True and analysis is on the surface, will use Freesurfer's
-            bbregister program to register the mean functional to the
-            anatomical so statisitcal images can be sampled onto the surface.
-            It is False by default, because registration can take a long time.
+        reg : int, optional
+            This option controls whether Freesurfer's bbregister program will 
+            be run to register the mean functional volume to the anatomical so
+            statistical images can be sampled to the surface.  This is only
+            relevant for surface atlases.  The option has three settings:
+            0 : do not create registration matrices
+            1 : create registration matrices if they do not exist -- default
+            2 : create registration matricies for all subjects
 
         Returns
         -------
@@ -521,22 +536,35 @@ class Atlas(RoiBase):
         if not self._init_analysis:
             raise InitError("Analysis")
         if not reg:
-            if self.manifold == "surface" and not os.path.isfile(self.regmat):
-                print ("\nRegistration matrix not found."
-                       "\nCall method with the argument 'reg=True' to create.")
-                return
+            if self.manifold == "surface" 
+                if not os.path.isfile(self.regmat) and not reg:
+                    print ("\nRegistration matrix not found for %s %s to orig."
+                           "\nCall method with a different `reg` setting to create."
+                           % (self.subject, self.analysis.paradigm))
+                    return
+                elif self.mask:
+                    mask = anal.SigImage(self.analysis)
+                    mask.init_subject(self.subject)
+                    if not os.path.isfile(mask.regmat) and not reg:
+                        print ("\nRegistration matrix not found for %s %s to orig."
+                               "\nCall method with a different `reg` setting to create."
+                               % (self.subject, mask.analysis.maskpar))
+                        return
+                        
 
         res = RoiResult()
-        if self.manifold == "surface" and reg:
-            reg = FSRegister()
-            reg.init_paradigm(self.analysis.paradigm)
-            reg.init_subject(self.subject)
-            res(reg.register())
-            if self.mask and self.analysis.maskpar != self.analysis.paradigm:
+        if self.manifold == "surface":
+            if reg==2 or (reg==1 and not os.path.isfile(self.regmat)):
                 reg = FSRegister()
-                reg.init_paradigm(self.analysis.maskpar)
+                reg.init_paradigm(self.analysis.paradigm)
                 reg.init_subject(self.subject)
                 res(reg.register())
+                if self.mask and self.analysis.maskpar != self.analysis.paradigm:
+                    if reg==2 or (reg==1 and not os.path.isfile(self.regmat):
+                        reg = FSRegister()
+                        reg.init_paradigm(self.analysis.maskpar)
+                        reg.init_subject(self.subject)
+                        res(reg.register())
         extractvols = anal.init_stat_object(self.analysis)
         extractvols.init_subject(self.subject)
         res(extractvols.concatenate())
@@ -558,13 +586,16 @@ class Atlas(RoiBase):
 
         Parameters
         ----------
-        analysis : dict or Analysis object
+        analysis : analysis number, dict or Analysis object
         subjects : list, or str, optional
             List of subjects to preprocess. If a string, it runs the
             group defined by that name in the config file. Will run
             the full subject list from config if ommitted.
-        reg : bool, optional
-            Perform intramodal registration, if applicable.  False by default.
+        reg : int, optional
+            See prepare_source_images() docstring for more info.
+            0 : do not create registration matrices
+            1 : create registration matrices if they do not exist -- default
+            2 : create registration matricies for all subjects
 
         Returns
         -------
@@ -609,7 +640,7 @@ class Atlas(RoiBase):
         """
         if not self._init_analysis:
             raise InitError("Analysis")
-        elif not self._atlas_exists:
+        elif not self._atlas_exists():
             raise PreprocessError(self.atlas)
 
         if self.manifold == "volume":
@@ -672,19 +703,27 @@ class Atlas(RoiBase):
             List of subjects to preprocess. If a string, it runs the
             group defined by that name in the config file. Will run
             the config setup module.
-            
+           
+        Returns
+        -------
+        RoiResult object
+
         """
         if subjects is None:
             subjects = cfg.subjects()
         elif isinstance(subjects, str):
             subjects = cfg.subjects(subjects)
-        if isinstance(analysis, dict):
+        if isinstance(analysis, dict) or isinstance(analysis, int):
             analysis = anal.Analysis(analysis)
+        result = RoiResult()
         for subj in subjects:
             self.init_paradigm(analysis.paradigm)
             self.init_subject(subj)
             self.init_analysis(analysis)
-            print self.extract()
+            res = self.extract()
+            print res
+            result(res)
+        return result
 
 class FreesurferAtlas(Atlas):
     """Class for Freesurfer atlases.
@@ -706,7 +745,7 @@ class FreesurferAtlas(Atlas):
     
     >>> aseg = roi.FreesurferAtlas("aseg", "par_name", "subj_id")
     >>> res = aseg.make_atlas()
-    >>> analysis = roi.cfg.analysis(0)
+    >>> analysis = roi.cfg.analysis(1)
     >>> aseg(analysis)
     >>> aseg.prepare_source_images()
     >>> res = aseg.extract()
@@ -715,7 +754,7 @@ class FreesurferAtlas(Atlas):
 
     >>> aseg = roi.FreesurferAtlas("aseg", "par_name")
     >>> res = aseg.group_make_atlas()
-    >>> analysis = roi.cfg.analysis(0)
+    >>> analysis = roi.cfg.analysis(1)
     >>> res = aseg.group_prepare_source_images(analysis)
     >>> res = aseg.group_extract(analysis)
 
@@ -765,7 +804,7 @@ class FreesurferAtlas(Atlas):
         if self.manifold == "surface":
             self.iterhemi = ["lh","rh"]
         self.fname = atlasdict["fname"]
-
+        self.space = "native"
         self.lutfile = os.path.join(os.getenv("FREESURFER_HOME"), 
                                     "FreeSurferColorLUT.txt")
 
@@ -837,7 +876,6 @@ class FreesurferAtlas(Atlas):
             self.origatlas = os.path.join(self.subjdir, subject, origdir, fname)
             self.atlas = os.path.join(self.basedir, self.manifold, pardir, subject,
                                       self.atlasname, "%s.%s" % (atlasname, ext))
-            self._atlas_exists = os.path.isfile(self.atlas)
             self.statsfile = os.path.join(self.basedir, self.manifold, pardir,
                                           subject, self.atlasname,
                                           "%s.stats" % atlasname)
@@ -909,6 +947,36 @@ class FSRegister(FreesurferAtlas):
 
         return self._nipype_run(reg)
 
+    def group_register(self, subjects=None, method="fsl"):
+        """Register functional space to Freesurfer original atlas space for a group.
+        
+        Parameters
+        ----------
+        subjects : str or list, optional
+            If None: runs the full subject list from the config file -- default
+            If str: runs analysis for that group as defined in config file
+            If list: runs analysis on the subjects in the list
+        method : str, optional
+            Specifiy the initial registration method.  Options are 'fsl',
+            'spm', or 'header'.  Defaults to 'fsl'.
+
+        Returns
+        -------
+        RoiResult object
+
+        """
+        if subjects is None:
+            subjects = cfg.subjects()
+        elif isinstance(subjects, str):
+            subjects = cfg.subjects(subjects)
+        result = RoiResult()
+        for subj in subjects:
+            self.init_subject(subjects)
+            res = self.register(method)
+            result(res)
+
+        return result
+
 
 class HarvardOxfordAtlas(Atlas):
     """Class for the HarvardOxford atlas included with FSL.   
@@ -927,7 +995,7 @@ class HarvardOxfordAtlas(Atlas):
     Single Subject:
     
     >>> fslatlas = roi.HavardOxfordAtlas("fsl")
-    >>> analysis = roi.cfg.analysis(0)
+    >>> analysis = roi.cfg.analysis(1)
     >>> fslatlas(analysis)
     >>> res = fslatlas.prepare_source_images()
     >>> res = fslatlas.extract()
@@ -935,7 +1003,7 @@ class HarvardOxfordAtlas(Atlas):
     Group:
     
     >>> fslatlas = roi.HarvardOxfordAtlas("fsl")
-    >>> analysis = roi.cfg.analysis(0)
+    >>> analysis = roi.cfg.analysis(1)
     >>> res = fslatlas.group_prepare_source_images(analysis)
     >>> res = fslatlas.group_extract()
 
@@ -1001,7 +1069,7 @@ class LabelAtlas(Atlas):
     
     >>> labls = roi.LabelAtlas("social_labels", "subj_id")
     >>> labls.make_atlas()
-    >>> analysis = roi.cfg.analysis(0)
+    >>> analysis = roi.cfg.analysis(1)
     >>> labls.init_analysis(analysis)
     >>> labls.extract()
 
@@ -1009,7 +1077,7 @@ class LabelAtlas(Atlas):
     
     >>> labls = roi.LabelAtlas("social_labels")
     >>> labls.group_make_atlas()
-    >>> analysis = roi.cfg.analysis(0)
+    >>> analysis = roi.cfg.analysis(1)
     >>> labls.group_extract(analysis)
 
     Atlas Information
@@ -1086,7 +1154,7 @@ class MaskAtlas(Atlas):
     
     >>> masks = roi.MaskAtlas("social_masks", "subj_id")
     >>> masks.make_atlas()
-    >>> analysis = roi.cfg.analysis(0)
+    >>> analysis = roi.cfg.analysis(1)
     >>> masks.init_analysis(analysis)
     >>> masks.extract()
 
@@ -1094,7 +1162,7 @@ class MaskAtlas(Atlas):
     
     >>> masks = roi.LabelAtlas("social_masks")
     >>> masks.group_make_atlas()
-    >>> analysis = roi.cfg.analysis(0)
+    >>> analysis = roi.cfg.analysis(1)
     >>> masks.group_extract(analysis)
 
     Atlas Information

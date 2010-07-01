@@ -33,6 +33,7 @@ if os.path.isfile(".roiconfigfile"):
     
     # Import the module
     try:
+        if not module: raise ImportError
         f, name, desc = imp.find_module(module)
         setup = imp.load_module("setup", f, name, desc)
         is_setup = True
@@ -66,7 +67,8 @@ def analysis(dictnumber=None):
     ---------
     dictnumber : int, optional
         If included, the function returns the dictionary at this index.
-        Otherwise, it returns the full list.
+        Otherwise, it returns the full list.  Note that indexing for this
+        function is 1-based, unlike most python sequences.        
 
     Returns
     -------
@@ -82,7 +84,13 @@ def analysis(dictnumber=None):
     if dictnumber is None:
         return analyses
     else:
-        return analyses[dictnumber]
+        if dictnumber not in range(1, len(analyses) + 1):
+            print ("\nAnalysis %d is out of range." 
+                   "\nRemember that the analysis list index is 1-based."
+                   % dictnumber)
+            return
+        else:
+            return analyses[dictnumber - 1]
 
 
 def atlases(atlasname=None):
