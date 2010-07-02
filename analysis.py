@@ -29,8 +29,8 @@ class Analysis(RoiBase):
 
         Parameter
         ---------
-        analysis : dict
-            Analysis dictionary from config module.
+        analysis : int or dict
+            Analysis index or dictionary from config module.
         
         """
         if not cfg.is_setup:
@@ -65,7 +65,7 @@ class FirstLevelStats(RoiBase):
         if not cfg.is_setup:
             raise SetupError
         
-        if isinstance(analysis, dict):
+        if isinstance(analysis, int) or isinstance(analysis, dict):
             analysis = Analysis(analysis)
 
         tree.make_levelone_tree()
@@ -120,17 +120,29 @@ class FirstLevelStats(RoiBase):
         """Concatenate stat images for a group of subjects."""
         if subjects is None:
             subjects = cfg.subjects()
+        elif isinstance(subjects, str):
+            subjects = cfg.subjects(subjects)
+        result = RoiResult()
         for subj in subjects:
             self.init_subject(subj)
-            print self.concatenate()
+            res = self.concatenate()
+            print res
+            result(res)
+        return result
 
     def group_sample_to_surface(self, subjects=None):
         """Sample stat volumes to the surface for a group."""
         if subjects is None:
             subjects = cfg.subjects()
+        elif isinstance(subjects, str):
+            subjects = cfg.subjects(subjects)
+        result = RoiResult()
         for subj in subjects:
             self.init_subject(subj)
-            print self.sample_to_surface()
+            res = self.sample_to_surface()
+            print res
+            result(res)
+        return result
 
 class BetaImage(FirstLevelStats):
     """Docstring goes here"""
@@ -186,6 +198,7 @@ class ContrastImage(FirstLevelStats):
                                    subject, "func2orig.dat")
         
         self._init_subject = True
+
 
 class TStatImage(FirstLevelStats):
     """T Statistic class"""
@@ -255,10 +268,14 @@ class TStatImage(FirstLevelStats):
         """Convert a t statistic image to a sig image for a group of subjects"""  
         if subjects is None:
             subjects = cfg.subjects()
+        elif isinstance(subjects, str):
+            subjects = cfg.subjects(subjects)
+        result = RoiResult()
         for subj in subjects:
             self.init_subject(subj)
-            self.convert_to_sig()
-            print "Converting %s to %s" % (self.timg, self.sigimg)
+            res = self.convert_to_sig()
+            result(res)
+        return result
 
 class SigImage(FirstLevelStats):
     """Sig image class"""
@@ -289,18 +306,24 @@ class SigImage(FirstLevelStats):
 def init_stat_object(analysis):
     """Initalize the proper first level statistic class with an analysis object.
     
+    This initializes the proper object for extraction (corresponding to the main
+    analysis paradigm and the image type specified by the 'extract' entry in the
+    analysis dictionary).
+
     Parameters
     ----------
-    analysis : Analysis object
+    analysis : int, dict, or Analysis object
     
     Returns
     -------
     FirstLevelStats object
     
     """
-    if isinstance(analysis, dict):
+    if isinstance(analysis, int) or isinstance(analysis, dict):
         analysis = Analysis(analysis)
     if analysis.extract == "beta":
         return BetaImage(analysis)
     elif analysis.extract == "contrast":
         return ContrastImage(analysis)
+    elif analysis.extract in ['timecourse', 'tstat', 'sig']:
+        raise NotImplementedError("%s cannot yet be extracted." % analysis.extract)

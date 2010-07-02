@@ -256,8 +256,14 @@ the result object::
 
     >>> res = aseg.extract()
     >>> print res
-    mri_segstats --i /g2/gablab/sad/PY_STUDY_DIR/Block/roi/levelone/beta/novelfaces/SAD_020/task_betas.mgz --seg /g2/gablab/sad/PY_STUDY_DIR/Block/roi/atlases/freesurfer/volume/novelfaces/SAD_020/aseg/aseg.mgz --id 17 --id 18 --id 53 --id 54 --sum /g2/gablab/sad/PY_STUDY_DIR/Block/roi/analysis/development/NF_nomask_beta/aseg/stats/SAD_020.stats --avgwf /g2/gablab/sad/PY_STUDY_DIR/Block/roi/analysis/development/NF_nomask_beta/aseg/extracttxt/SAD_020.txt --avgwfvol /g2/gablab/sad/PY_STUDY_DIR/Block/roi/analysis/development/NF_nomask_beta/aseg/extractvol/SAD_020.nii
-    Loading /g2/gablab/sad/PY_STUDY_DIR/Block/roi/atlases/freesurfer/volume/novelfaces/SAD_020/aseg/aseg.mgz    
+    mri_segstats --i /g2/gablab/sad/PY_STUDY_DIR/Block/roi/levelone/beta/novelfaces/SAD_020/task_betas.mgz 
+    --seg /g2/gablab/sad/PY_STUDY_DIR/Block/roi/atlases/freesurfer/volume/novelfaces/SAD_020/aseg/aseg.mgz 
+    --id 17 --id 18 --id 53 --id 54 
+    --sum /g2/gablab/sad/PY_STUDY_DIR/Block/roi/analysis/development/NF_nomask_beta/aseg/stats/SAD_020.stats 
+    --avgwf /g2/gablab/sad/PY_STUDY_DIR/Block/roi/analysis/development/NF_nomask_beta/aseg/extracttxt/SAD_020.txt 
+    --avgwfvol /g2/gablab/sad/PY_STUDY_DIR/Block/roi/analysis/development/NF_nomask_beta/aseg/extractvol/SAD_020.nii
+
+    Loading /g2/gablab/sad/PY_STUDY_DIR/Block/roi/atlases/freesurfer/volume/novelfaces/SAD_020/aseg/aseg.mgz
     Loading /g2/gablab/sad/PY_STUDY_DIR/Block/roi/levelone/beta/novelfaces/SAD_020/task_betas.mgz
     Voxel Volume is 14.6228 mm^3
     Generating list of segmentation ids
@@ -280,10 +286,11 @@ object to its internal records.  In this way, result objects can be used in
 a script to easily create a log object, which you can then write to a file
 after you finish your processing::
 
-    >>> res = roi.RoiResult()
-
-    ...some processing...
-
+    >>> result = roi.RoiResult()
+    >>> res = atlas.make_atlas()
+    >>> res(result)
+    >>> res = atlas.extract()
+    >>> res(result)
     >>> log = open("log_file.txt", "w")
     >>> log.write("%s" % res)
     >>> log.close()
