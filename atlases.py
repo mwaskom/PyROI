@@ -257,9 +257,9 @@ class Atlas(RoiBase):
             This option controls whether Freesurfer's bbregister program will 
             be run to register the mean functional volume to the anatomical.  
             This is only relevant for Freesurfer atlases.  It has three settings:
-            0 : do not create registration matrices
-            1 : create registration matrices if they do not exist -- default
-            2 : create registration matricies for all subjects
+            0 : do not create registration matrix
+            1 : create registration matrix if it does not exist -- default
+            2 : create or overwrite registration matrix
 
         Returns
         -------
@@ -303,7 +303,7 @@ class Atlas(RoiBase):
             See make_atlas() docstring for more info
             0 : do not create registration matrices
             1 : create registration matrices if they do not exist -- default
-            2 : create registration matricies for all subjects
+            2 : create or overwrite registration matricies
            
         Returns
         -------
@@ -430,7 +430,7 @@ class Atlas(RoiBase):
         if self.debug: os.remove(self.lutfile)
         return RoiResult("Writing %s" % self.lutfile)
 
-    def __make_freesurfer_atlas(self, reg=False):
+    def __make_freesurfer_atlas(self, reg=1):
         """Run atlas preprocessing steps for a Freesurfer atlas."""
         if not os.path.isfile(self.regmat) and not reg:
             print ("\nRegistration matrix not found for %s."
@@ -512,7 +512,7 @@ class Atlas(RoiBase):
 
         return self._nipype_run(segstats)
 
-    def prepare_source_images(self, reg=False):
+    def prepare_source_images(self, reg=1):
         """Prepare the functional and statistical images for extraction.
         
         An analysis must be initialized in the atlas
@@ -524,9 +524,9 @@ class Atlas(RoiBase):
             be run to register the mean functional volume to the anatomical so
             statistical images can be sampled to the surface.  This is only
             relevant for surface atlases.  The option has three settings:
-            0 : do not create registration matrices
-            1 : create registration matrices if they do not exist -- default
-            2 : create registration matricies for all subjects
+            0 : do not create registration matrix
+            1 : create registration matrix if it does not exist -- default
+            2 : create or overwrite registration matrix
 
         Returns
         -------
@@ -581,7 +581,7 @@ class Atlas(RoiBase):
 
         return res
 
-    def group_prepare_source_images(self, analysis, subjects=None, reg=False):
+    def group_prepare_source_images(self, analysis, subjects=None, reg=1):
         """Prepare the source images for a group.
 
         Parameters
@@ -595,7 +595,7 @@ class Atlas(RoiBase):
             See prepare_source_images() docstring for more info.
             0 : do not create registration matrices
             1 : create registration matrices if they do not exist -- default
-            2 : create registration matricies for all subjects
+            2 : create or overwrite registration matricies
 
         Returns
         -------
@@ -1261,8 +1261,8 @@ def init_atlas(atlasdict, subject=None, paradigm=None, **kwargs):
     
     Parameters
     ----------
-    atlasdict : dict or str
-        Atlas dictionary or atlas name, if internal config module is setup.
+    atlasdict : str or dict
+        Atlas name or a dictionary of atlas parameters
     subject : str, optional
         If included, the atlas will be initialized for this subject
     paradigm : str, optional

@@ -2,7 +2,7 @@
 
 This is a skeleton config file for the PyROI package.  It consists of 
 several sections where you first specify the elements of your ROI
-analysis and then you give information about your first-level design
+analysis and then give information about your first-level design
 and directory structure so the program knows what to look for and 
 where to find it.
 
@@ -29,12 +29,14 @@ types, which will save a few headaches in the long run:
 If you feel like you understand the format each of these types
 requires, you should be all set.  Just make sure to pay close 
 attention to things like the order of quotation marks, commas,
-and the difference between square brackets (``[ ]``), braces 
-(``{ }``), and parentheses (``( )``).  Using an editor that
+and the difference between square brackets -- ``[ ]``, braces -- 
+``{ }``, and parentheses -- ``( )``.  Using an editor that
 highlights syntax to prepare this file is *strongly* encouraged,
 as it can help you catch a lot of mistakes.
 
-Without further preamble, onto your project.
+All of the commentary in this file is also availbile on the online
+documentation in a format you might find easier to read.  Now, 
+without further preamble, onto your project.
 
 
 
@@ -127,10 +129,10 @@ Atlases
 -------
 
 An *atlas* is the concept that lets you define the regions PyROI will
-extract data from.  There currently five broad atlas types: Freesurfer
-atlases, the Harvard-Oxford probabilistic atlas distributed with FSL,
-and atlases composed of regions defined by the user in the form of 
-Freesurfer surface labels, binary mask volumes, or spheres.
+extract data from.  There currently five atlas types: Freesurfer atlases,
+the Harvard-Oxford probabilistic atlas distributed with FSL, and atlases
+composed of regions defined by the user in the form of Freesurfer surface
+labels, binary mask volumes, or spheres.
 
 See the atlas reference pages in the online documentation for a full
 description of the various atlases you can use and how to set them up.
@@ -154,17 +156,17 @@ Entry Formats
 
 - hemi: "lh" or "rh"
 
-- coordsys: "mni", "tal", or "vox"
-
-- radius: integer
-
-- centers: dictionary with a string keys and tuples of integers as values 
-
 - probthresh: integer
 
 - sourcedir: string
 
 - sourcefiles: "all" or list of strings 
+
+- coordsys: "mni", "tal", or "vox"
+
+- radius: integer
+
+- centers: dictionary with a string keys and tuples of integers as values 
 
 
 
@@ -289,6 +291,9 @@ may include ``$paradigm``, ``$subject``, and ``$contrast`` wildcards in
 the path strings, which will be replaced appropriately as the program runs.
 After replacement,each variable should pick out a single directory in your
 file system.
+
+A directory will be created within the basepath directory called ``roi``,
+which is where all files created by PyROI will be stored.
 
 The betapath variable gives the path to parameter estimates for regressors
 from your first-level model.  The contrastpath variable gives the path to
