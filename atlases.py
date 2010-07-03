@@ -1,3 +1,27 @@
+"""
+This module contains classes with methods that relate to atlas manipulation.
+
+Classes
+-------
+Atlas              :  Base class with most processing methods
+FreesurferAtlas    :  Methods for extraction from Freesurfer volume and surface 
+                      atlases in native space
+HarvardOxfordAtlas :  Methods for extraction from the Harvard-Oxford probabilistic
+                      atlas in standard space
+LabelAtlas         :  Methods for the creation of user-defined atlases from
+                      Freesurfer surface labels
+MaskAtlas          :  Methods for the creation of user-defined atlases from
+                      binary mask images in standard space
+SphereAtlas        :  Methods for the creation of user-defined atlases from
+                      spherical ROIs
+
+Functions
+---------
+init_atlas         :  Common interface to atlas classes
+
+See the docstrings for different classes for more information and usage examples
+
+"""
 import os
 import re
 import sys
@@ -11,14 +35,14 @@ import nibabel as nib
 import nipype.interfaces.freesurfer as fs
 
 import configinterface as cfg
-import analysis as anal
+import source
 import treeutils as tree
 from exceptions import *
 import core
 from core import RoiBase, RoiResult
 
 __all__ = ["Atlas", "FreesurferAtlas", "FSRegister", "LabelAtlas",
-           "MaskAtlas", "HarvardOxfordAtlas", "init_atlas"]
+           "MaskAtlas", "HarvardOxfordAtlas", "SphereAtlas", "init_atlas"]
 
 __module__ = "atlases"
 
@@ -74,15 +98,25 @@ class Atlas(RoiBase):
 
         """
         if isinstance(analysis, dict):
-            analysis = anal.Analysis(analysis)
+            analysis = source.Analysis(analysis)
         self.init_analysis(analysis)
 
     def __str__(self):
         """String representation."""
+        pass
 
     def _atlas_exists(self):
         """Return whether the atlas file exists."""
-        return os.path.isfile(self.atlas)
+        if self.manifold == "volume":
+            return os.path.isfile(self.atlas)
+        else:
+            exists = []
+            for hemi in self.iterhemi:
+                if os.path.isfile(self.atlas % hemi):
+                    exists.append(True)
+                else:  
+                    exists.append(False)
+            return all(exists)
 
     # Initialization methods
     def init_paradigm(self, paradigm):
@@ -110,12 +144,12 @@ class Atlas(RoiBase):
             raise InitError("Subject")
 
         if isinstance(analysis, dict) or isinstance(analysis, int):
-            analysis = anal.Analysis(analysis)
+            analysis = source.Analysis(analysis)
 
         self.analysis = analysis
         if analysis.mask:
             self.mask = True
-            mask = anal.SigImage(analysis)
+            mask = source.SigImage(analysis)
             mask.init_subject(self.subject)
             if self.manifold == "surface":
                 mask.sigimg = mask.sigsurf
@@ -126,12 +160,12 @@ class Atlas(RoiBase):
             self.analysis.masksign = analysis.masksign
         else:
             self.mask = False
-        source = anal.init_stat_object(analysis)
-        source.init_subject(self.subject)
+        sourceimg = source.init_stat_object(analysis)
+        sourceimg.init_subject(self.subject)
         if self.manifold == "surface":
-            self.analysis.source = source.extractsurf
+            self.analysis.source = sourceimg.extractsurf
         else:
-            self.analysis.source = source.extractvol
+            self.analysis.source = sourceimg.extractvol
 
 
         analysisdir = os.path.join(self.roidir, "analysis", 
@@ -156,8 +190,9 @@ class Atlas(RoiBase):
         if self.manifold == "volume":
             shutil.copy(self.origatlas, self.atlas)  
         else:
-            shutil.copy(self.origatlas % self.hemi,
-                        self.atlas % self.hemi)
+            for hemi in self.iterhemi:
+                shutil.copy(self.origatlas % hemi,
+                            self.atlas % hemi)
 
     def __sourcenames_to_lutdict(self):                        
         """Turn the list of sourcenames into a lookup dict."""
@@ -234,7 +269,7 @@ class Atlas(RoiBase):
         
         cmd = ["tkregister2"]
 
-        cmd.append("--mov %s" % cfg.meanfunc(self.paradigm, self.subject))
+        cmd.append("--mov %s" % cfg.pathspec("meanfunc", self.analysis.paradigm, self.subject))
         cmd.append("--reg %s" % self.regmat)
         cmd.append("--surf")
 
@@ -269,17 +304,17 @@ class Atlas(RoiBase):
         res = RoiResult()
         if self.source == "mask":
             res(self.__make_mask_atlas())
-            if self._atlas_exists(): res(self.__stats())
+            if self._atlas_exists: res(self.__stats())
         elif self.source == "label":
             if not self._init_subject:
                 raise InitError("Subject")
             res(self.__make_label_atlas())
-            if self._atlas_exists(): res(self.__stats())
+            if self._atlas_exists: res(self.__stats())
         elif self.source == "freesurfer":
             if not self._init_subject:
                 raise InitError("Subject")
             res(self.__make_freesurfer_atlas(reg))
-            if self._atlas_exists(): res(self.__stats())
+            if self._atlas_exists: res(self.__stats())
         else:
             res("No make_atlas processing neccessary for %s atlases." 
                 % self.source)
@@ -321,7 +356,6 @@ class Atlas(RoiBase):
             for subject in subjects:
                 self.init_subject(subject)
                 res = self.make_atlas(reg)
-
                 print res
                 result(res)
         return result
@@ -396,7 +430,7 @@ class Atlas(RoiBase):
     def __gen_annotation(self):
         """Create an annotation from a list of labels."""
         if os.path.isfile(self.origatlas % self.hemi) and not self.debug:
-            os.remove(self.origatlas)
+            os.remove(self.origatlas % self.hemi) 
         cmd = ["mris_label2annot"]
 
         cmd.append("--s %s" % self.subject)
@@ -445,6 +479,11 @@ class Atlas(RoiBase):
                 reg.init_subject(self.subject)
                 result(reg.register())
             result(self.__resample())
+        else:
+            result = RoiResult()
+            for hemi in self.iterhemi:
+                res = self.__copy_atlas()
+                result(res)
         return result
 
     def __resample(self):
@@ -543,7 +582,7 @@ class Atlas(RoiBase):
                            % (self.subject, self.analysis.paradigm))
                     return
                 elif self.mask:
-                    mask = anal.SigImage(self.analysis)
+                    mask = source.SigImage(self.analysis)
                     mask.init_subject(self.subject)
                     if not os.path.isfile(mask.regmat) and not reg:
                         print ("\nRegistration matrix not found for %s %s to orig."
@@ -554,28 +593,24 @@ class Atlas(RoiBase):
 
         res = RoiResult()
         if self.manifold == "surface":
-            if reg==2 or (reg==1 and not os.path.isfile(self.regmat)):
-                reg = FSRegister()
-                reg.init_paradigm(self.analysis.paradigm)
-                reg.init_subject(self.subject)
-                res(reg.register())
+            sourcereg = FSRegister(self.analysis.paradigm, self.subject)
+            if reg==2 or (reg==1 and not os.path.isfile(sourcereg.regmat)):
+                res(sourcereg.register())
                 if self.mask and self.analysis.maskpar != self.analysis.paradigm:
-                    if reg==2 or (reg==1 and not os.path.isfile(self.regmat)):
-                        reg = FSRegister()
-                        reg.init_paradigm(self.analysis.maskpar)
-                        reg.init_subject(self.subject)
-                        res(reg.register())
-        extractvols = anal.init_stat_object(self.analysis)
+                    maskreg = FSRegister(self.analysis.maskpar, self.subject)
+                    if reg==2 or (reg==1 and not os.path.isfile(maskreg.regmat)):
+                        res(maskreg.register())
+        extractvols = source.init_stat_object(self.analysis)
         extractvols.init_subject(self.subject)
         res(extractvols.concatenate())
         if self.manifold == "surface":
             res(extractvols.sample_to_surface())
         if self.mask:
-            tstat = anal.TStatImage(self.analysis)
+            tstat = source.TStatImage(self.analysis)
             tstat.init_subject(self.subject)
             res(tstat.convert_to_sig())
             if self.manifold == "surface":
-                sig = anal.SigImage(self.analysis)
+                sig = source.SigImage(self.analysis)
                 sig.init_subject(self.subject)
                 res(sig.sample_to_surface())
 
@@ -640,7 +675,7 @@ class Atlas(RoiBase):
         """
         if not self._init_analysis:
             raise InitError("Analysis")
-        elif not self._atlas_exists():
+        elif not self._atlas_exists:
             raise PreprocessError(self.atlas)
 
         if self.manifold == "volume":
@@ -714,7 +749,7 @@ class Atlas(RoiBase):
         elif isinstance(subjects, str):
             subjects = cfg.subjects(subjects)
         if isinstance(analysis, dict) or isinstance(analysis, int):
-            analysis = anal.Analysis(analysis)
+            analysis = source.Analysis(analysis)
         result = RoiResult()
         for subj in subjects:
             self.init_paradigm(analysis.paradigm)
@@ -1030,11 +1065,11 @@ class HarvardOxfordAtlas(Atlas):
      
         tree.make_fsl_atlas_tree()
 
+        self.space = "standard"
         self.thresh = atlasdict["probthresh"]
         pckgdir = os.path.split(__file__)[0]
         filename = "HarvardOxford-%d.nii" % self.thresh
         self.atlas = os.path.join(pckgdir, "data", "HarvardOxford", filename)
-        self._atlas_exists = os.path.isfile(self.atlas)
         self.lutfile = os.path.join(os.path.split(__file__)[0], "data", 
                                  "HarvardOxford", "HarvardOxford-LUT.txt")
         self.regions = atlasdict["regions"]
@@ -1104,6 +1139,7 @@ class LabelAtlas(Atlas):
         
         tree.make_label_atlas_tree()
 
+        self.space = "native"
         self.hemi = self.atlasdict["hemi"]
         self.iterhemi = [self.hemi]
         self.fname = "%s.annot" % self.atlasname
@@ -1115,8 +1151,8 @@ class LabelAtlas(Atlas):
         self.regions = {}
         self.regions[self.hemi] = self.lutdict.keys()
         self.all_regions = {}
-        self.all_regions[self.hemi] = self.regions
-        self.regionnames = [self.lutdict[id] for id in self.regions["hemi"]]
+        self.all_regions[self.hemi] = self.regions[self.hemi]
+        self.regionnames = [self.lutdict[id] for id in self.regions[self.hemi]]
         self.regionnames.sort()                                
 
         if subject is not None: self.init_subject(subject)
@@ -1129,7 +1165,6 @@ class LabelAtlas(Atlas):
         self.statsfile = os.path.join(self.atlasdir,
                                       "%s." + self.atlasname + ".stats")
         self.atlas = os.path.join(self.atlasdir, "%s." + self.fname)
-        self._atlas_exists = os.path.isfile(self.atlas)
         self.origatlas = os.path.join(self.subjdir, subject, 
                                       "label", "%s." + self.fname)
         
@@ -1187,7 +1222,8 @@ class MaskAtlas(Atlas):
         Atlas.__init__(self, atlasdict, **kwargs)
 
         tree.make_mask_atlas_tree()
-        
+       
+        self.space = "standard"
         self.fname = "%s.mgz" % self.atlasname
 
         self.basedir = os.path.join(self.roidir, "atlases",
@@ -1200,7 +1236,6 @@ class MaskAtlas(Atlas):
         self.regionnames.sort()                                
         
         self.atlas = os.path.join(self.basedir, self.fname)
-        self._atlas_exists = os.path.isfile(self.atlas)
 
 
         if subject is not None: self.init_subject(subject)
@@ -1216,14 +1251,18 @@ class SphereAtlas(Atlas):
 
     def __init__(self, atlasdict, subject=None, **kwargs):
 
-
         if isinstance(atlasdict, str):
             atlasdict = cfg.atlases(atlasdict)
         
         Atlas.__init__(self, atlasdict, **kwargs)
 
+        if not self.debug:
+            raise NotImplementedError(
+                "Sphere atlases are not yet implemented (sorry!)")
+
         tree.make_sphere_atlas_tree()
         
+        self.space = "standard"
         self.fname = "%s.mgz" % self.atlasname
 
         self.basedir = os.path.join(self.roidir, "atlases",
@@ -1244,7 +1283,6 @@ class SphereAtlas(Atlas):
         self.regionnames.sort()                                
         
         self.atlas = os.path.join(self.basedir, self.fname)
-        self._atlas_exists = os.path.isfile(self.atlas)
 
         if subject is not None: self.init_subject(subject)
 

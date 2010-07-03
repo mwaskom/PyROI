@@ -1,3 +1,13 @@
+"""
+This module contains functions that set up various parts of the roi directory structure.
+
+All of the make_*_tree functions are called from the constructors of the appropriate 
+object classes, and never need to be called by the user.  This module also offers 
+some trim classes, which removes portions of the roi tree.  These may be useful if 
+you don't feel comfortable enough with the directory structure to use shell utilities.
+
+"""
+
 import os
 import shutil
 

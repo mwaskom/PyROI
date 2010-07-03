@@ -85,7 +85,7 @@ The extraction method  will produce three files.  One will be a text
 file summarizing the regions from which data was extracted and the size
 of those regions.  If a functional mask was included in the analysis 
 parameters, the size of the regions will be reported after masking.  
-The second will be a text sumarry of the average statistical value for 
+The second will be a text summary of the average statistical value for 
 each ROI in each frame of the input image.  The third will be a binary
 "volume" file with the same data as the previous file as "voxel" values
 -- one voxel for each ROI in each frame.
@@ -102,7 +102,7 @@ thing, but for a group of subjects::
     >>> res = group_prepare_source_images(1)
     >>> res = group_extract(1)
 
-This will create the same three sumarry files as before, but for each
+This will create the same three summary files as before, but for each
 subject in the group.  Having shown you the ease with which you can extract
 data for a group, let's now go over each step in a bit more detail.
 
@@ -123,10 +123,11 @@ parameters.  For instance, doing this::
 Will do the same thing as the first line in the above snippets of code.  
 
 Something that wasn't discussed above is that native space atlases
-currently this means just Freesurfer atlases) must be initialized with 
+(currently this means just Freesurfer atlases) must be initialized with 
 a paradigm -- corresponding to the main analysis paradigm -- before they
 can be initialized with a subject.  However, *another* thing that wasn't
-discussed is that both paradigm initialization and subject initialization
+d
+iscussed is that both paradigm initialization and subject initialization
 can be acheived through the ``init_atlas()`` method::
 
     >>> atlas = roi.init_atlas("atlas_name", "subj_id", "par_name")

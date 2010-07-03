@@ -1,7 +1,14 @@
 """
-   May/June 2010 update of ROI pypeline.  A work in progress.
+The config interface module provides an interface to custom config modules.
 
-   Michael Waskom -- mwaskom<at>mit<dot>edu
+If a file called ``.roisetupfile`` exists in the working directory when
+PyROI is imported, it will attempt to import the file named within as the
+config setup module.  If successful, that module will be imported as 
+``setup`` within this module.  If not, it will have to be manually 
+imported through the ``import_setup()`` fucntion.
+
+See the docstrings for individual functions in this module for 
+information on how to use them.
 """
 
 import os
@@ -18,15 +25,13 @@ __module__ = "configinterface"
 # Look for a file indicating the setup module and import that module if found
 if os.path.isfile(".roiconfigfile"):
     
-    fid = open(".roiconfigfile","r")
-    module = fid.read()
-    fid.close()
+    module = open(".roiconfigfile","r").read()
     
     # Get rid of any extraneous whitespace
     m = re.search("\w+", module)
     if m:
         module = m.group()
-    
+
     # Trim the file extension if it exists
     if module.endswith(".py"):
         module = pmodule[:-3]
@@ -40,11 +45,12 @@ if os.path.isfile(".roiconfigfile"):
         f.close()
         del f, name, desc
     except ImportError:
-        print "\nFound .roiconfigfile, but config module import failed."
+        print ("\nFound .roiconfigfile, but config module import failed."
+               "\nYou will need to use the `import_setup()' function.")
         is_setup = False
     
     # Clean up
-    del fid, m, module
+    del m, module
 else:
     is_setup = False
 
@@ -61,7 +67,7 @@ def projectname():
 
 
 def analysis(dictnumber=None):
-    """Return the analysis list.  
+    """Return the analysis list or an analysis dict.  
     
     Parameter
     ---------
@@ -72,7 +78,7 @@ def analysis(dictnumber=None):
 
     Returns
     -------
-    dict or list of dicts
+    list of dicts or dict
 
     """
 
@@ -96,18 +102,14 @@ def analysis(dictnumber=None):
 def atlases(atlasname=None):
     """Return the atlas specifications.
     
-    This function deals with the ROI atlas defintions. If the scope is 
-    empty when called, it will return the full atlas dictionary, where each
-    entry specifies an atlas. If called with an atlas key as the argument,
-    it will return the attribute dictionary for that atlas. The function 
-    performs a fair amount of checking and addition of obvious but neccessary
-    fields (via calls to private subfunctions), so always get atlas dictionaries
-    from this function, not directly from the setup module.
+    This function performs a fair amount of checking and addition of obvious but 
+    neccessary fields (via calls to private subfunctions), so always get atlas 
+    dictionaries from this function, not directly from the setup module.
 
     Parameters
     ----------
     atlasname : str, optional
-        The atlas name, or None to return the full dictionary.
+        The atlas name, or None to return the full dictionary, which is default.
 
     Returns
     -------
@@ -317,7 +319,7 @@ def paradigms(parname=None, case="upper"):
 
     Parameters
     ----------
-    parname : string
+    parname : string, optional
         full paradigm name (if None, returns the full list of paradigms)
     case : string
         "upper" or "lower" -- Def: upper
@@ -339,8 +341,8 @@ def paradigms(parname=None, case="upper"):
         elif case == "upper":
             return pardict[parname].upper()
         else:
-            raise Exception("Case argument '%s' to " % case +
-	                        "config.Paradigms not understood.") 
+            raise Exception("Case argument '%s' to "
+                            "config.Paradigms not understood." % case) 
 
 
 def betas(par=None, retval=None):
@@ -482,57 +484,24 @@ def contrasts(par=None, type="con-img", format=".nii"):
         raise Exception("Image type '%s' " % type +
                         "not understood: use 'T-map', 'sig', or 'con-img'")
 
-def meanfunc(paradigm, subject):
-    """Return the path to a mean functional image.
-
-    Note: this function simply globs nifti files from the path and takes the
-    first one.  Standard NiPype behavior is to create a first level directory
-    called "realign" for each paradigm/subject and store mean images there. 
-    There may be issues if a NiPype is set up unusually or if it is not used
-    for first level analysis
-
-    Parameters
-    ----------
-    par : paradigm
-    subj : subject
-
-    Returns
-    -------
-    string
-    
-    """
-
-    funcpath = pathspec("meanfunc", paradigm, subject)
-    meanfuncimg = glob(funcpath)
-    # XXX Add excpetion if this globs more than one file
-    meanfuncimg = meanfuncimg[0]
-    return meanfuncimg
 
 def pathspec(imgtype, paradigm=None, subject=None, contrast=None):
     """Return the path to directories containing various first-level components.
 
-    This function allows the ROI procesing pypeline to be free of any
-    specific first-level directory structure. A variable path is specified
-    in the setup function where the directory for paradigm, subject, and
-    contrast is is signified by $variable for beta and contrast files
-    separately.  This function expects those strings to be keyed by "betapath"
-    and "contrastpath", respectively.
-
-    In theory, this function should work for both SPM and FsFast first-level
-    structures.  At the time of the writing of this docstring, however, the
-    ROI pypeline does not yet handle the FsFast first level beta images
-    themselves properly.
-
     Parameters
     -----------
-    imgtype : timecourse, beta, meanfunc, or contrast
-    paradigm : paradigm name, however it is specified in the actual path
-    subject : subject name, however it is specified in the actual path
-    contrast: : contrast name, however it is specified in the actual path
+    imgtype : str
+        "beta", "meanfunc", "timecourse," or "contrast"
+    paradigm : str
+        full paradigm name
+    subject : str 
+        subject name
+    contrast: str
+        contrast name
 
     Returns
     -------
-    string of path to image directory
+    str : path to image directory or to image
 
     """
     basepath = setup.basepath

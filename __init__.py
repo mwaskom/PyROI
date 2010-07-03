@@ -1,9 +1,9 @@
 """Package for functional neuroimaging region of interest analysis in Python"""
-from core import *
 from atlases import *
-from analysis import *
-from treeutils import *
-from exceptions import *
+from core import RoiResult, import_config, write_config_base
+import source
+import exceptions
+import treeutils as tree
 import configinterface as cfg
 
 __version__ = 0.1
