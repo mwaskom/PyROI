@@ -136,8 +136,8 @@ description of the various atlases you can use and how to set them up.
 
 Format
 ------
-A dictionary of dictionaries.  The key in each inner dictionary is a string,
-and the value formats are given below.
+A dictionary of dictionaries.  
+The key in each inner dictionary is a string, and the value formats are given below.
 
 Entry Formats
 --------------

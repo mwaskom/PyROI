@@ -36,6 +36,13 @@ function, however, it will not be overwritten.  You can cause the file
 to be overwritten by adding the argument ``force = True`` to the function
 call.
 
+All of the file paths in PyROI are absolute, so the location of your
+config file has no special relation to the location of your data.  If 
+multiple config files will be associated with the same dataset, it is
+advisable to keep them in separate directories, so as to take advantage
+of the automatic importing of the config file, which can only happen
+for one file per directory.
+
 By default, the config file base contains a lot of commentary on what
 the different parts of the config file do and the format they are
 expected to be in.  If you want to write a clean config file without

@@ -289,11 +289,11 @@ after you finish your processing::
 
     >>> result = roi.RoiResult()
     >>> res = atlas.make_atlas()
-    >>> res(result)
+    >>> result(res)
     >>> res = atlas.extract()
-    >>> res(result)
+    >>> result(res)
     >>> log = open("log_file.txt", "w")
-    >>> log.write("%s" % res)
+    >>> log.write("%s" % result)
     >>> log.close()
 
 You can also print the last group of command lines and system pipe
