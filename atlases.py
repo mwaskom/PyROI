@@ -69,7 +69,7 @@ class Atlas(RoiBase):
             raise SetupError
 
         self.roidir = os.path.join(cfg.setup.basepath,"roi")
-        self.subjdir = cfg.setup.subjdir
+        self.subjdir = cfg.fssubjdir()
 
         self.atlasdict = atlasdict
         self.atlasname = atlasdict["atlasname"]
@@ -187,12 +187,18 @@ class Atlas(RoiBase):
     # Operation methods
     def _copy_atlas(self):
         """Copy original atlas file to pyroi atlas tree."""
+        result = RoiResult()
         if self.manifold == "volume":
             shutil.copy(self.origatlas, self.atlas)  
+            return result("Copying %s to %s" % (self.origatlas, self.atlas))
         else:
             for hemi in self.iterhemi:
                 shutil.copy(self.origatlas % hemi,
                             self.atlas % hemi)
+                result("Copying %s to %s" % (self.origatlas % hemi,
+                                             self.atlas % hemi))
+            return result
+                                    
 
     def _sourcenames_to_lutdict(self):                        
         """Turn the list of sourcenames into a lookup dict."""
@@ -444,8 +450,7 @@ class Atlas(RoiBase):
 
         if not self.debug: 
             try:
-                self._copy_atlas()
-                res("Copying %s to atlas directory" % self.atlasname)
+                res(self._copy_atlas())
             except IOError:
                 res("IOError: Atlas copy failed")
 
@@ -480,10 +485,7 @@ class Atlas(RoiBase):
                 result(reg.register())
             result(self._resample())
         else:
-            result = RoiResult()
-            for hemi in self.iterhemi:
-                res = self._copy_atlas()
-                result(res)
+            result(self._copy_atlas())
         return result
 
     def _resample(self):
@@ -939,7 +941,7 @@ class FSRegister(FreesurferAtlas):
 
         tree.make_reg_tree()
         self.roidir = os.path.join(cfg.setup.basepath, "roi")
-        subjdir = cfg.setup.subjdir
+        subjdir = cfg.fssubjdir()
         
         self.manifold = "reg"
         self.fname = "orig.mgz"

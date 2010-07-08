@@ -35,9 +35,9 @@ class RoiBase(object):
         """
 
         if isinstance(input, pypebase.Interface):
-            return _nipype_run(input)
+            return self._nipype_run(input)
         elif isinstance(input, list):
-            return _manual_run(input)
+            return self._manual_run(input)
         else:
             raise TypeError("Unexpected input %s" % type(input))
             
