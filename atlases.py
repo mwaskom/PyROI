@@ -103,7 +103,7 @@ class Atlas(RoiBase):
 
     def __str__(self):
         """String representation."""
-        pass
+        return __repr__()
 
     def _atlas_exists(self):
         """Return whether the atlas file exists."""
@@ -845,7 +845,7 @@ class FreesurferAtlas(Atlas):
 
         dictdict = {"aseg.mgz": "aseg-lut.txt",
                     "aparc.annot": "aparc-lut.txt",
-                    "aparc.a2009s": "aparc-aparc.a2009s-lut.txt"}
+                    "aparc.a2009s.annot": "aparc.a2009s-lut.txt"}
         datadir = os.path.join(os.path.split(__file__)[0], "data", "Freesurfer")
         dictfile = os.path.join(datadir, dictdict[self.fname])
         lutarray = np.genfromtxt(dictfile, str)
@@ -868,13 +868,16 @@ class FreesurferAtlas(Atlas):
                 self.regions["rh"] = [2000 + id for id in self.atlasdict["regions"]]
                 self.all_regions["lh"] = [1000 + id for id in self.lutdict.keys()]
                 self.all_regions["rh"] = [2000 + id for id in self.lutdict.keys()]
+                self.regionnames = ([self.lutdict[id] for id in self.regions['lh']] + 
+                                    [self.lutdict[id] for id in self.regions['rh']]) 
             else:
                 self.regions["lh"] = self.atlasdict["regions"]
                 self.regions["rh"] = self.atlasdict["regions"]
                 self.all_regions["lh"] = self.lutdict.keys()
                 self.all_regions["rh"] = self.lutdict.keys()
-            self.regionnames = (["lh-" + self.lutdict[id] for id in self.atlasdict["regions"]] +
-                                ["rh-" + self.lutdict[id] for id in self.atlasdict["regions"]])
+                self.regionnames = \
+                    (["lh-" + self.lutdict[id] for id in self.atlasdict["regions"]] +
+                     ["rh-" + self.lutdict[id] for id in self.atlasdict["regions"]])
         self.regionnames.sort()                                
 
 

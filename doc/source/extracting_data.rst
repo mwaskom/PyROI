@@ -293,7 +293,7 @@ after you finish your processing::
     >>> res = atlas.extract()
     >>> result(res)
     >>> log = open("log_file.txt", "w")
-    >>> log.write("%s" % result)
+    >>> log.write("%s" % str(result))
     >>> log.close()
 
 You can also print the last group of command lines and system pipe

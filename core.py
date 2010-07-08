@@ -11,6 +11,12 @@ __module__ = "core"
 
 class RoiBase(object):
     """Base class for PyROI objects that defines run methods."""
+    def __init__(self, **kwargs):
+
+        self.__dict__.update(**kwargs)
+        if "debug" not in self.__dict__:
+            self.debug = False
+    
     def _nipype_run(self, interface):
         """Run a program using its nipype interface.
         
@@ -32,12 +38,13 @@ class RoiBase(object):
         return result
 
     def _manual_run(self, cmd):
-        """Run a freesurfer program that lacks a nipype interface.
+        """Run a command line program that lacks a nipype interface.
         
         Parameter
         ---------
-        interface : NiPype interface object
-        
+        cmd : list
+            List of command and argument strings
+
         Returns
         -------
         PyROI result object

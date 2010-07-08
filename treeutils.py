@@ -128,9 +128,9 @@ def make_fs_atlas_tree():
                 subjdir = os.path.join(pardir, subj)
                 fsdirs.append(subjdir)
 
-                for atlas in cfg.atlases().keys():
-                    if cfg.atlases(atlas)["source"] == "freesurfer":
-                        atnamedir = os.path.join(subjdir, atlas)
+                for name, atdict in cfg.atlases().items():
+                    if atdict["source"] == "freesurfer" and atdict["manifold"] == mani:
+                        atnamedir = os.path.join(subjdir, name)
                         fsdirs.append(atnamedir)
                     
     for direct in fsdirs:
