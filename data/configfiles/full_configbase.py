@@ -349,23 +349,6 @@ timecoursepath = ""
 meanfuncpath = ""
 
 
-#--------------------<Freesurfer Subject Directory>------------------------#
-"""
-Set the path to your Freesurfer Subjects directory. If your data has not
-been processed in Freesurfer, leave this variable as an empty string.
-
-Format
-------
-string
-
-Variable Name
--------------
-``subjdir``
-
-"""
-
-subjdir = ""
-
 #----------------------------<Subjects>------------------------------------#
 """
 Here you name the subjects in your project.  The format is a dictionary

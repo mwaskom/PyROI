@@ -128,15 +128,15 @@ def atlases(atlasname=None):
             raise SetupError("Source missing from %s atlas dictionary" % name)
         dictionary["source"] = dictionary["source"].lower()
         if dictionary["source"] == "freesurfer":
-            dictionary = __prep_freesurfer_atlas(dictionary)
+            dictionary = _prep_freesurfer_atlas(dictionary)
         elif dictionary["source"] == "fsl":
-            dictionary = __prep_fsl_atlas(dictionary)
+            dictionary = _prep_fsl_atlas(dictionary)
         elif dictionary["source"] == "label":
-            dictionary = __prep_label_atlas(dictionary)
+            dictionary = _prep_label_atlas(dictionary)
         elif dictionary["source"] == "mask":
-            dictionary = __prep_mask_atlas(dictionary)
+            dictionary = _prep_mask_atlas(dictionary)
         elif dictionary["source"] == "sphere":
-            dictionary = __prep_sphere_atlas(dictionary)
+            dictionary = _prep_sphere_atlas(dictionary)
         else:
             raise SetupError("Source setting '%s' for %s atlas not understood"
                                 % (dictionary["source"], name))
@@ -146,7 +146,7 @@ def atlases(atlasname=None):
     else:
         return atlasdicts[atlasname]
 
-def __check_fields(atlasfields, atlasdict):
+def _check_fields(atlasfields, atlasdict):
     """Check whether any fields are missing or unexpected in an atlas dictionary."""
     extra = [k for k in atlasdict if k not in atlasfields]
     missing = [f for f in atlasfields if f not in atlasdict]
@@ -158,10 +158,10 @@ def __check_fields(atlasfields, atlasdict):
         raise SetupError("Field(s) %s missing from %s dictionary"
                             % (missing, atlasname))
 
-def __prep_freesurfer_atlas(atlasdict):
+def _prep_freesurfer_atlas(atlasdict):
     """Prepare a Freesurfer atlas dictionary."""
     atlasfields = ["atlasname", "source", "fname", "manifold", "regions"]
-    __check_fields(atlasfields, atlasdict)
+    _check_fields(atlasfields, atlasdict)
 
     atlasdict["manifold"] = atlasdict["manifold"].lower()
     if atlasdict["manifold"] not in ["surface", "volume"]:
@@ -180,10 +180,10 @@ def __prep_freesurfer_atlas(atlasdict):
 
     return atlasdict                                
 
-def __prep_fsl_atlas(atlasdict):
+def _prep_fsl_atlas(atlasdict):
     """Prepare a HarvardOxford atlas dictionary."""
     atlasfields = ["atlasname", "source", "probthresh", "regions"]
-    __check_fields(atlasfields, atlasdict)
+    _check_fields(atlasfields, atlasdict)
 
     atlasdict["manifold"] = "volume"
 
@@ -195,10 +195,10 @@ def __prep_fsl_atlas(atlasdict):
 
     return atlasdict                                
 
-def __prep_label_atlas(atlasdict):
+def _prep_label_atlas(atlasdict):
     """Prepare a label atlas dictionary"""
     atlasfields = ["atlasname", "source", "hemi", "sourcedir", "sourcefiles"]
-    __check_fields(atlasfields, atlasdict)
+    _check_fields(atlasfields, atlasdict)
     
     if not os.path.isdir(fssubjdir()):
         raise SetupError("Using label atlas with illegitimite "
@@ -231,10 +231,10 @@ def __prep_label_atlas(atlasdict):
     atlasdict["sourcenames"] = lnames
     return atlasdict
 
-def __prep_mask_atlas(atlasdict):
+def _prep_mask_atlas(atlasdict):
     """Prepare a mask atlas dictionary"""
     atlasfields = ["atlasname", "source", "sourcedir", "sourcefiles"]
-    __check_fields(atlasfields, atlasdict)
+    _check_fields(atlasfields, atlasdict)
 
     if not os.path.isabs(atlasdict["sourcedir"]):
         atlasdict["sourcedir"] = os.path.join(setup.basepath, atlasdict["sourcedir"])
@@ -287,7 +287,7 @@ def __prep_mask_atlas(atlasdict):
     atlasdict["sourcenames"] = lnames
     return atlasdict
 
-def __prep_sphere_atlas(atlasdict):
+def _prep_sphere_atlas(atlasdict):
     """Prepare the atlas dictionary for a sphere atlas."""
     atlasdict["manifold"] = "volume"
 
@@ -299,12 +299,17 @@ def fssubjdir():
     str
     
     """
-    
+   
+    """
     dirpath = setup.subjdir
+    print dirpath
+    if not os.path.isabs:
+        dirpath = os.path.join(setup.basepath, dirpath)
 
-    subjdir = fs.FSInfo.subjectsdir(os.path.abspath(dirpath))
+    subjdir = fs.FSInfo.subjectsdir(dirpath)
+    """
 
-    return subjdir
+    return fs.FSInfo.subjectsdir(os.getenv("SUBJECTS_DIR"))
 
 
 def paradigms(parname=None, case="upper"):
