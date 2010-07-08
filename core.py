@@ -3,6 +3,7 @@ import sys
 import shutil
 import subprocess
 from copy import deepcopy
+import nipype.interfaces.base as pypebase
 import configinterface as cfg
 
 __all__ = ["RoiResult", "import_config", "write_config_base"]
@@ -16,7 +17,31 @@ class RoiBase(object):
         self.__dict__.update(**kwargs)
         if "debug" not in self.__dict__:
             self.debug = False
-    
+
+    def _run(self, input):
+        """Interface to _nipype_run and _manual_run methods.
+        
+        Parameters
+        ----------
+        input : list or nipype interface object
+            If the input is a list, it gets passed to the _manual_run
+            method to be executed with a subprocess system call.  If 
+            an interface, it is passed to _nipype_run and executed by
+            calling its run() method.
+
+        Returns
+        -------
+        RoiResult object
+        """
+
+        if isinstance(input, pypebase.Interface):
+            return _nipype_run(input)
+        elif isinstance(input, list):
+            return _manual_run(input)
+        else:
+            raise TypeError("Unexpected input %s" % type(input))
+            
+
     def _nipype_run(self, interface):
         """Run a program using its nipype interface.
         
