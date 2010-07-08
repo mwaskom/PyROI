@@ -79,7 +79,7 @@ class Atlas(RoiBase):
         if "sourcefiles" in atlasdict:
             self.sourcefiles = atlasdict["sourcefiles"]
             self.sourcenames = atlasdict["sourcenames"]
-            self.__sourcenames_to_lutdict()
+            self._sourcenames_to_lutdict()
 
         self._init_paradigm = False
         self._init_subject = False
@@ -185,7 +185,7 @@ class Atlas(RoiBase):
         self._init_analysis = True         
 
     # Operation methods
-    def __copy_atlas(self):
+    def _copy_atlas(self):
         """Copy original atlas file to pyroi atlas tree."""
         if self.manifold == "volume":
             shutil.copy(self.origatlas, self.atlas)  
@@ -194,7 +194,7 @@ class Atlas(RoiBase):
                 shutil.copy(self.origatlas % hemi,
                             self.atlas % hemi)
 
-    def __sourcenames_to_lutdict(self):                        
+    def _sourcenames_to_lutdict(self):                        
         """Turn the list of sourcenames into a lookup dict."""
         self.lutdict = {}
         for i, name in enumerate(self.sourcenames):
@@ -221,11 +221,11 @@ class Atlas(RoiBase):
             raise InitError("Subject")
 
         if self.manifold == "surface":
-            self.__surf_display()
+            self._surf_display()
         else:
-            self.__vol_display()
+            self._vol_display()
     
-    def __surf_display(self):
+    def _surf_display(self):
         """Display a surface atlas using tksurfer."""
         if "hemi" not in self.__dict__:
             hemi = "lh"
@@ -245,7 +245,7 @@ class Atlas(RoiBase):
         else:
             subprocess.call(cmd) 
 
-    def __vol_display(self):
+    def _vol_display(self):
         """Display a volume atlas using Freeview."""
         cmd = ["freeview"]
         cmd.append("-v")
@@ -303,18 +303,18 @@ class Atlas(RoiBase):
         """
         res = RoiResult()
         if self.source == "mask":
-            res(self.__make_mask_atlas())
-            if self._atlas_exists: res(self.__stats())
+            res(self._make_mask_atlas())
+            if self._atlas_exists: res(self._stats())
         elif self.source == "label":
             if not self._init_subject:
                 raise InitError("Subject")
-            res(self.__make_label_atlas())
-            if self._atlas_exists: res(self.__stats())
+            res(self._make_label_atlas())
+            if self._atlas_exists: res(self._stats())
         elif self.source == "freesurfer":
             if not self._init_subject:
                 raise InitError("Subject")
-            res(self.__make_freesurfer_atlas(reg))
-            if self._atlas_exists: res(self.__stats())
+            res(self._make_freesurfer_atlas(reg))
+            if self._atlas_exists: res(self._stats())
         else:
             res("No make_atlas processing neccessary for %s atlases." 
                 % self.source)
@@ -360,23 +360,23 @@ class Atlas(RoiBase):
                 result(res)
         return result
 
-    def __make_mask_atlas(self):
+    def _make_mask_atlas(self):
         """Make the single atlas image and look-up-table from a group of masks."""
         self.tempdir = os.path.join(self.basedir, ".temp")
         if not os.path.isdir(self.tempdir): os.mkdir(self.tempdir)
         self.tempvols = []
-        result = RoiResult(self.__write_lut())
+        result = RoiResult(self._write_lut())
         for segnum in range(1, len(self.sourcefiles) + 1):
-            res = self.__adj_binary_segvol(segnum)
+            res = self._adj_binary_segvol(segnum)
             result(res)
 
-        res = self.__combine_segvols()
+        res = self._combine_segvols()
         result(res)
         shutil.rmtree(self.tempdir)
 
         return result
 
-    def __adj_binary_segvol(self, segnum):
+    def _adj_binary_segvol(self, segnum):
         """Adjust the segmentation value of a binary mask image."""
         adjust = fs.Concatenate()
 
@@ -389,7 +389,7 @@ class Atlas(RoiBase):
 
         return self._nipype_run(adjust)
 
-    def __combine_segvols(self):
+    def _combine_segvols(self):
         """Combine adjusted segvols into one atlas."""
         combine = fs.Concatenate()
 
@@ -399,14 +399,14 @@ class Atlas(RoiBase):
 
         return self._nipype_run(combine)
 
-    def __make_label_atlas(self):
+    def _make_label_atlas(self):
         """Turn a list of label files into a label annotation."""
-        result = RoiResult(self.__write_lut())
-        result(self.__resample_labels())
-        result(self.__gen_annotation())
+        result = RoiResult(self._write_lut())
+        result(self._resample_labels())
+        result(self._gen_annotation())
         return result
 
-    def __resample_labels(self):
+    def _resample_labels(self):
         """Resample label files from fsaverage surface to native surfaces."""
         res = RoiResult()
         for i, label in enumerate(self.sourcefiles):
@@ -427,7 +427,7 @@ class Atlas(RoiBase):
 
         return res
 
-    def __gen_annotation(self):
+    def _gen_annotation(self):
         """Create an annotation from a list of labels."""
         if os.path.isfile(self.origatlas % self.hemi) and not self.debug:
             os.remove(self.origatlas % self.hemi) 
@@ -444,14 +444,14 @@ class Atlas(RoiBase):
 
         if not self.debug: 
             try:
-                self.__copy_atlas()
+                self._copy_atlas()
                 res("Copying %s to atlas directory" % self.atlasname)
             except IOError:
                 res("IOError: Atlas copy failed")
 
         return res
     
-    def __write_lut(self):
+    def _write_lut(self):
         """Write a look up table to the roi atlas directory."""
         lutfile = open(self.lutfile, "w")
         for id, name in self.lutdict.items():
@@ -464,7 +464,7 @@ class Atlas(RoiBase):
         if self.debug: os.remove(self.lutfile)
         return RoiResult("Writing %s" % self.lutfile)
 
-    def __make_freesurfer_atlas(self, reg=1):
+    def _make_freesurfer_atlas(self, reg=1):
         """Run atlas preprocessing steps for a Freesurfer atlas."""
         if not os.path.isfile(self.regmat) and not reg:
             print ("\nRegistration matrix not found for %s."
@@ -478,15 +478,15 @@ class Atlas(RoiBase):
                 reg.init_paradigm(self.paradigm)
                 reg.init_subject(self.subject)
                 result(reg.register())
-            result(self.__resample())
+            result(self._resample())
         else:
             result = RoiResult()
             for hemi in self.iterhemi:
-                res = self.__copy_atlas()
+                res = self._copy_atlas()
                 result(res)
         return result
 
-    def __resample(self):
+    def _resample(self):
         """Resample a freesurfer volume atlas into functional space."""
 
         transform = fs.ApplyVolTransform()
@@ -500,21 +500,21 @@ class Atlas(RoiBase):
 
         return self._nipype_run(transform)
 
-    def __stats(self):
+    def _stats(self):
         """Generate a summary of voxel/vertex counts for all regions in an atlas."""
         if not self._init_subject:
             raise InitError("Subject")
         
         if self.manifold == "volume":
-            return self.__vol_stats()
+            return self._vol_stats()
         else:
             results = RoiResult()
             for hemi in self.iterhemi:
-                res = self.__surf_stats(hemi)
+                res = self._surf_stats(hemi)
                 results(res) 
             return results
 
-    def __surf_stats(self, hemi):
+    def _surf_stats(self, hemi):
         """Generate stats for a surface atlas."""
         
         """Running this manually until NiPype interface is fixed
@@ -538,7 +538,7 @@ class Atlas(RoiBase):
 
         return self._manual_run(cmd)
 
-    def __vol_stats(self):
+    def _vol_stats(self):
         """Generate stats for a volume atlas."""
         segstats = fs.SegStats()
 
@@ -679,15 +679,15 @@ class Atlas(RoiBase):
             raise PreprocessError(self.atlas)
 
         if self.manifold == "volume":
-            return self.__vol_extract()
+            return self._vol_extract()
         else:
             results = RoiResult()
             for hemi in self.iterhemi:
-                res = self.__surf_extract(hemi)
+                res = self._surf_extract(hemi)
                 results(res)
             return results
 
-    def __surf_extract(self, hemi):
+    def _surf_extract(self, hemi):
         """Internal function to extract from a surface."""
         funcex = fs.SegStats()
         
@@ -707,7 +707,7 @@ class Atlas(RoiBase):
         return self._nipype_run(funcex)
         return cmdline, res
 
-    def __vol_extract(self):
+    def _vol_extract(self):
         """Internal function to extract from a volume."""
         funcex = fs.SegStats()
 
