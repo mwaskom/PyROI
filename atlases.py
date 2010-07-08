@@ -387,7 +387,7 @@ class Atlas(RoiBase):
         adjust.inputs.outvol = output
         adjust.inputs.mul = segnum
 
-        return self._nipype_run(adjust)
+        return self._run(adjust)
 
     def _combine_segvols(self):
         """Combine adjusted segvols into one atlas."""
@@ -397,7 +397,7 @@ class Atlas(RoiBase):
         combine.inputs.outvol = self.atlas
         combine.inputs.combine = True
 
-        return self._nipype_run(combine)
+        return self._run(combine)
 
     def _make_label_atlas(self):
         """Turn a list of label files into a label annotation."""
@@ -422,7 +422,7 @@ class Atlas(RoiBase):
                        % os.path.join(self.atlasdir,
                        "%s.label" % self.sourcenames[i]))
 
-            result = self._manual_run(cmd)
+            result = self._run(cmd)
             res(result)      
 
         return res
@@ -440,7 +440,7 @@ class Atlas(RoiBase):
         for label in self.sourcenames:
             cmd.append("--l %s" % os.path.join(self.atlasdir, "%s.label" % label))
 
-        res = self._manual_run(cmd)
+        res = self._run(cmd)
 
         if not self.debug: 
             try:
@@ -498,7 +498,7 @@ class Atlas(RoiBase):
         transform.inputs.interp = "nearest"
         transform.inputs.outfile = self.atlas
 
-        return self._nipype_run(transform)
+        return self._run(transform)
 
     def _stats(self):
         """Generate a summary of voxel/vertex counts for all regions in an atlas."""
@@ -525,7 +525,7 @@ class Atlas(RoiBase):
         segstats.inputs.segid = self.all_regions
         segstats.inputs.sumfile = self.statsfile % hemi
 
-        return self._nipype_run(segstats)
+        return self._run(segstats)
         """
         cmd = ["mri_segstats"]
 
@@ -536,7 +536,7 @@ class Atlas(RoiBase):
         for id in ids:
             cmd.append("--id %d" % id)
 
-        return self._manual_run(cmd)
+        return self._run(cmd)
 
     def _vol_stats(self):
         """Generate stats for a volume atlas."""
@@ -549,7 +549,7 @@ class Atlas(RoiBase):
         segstats.inputs.segid = ids
         segstats.inputs.sumfile = self.statsfile
 
-        return self._nipype_run(segstats)
+        return self._run(segstats)
 
     def prepare_source_images(self, reg=1):
         """Prepare the functional and statistical images for extraction.
@@ -704,7 +704,7 @@ class Atlas(RoiBase):
         funcex.inputs.avgwftxt = self.functxt % hemi
         funcex.inputs.avgwfvol = self.funcvol % hemi
 
-        return self._nipype_run(funcex)
+        return self._run(funcex)
         return cmdline, res
 
     def _vol_extract(self):
@@ -724,7 +724,7 @@ class Atlas(RoiBase):
         funcex.inputs.avgwftxt = self.functxt
         funcex.inputs.avgwfvol = self.funcvol
 
-        return self._nipype_run(funcex)
+        return self._run(funcex)
 
     def group_extract(self, analysis, subjects=None):
         """Extract functional data for a group of subjects.
@@ -983,7 +983,7 @@ class FSRegister(FreesurferAtlas):
         elif method == "header":
             reg.inputs.init_header = True
 
-        return self._nipype_run(reg)
+        return self._run(reg)
 
     def group_register(self, subjects=None, method="fsl"):
         """Register functional space to Freesurfer original atlas space for a group.
