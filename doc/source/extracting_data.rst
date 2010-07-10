@@ -98,9 +98,9 @@ atlases classes in PyROI have a "group" counterpart that does the same
 thing, but for a group of subjects::
 
     >>> atlas = roi.init_atlas("atlas_name")
-    >>> res = group_make_atlas()
-    >>> res = group_prepare_source_images(1)
-    >>> res = group_extract(1)
+    >>> res = atlas.group_make_atlas()
+    >>> res = atlas.group_prepare_source_images(1)
+    >>> res = atlas.group_extract(1)
 
 This will create the same three summary files as before, but for each
 subject in the group.  Having shown you the ease with which you can extract

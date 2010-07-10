@@ -189,15 +189,28 @@ class Atlas(RoiBase):
         """Copy original atlas file to pyroi atlas tree."""
         result = RoiResult()
         if self.manifold == "volume":
-            shutil.copy(self.origatlas, self.atlas)  
-            return result("Copying %s to %s" % (self.origatlas, self.atlas))
+            if not self.debug:
+                shutil.copyfile(self.origatlas, self.atlas)  
+            return result("cp %s %s" % (self.origatlas, self.atlas))
         else:
             for hemi in self.iterhemi:
-                shutil.copy(self.origatlas % hemi,
-                            self.atlas % hemi)
-                result("Copying %s to %s" % (self.origatlas % hemi,
-                                             self.atlas % hemi))
+                if not self.debug:
+                    shutil.copyfile(self.origatlas % hemi,
+                                self.atlas % hemi)
+                result("cp %s %s" % (self.origatlas % hemi,
+                                     self.atlas % hemi))
             return result
+
+    def _inv_copy_annot(self):
+        """Copy an annotation from the roi atlas tree to the subjects directory."""
+        result = RoiResult()
+        for hemi in self.iterhemi:
+            target = os.path.join(self.subjdir, self.subject, "label", 
+                                  "%s.%s.annot" % (hemi, self.atlasname))
+            if not self.debug:
+                shutil.copyfile(self.atlas % hemi, target)
+            result("cp %s %s" % (self.atlas % hemi, target))
+        return result
                                     
 
     def _sourcenames_to_lutdict(self):                        
@@ -486,6 +499,7 @@ class Atlas(RoiBase):
             result(self._resample())
         else:
             result(self._copy_atlas())
+            result(self._inv_copy_annot())
         return result
 
     def _resample(self):
