@@ -333,26 +333,6 @@ image type for each paradigm/subject, the wildcard should be choosen
 to match only one file in the directory.
 
 
-Freesurfer Subject Directory
-----------------------------
-
-Set the path to your Freesurfer Subjects directory. If your data has not
-been processed in Freesurfer, leave this variable as an empty string.
-
-Format
-^^^^^^
-
-string
-
-
-Variable Name
-^^^^^^^^^^^^^
-
-``subjdir``
-
-
-
-
 Subjects
 --------
 

@@ -26,7 +26,8 @@ def build_database(atlas, analysis, subjects=None):
 
     # Get the name, current date, and database directory
     name = atlas.atlasname + "_" + get_analysis_name(analysis)
-    newdate = str(datetime.now())[:-10].replace("-","").replace(":","").replace(" ","-")
+    newdate = str(
+        datetime.now())[:-10].replace("-","").replace(":","").replace(" ","-")
     dbdir = os.path.join(cfg.setup.basepath, "roi", "analysis",
                          cfg.projectname(), "databases")
     dbfile = os.path.join(dbdir, name + ".txt")                         
@@ -72,15 +73,14 @@ def build_database(atlas, analysis, subjects=None):
     if atlas.manifold == "volume":
         addrois = np.array([atlas.lutdict[id] for id in atlas.regions])
     else:
-        addrois = np.array(([atlas.lutdict[id] for id in atlas.regions['lh']] + 
-                            [atlas.lutdict[id] for id in atlas.regions['rh']]))
+        addrois = np.array([atlas.lutdict[id] for id in atlas.regions['lh']] + 
+                           [atlas.lutdict[id] for id in atlas.regions['rh']])
     nrois = addrois.shape[0]
     addrois = addrois.reshape(nrois, 1)
 
     for subject in subjects:
         atlas.init_subject(subject)
         atlas.init_analysis(analysis)
-        rois = np.vstack((rois, addrois))
         if atlas.manifold == "volume":
             addfunc = np.genfromtxt(atlas.functxt)
             addfunc = np.transpose(addfunc)
@@ -93,11 +93,13 @@ def build_database(atlas, analysis, subjects=None):
             addmask = np.array([getmask(id) for id in atlas.regions]).reshape(nrois, 1)
             
             subj = np.vstack((subj, addsubj))
+            rois = np.vstack((rois, addrois))
             size = np.vstack((size, addsize))
             func = np.vstack((func, addfunc))
             mask = np.vstack((mask, addmask))
         else:
-            for hemi in atlas.iterhemi:
+            splitrois = np.vsplit(addrois, len(atlas.iterhemi))
+            for idx, hemi in enumerate(atlas.iterhemi):
                 addfunc = np.genfromtxt(atlas.functxt % hemi)
                 addfunc = np.transpose(addfunc)
                 addsubj = np.array([subject for i in range(nrois/2)]).reshape(nrois/2, 1)
@@ -109,8 +111,13 @@ def build_database(atlas, analysis, subjects=None):
                     [getsize(id) for id in atlas.regions[hemi]]).reshape(nrois/2, 1)
                 addmask = np.array( \
                     [getmask(id) for id in atlas.regions[hemi]]).reshape(nrois/2, 1)
-            
+                for i, row in enumerate(splitrois[idx]):
+                    roiname = row[0]
+                    if not roiname.startswith(hemi):
+                        splitrois[idx][i] = hemi + "-" + roiname
+
                 subj = np.vstack((subj, addsubj))
+                rois = np.vstack((rois, splitrois[idx]))
                 size = np.vstack((size, addsize))
                 func = np.vstack((func, addfunc))
                 mask = np.vstack((mask, addmask))

@@ -118,9 +118,6 @@ meanfuncpath = ""
 
 
 
-subjdir = ""
-
-
 subjects  =  {"": 
 
                  [ ],
