@@ -17,7 +17,8 @@ __module__ = "database"
 def build_database(atlas, analysis, subjects=None):
     """Build a text database for an atlas/analysis extraction.
 
-    The text database will be saved to $basedir/roi/analyses/$projectname/databases.
+    The text database will be saved to $basedir/roi/analysis/$projectname/databases.
+    This function is run automatically at the end of the group_extract() atlas method.
 
     Parameters
     ----------

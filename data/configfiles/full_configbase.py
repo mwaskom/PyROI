@@ -144,6 +144,7 @@ Entry Formats
 - source: "freesurfer", "fsl", "mask", "label", or "sphere"
 - regions: list of integers
 - manifold: "volume" or "surface"
+- fname: string
 - hemi: "lh" or "rh"
 - probthresh: integer
 - sourcedir: string

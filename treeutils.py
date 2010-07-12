@@ -51,12 +51,13 @@ def make_analysis_tree(analysis):
 
     projdir = os.path.join(analysisdir, cfg.projectname())
     logdir = os.path.join(projdir, "logfiles")
+    logarcdir = os.path.join(logdir, "archive")
     dbdir = os.path.join(projdir, "databases")
     dbhistdir = os.path.join(dbdir, ".old")
 
     analdir = os.path.join(projdir, core.get_analysis_name(analysis))
     
-    analdirs = [roidir, analysisdir, projdir, logdir, dbdir, dbhistdir, analdir]
+    analdirs = [roidir, analysisdir, projdir, logdir, logarcdir,  dbdir, dbhistdir, analdir]
 
     for atlas in cfg.atlases().keys():
         atlasdir = os.path.join(analdir, atlas)

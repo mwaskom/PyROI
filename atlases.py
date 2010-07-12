@@ -601,7 +601,7 @@ class Atlas(RoiBase):
 
     def _stats(self):
         """Generate a summary of voxel/vertex counts for all regions in an atlas."""
-        if not self._init_subject:
+        if not self._init_subject and self.space == "native":
             raise InitError("Subject")
         
         if self.manifold == "volume":
@@ -1193,7 +1193,7 @@ class HarvardOxfordAtlas(Atlas):
 
 class SigSurfAtlas(Atlas):
     """Atlas made from a second level sig map on the surface."""
-    def __init__(self, atlas, subject, **kwargs):
+    def __init__(self, atlas, subject=None, **kwargs):
 
         if isinstance(atlas, str):
             atlasdict = cfg.atlases(atlas)
@@ -1282,7 +1282,7 @@ class LabelAtlas(Atlas):
     from those regions.
 
     """
-    def __init__(self, atlas, subject, **kwargs):
+    def __init__(self, atlas, subject=None, **kwargs):
 
         if isinstance(atlas, str):
             atlasdict = cfg.atlases(atlas)
@@ -1368,7 +1368,7 @@ class MaskAtlas(Atlas):
     volumes and .img/.hdr pairs should work).
 
     """
-    def __init__(self, atlasdict, **kwargs):
+    def __init__(self, atlasdict, subject=None, **kwargs):
 
         if isinstance(atlasdict, str):
             atlasdict = cfg.atlases(atlasdict)

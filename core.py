@@ -3,6 +3,7 @@ import sys
 import shutil
 import subprocess
 from copy import deepcopy
+from datetime import datetime
 import nipype.interfaces.base as pypebase
 import configinterface as cfg
 
@@ -102,15 +103,35 @@ class RoiResult(object):
 
     By calling or using the add() method on another RoiResult object,
     it will add that object's information to its internal result lists.  
-    In this way, it can be used to create a log object, which can then
-    be written to text at the end of an analysis script.
     
     """
-    def __init__(self, cmdline=None, res=None):
+    def __init__(self, cmdline=None, res=None, log=False, continue_log=False):
         
         self.cmdline = []
         self.stdout = []
         self.stderr = []
+
+        self.log = log
+        self.continue_log = continue_log
+
+        if self.log:
+            self.logdir = os.path.join(cfg.basedir, "roi", "analysis",
+                                       cfg.projectname(), "logfiles")
+            self.oldlogdir = os.path.join(cfg.logdir, "archive") 
+
+            self.log_file = os.path.join(self.logdir, "pyroi_log.txt")
+            self.loghistfile = os.path.join(self.logdir, ".logtimestamp")                   
+
+            if os.path.isfile(self.log_file):
+                try:
+                    oldtimestamp = open(self.loghistfile,"r").read()
+                except IOError:
+                    oldtimestamp = "unknown"
+
+            self.log_fid = open(self.log_file, "w")
+
+            newtimestamp = str(
+                datetime.now())[:-10].replace("-","").replace(":","").replace(" ","-")
 
         if cmdline is not None:
             self(cmdline, res)
