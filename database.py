@@ -12,6 +12,8 @@ import configinterface as cfg
 from core import RoiResult, get_analysis_name
 from exceptions import *
 
+__module__ = "database"
+
 def build_database(atlas, analysis, subjects=None):
     """Good Python programmers write docstrings"""
     if not cfg.is_setup:
@@ -67,8 +69,13 @@ def build_database(atlas, analysis, subjects=None):
     subj = np.array("subjects")
     rois = np.array("rois")
     size = np.array("base-%s" % units)
-    func = np.array(cfg.betas(analysis["par"], "names"))
     mask = np.array("final-%s" % units)
+    if analysis["extract"] == "beta":
+        func = np.array(cfg.betas(analysis["par"], "names"))
+    elif analysis["extract"] == "contrast":
+        func = np.array(cfg.contrasts(analysis["par"], "names"))
+    elif analysis["extract"] == "timecourse":
+        raise NotImplementedError("Using build_database() function for timecourse extractions")
 
     if atlas.manifold == "volume":
         addrois = np.array([atlas.lutdict[id] for id in atlas.regions])

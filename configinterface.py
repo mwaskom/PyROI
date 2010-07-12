@@ -478,9 +478,9 @@ def contrasts(par=None, type="con-img", format=".nii"):
     par : str
         Paradigm
     type : str
-        "sig", "T-map", or "con-img" -- def: con-img
+        "sig", "T-map", "con-img", or "names" -- default: con-img
     format : str
-        File extension -- def: .nii
+        File extension -- default: .nii
 
     Returns
     -------
@@ -512,6 +512,13 @@ def contrasts(par=None, type="con-img", format=".nii"):
         contrasts_tstat[con] = "spmT_%04d%s" % (contrasts[con], format)
         contrasts_con[con] = "con_%04d%s" % (contrasts[con], format)
 
+    # Get the list of names
+    names = []
+    connums = contrasts.values()
+    connums.sort()
+    for num in connums:
+        names.append([k for k, v in contrasts.items() if v == num][0])
+
     # Figure out what type of image the function is being asked about and return
     if type == "sig":
         return contrasts_sig
@@ -519,6 +526,8 @@ def contrasts(par=None, type="con-img", format=".nii"):
         return contrasts_tstat
     elif type == "con-img":
         return contrasts_con
+    elif type == "names":
+        return names
     else:
         raise Exception("Image type '%s' " % type +
                         "not understood: use 'T-map', 'sig', or 'con-img'")
