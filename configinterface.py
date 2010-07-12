@@ -14,7 +14,7 @@ information on how to use them.
 import os
 import re
 import imp
-import warnings
+from warnings import warn
 from copy import deepcopy
 from glob import glob
 import nipype.interfaces.freesurfer as fs
@@ -133,6 +133,8 @@ def atlases(atlasname=None):
             dictionary = _prep_fsl_atlas(dictionary)
         elif dictionary["source"] == "label":
             dictionary = _prep_label_atlas(dictionary)
+        elif dictionary["source"] == "sigsurf":
+            dictionary = _prep_sigsurf_atlas(dictionary)
         elif dictionary["source"] == "mask":
             dictionary = _prep_mask_atlas(dictionary)
         elif dictionary["source"] == "sphere":
@@ -195,6 +197,38 @@ def _prep_fsl_atlas(atlasdict):
 
     return atlasdict                                
 
+def _prep_sigsurf_atlas(atlasdict):
+    """Prepare a sigsurf atlas dictionary."""
+    atlasfields = ["atlasname", "source", "hemi", "file", "fdr", "minsize"]
+    _check_fields(atlasfields, atlasdict)
+
+    atlasdict["manifold"] = "surface"
+
+    if not os.path.isdir(fssubjdir()):
+        raise SetupError("Using sigsurf atlas with illegitimite "
+                            "Freesurfer Subjects Directory path")
+
+    if isinstance(atlasdict["fdr"], str):
+        try:
+            atlasdict["fdr"] = float(atlasdict["fdr"])
+        except ValueError:
+            raise SetupError("FDR thresh setting for %s atlas does not appear "
+                             "to be a number" % atlasdict["atlasname"])
+    if isinstance(atlasdict["minsize"], str):
+        try:
+            atlasdict["fdr"] = int(atlasdict["fdr"])
+        except ValueError:
+            raise SetupError("Minsize setting for %s atlas does not appear "
+                             "to be a number" % atlasdict["atlasname"])
+
+    if not os.path.isabs(atlasdict["file"]):
+        atlasdict["file"] = os.path.join(setup.basedir, atlasdict["file"])
+    if not os.path.isfile(atlasdict["file"]):
+        raise SetupError("%s source image %s does not exist" 
+                         % (atlasdict["atlasname"], atlasdict["file"]))
+
+    return atlasdict                         
+
 def _prep_label_atlas(atlasdict):
     """Prepare a label atlas dictionary"""
     atlasfields = ["atlasname", "source", "hemi", "sourcedir", "sourcefiles"]
@@ -226,7 +260,7 @@ def _prep_label_atlas(atlasdict):
         lfiles[i] = os.path.join(atlasdict["sourcedir"], lfile + ".label")
         lnames.append(lfile)
         if not os.path.isfile(lfiles[i]):
-            warnings.warn("%s does not exist." % lfiles[i])
+            warn("%s does not exist." % lfiles[i])
     atlasdict["sourcefiles"] = lfiles
     atlasdict["sourcenames"] = lnames
     return atlasdict
@@ -282,7 +316,7 @@ def _prep_mask_atlas(atlasdict):
         lfile, ext = os.path.splitext(lfile)
         lnames.append(lfile)
         if not os.path.isfile(lfiles[i]):
-            warnings.warn("%s does not exist." % lfiles[i])
+            warn("%s does not exist." % lfiles[i])
     atlasdict["sourcefiles"] = lfiles
     atlasdict["sourcenames"] = lnames
     return atlasdict

@@ -17,7 +17,8 @@ import core
 
 __all__ = ["trim_analysis_tree", "make_analysis_tree", 
            "make_levelone_tree",
-           "make_fs_atlas_tree", "make_reg_tree", "make_label_atlas_tree", "make_mask_atlas_tree"]
+           "make_fs_atlas_tree", "make_reg_tree", "make_sigsurf_tree",
+           "make_label_atlas_tree", "make_mask_atlas_tree"]
 
 def trim_analysis_tree(analysis):
     """Remove a analysis tree and all of its contents.
@@ -155,6 +156,28 @@ def make_reg_tree():
         if not os.path.isdir(direct):
             os.mkdir(direct)
 
+def make_sigsurf_atlas_tree():
+    """Set up the atlas tree for sigsurf atlases."""
+    roidir = os.path.join(cfg.setup.basepath, "roi")
+    atlasdir = os.path.join(roidir, "atlases")
+    basedir = os.path.join(atlasdir, "sigsurf")
+    projectdir = os.path.join(basedir, cfg.projectname())
+    lutfiledir = os.path.join(projectdir, "lookup_tables")
+    labeldirs = [roidir, atlasdir, basedir, projectdir, lutfiledir]
+
+    for subj in cfg.subjects() + ["source"]:
+        subjdir = os.path.join(projectdir, subj)
+        labeldirs.append(subjdir)
+
+        for atlas in cfg.atlases():
+            if cfg.atlases(atlas)["source"] == "sigsurf":
+                atnamedir = os.path.join(subjdir, atlas)
+                labeldirs.append(atnamedir)
+
+    for direct in labeldirs:
+        if not os.path.isdir(direct):
+            os.mkdir(direct)
+
 def make_label_atlas_tree():
     """Set up the atlas tree for label atlases."""
     roidir = os.path.join(cfg.setup.basepath, "roi")
@@ -168,7 +191,7 @@ def make_label_atlas_tree():
         subjdir = os.path.join(projectdir, subj)
         labeldirs.append(subjdir)
 
-        for atlas in cfg.atlases().keys():
+        for atlas in cfg.atlases():
             if cfg.atlases(atlas)["source"] == "label":
                 atnamedir = os.path.join(subjdir, atlas)
                 labeldirs.append(atnamedir)
@@ -185,7 +208,7 @@ def make_mask_atlas_tree():
     projectdir = os.path.join(basedir, cfg.projectname())
     maskdirs = [roidir, atlasdir, basedir, projectdir]
 
-    for atlas in cfg.atlases().keys():
+    for atlas in cfg.atlases():
         if cfg.atlases(atlas)["source"] == "mask":
             atnamedir = os.path.join(projectdir, atlas)
             maskdirs.append(atnamedir)
@@ -202,7 +225,7 @@ def make_sphere_atlas_tree():
     projectdir = os.path.join(basedir, cfg.projectname())
     spheredirs = [roidir, atlasdir, basedir, projectdir]
 
-    for atlas in cfg.atlases().keys():
+    for atlas in cfg.atlases():
         if cfg.atlases(atlas)["source"] == "sphere":
             atnamedir = os.path.join(projectdir, atlas)
             spheredirs.append(atnamedir)

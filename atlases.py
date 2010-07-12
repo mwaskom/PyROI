@@ -8,6 +8,8 @@ FreesurferAtlas    :  Methods for extraction from Freesurfer volume and surface
                       atlases in native space
 HarvardOxfordAtlas :  Methods for extraction from the Harvard-Oxford probabilistic
                       atlas in standard space
+SigSurfAtlas       :  Methods for turning the blobs on a second-level Freesurfer
+                      significance map into an atlas
 LabelAtlas         :  Methods for the creation of user-defined atlases from
                       Freesurfer surface labels
 MaskAtlas          :  Methods for the creation of user-defined atlases from
@@ -41,7 +43,7 @@ from exceptions import *
 import core
 from core import RoiBase, RoiResult
 
-__all__ = ["Atlas", "FreesurferAtlas", "FSRegister", "LabelAtlas",
+__all__ = ["Atlas", "FreesurferAtlas", "FSRegister", "LabelAtlas", "SigSurfAtlas",
            "MaskAtlas", "HarvardOxfordAtlas", "SphereAtlas", "init_atlas"]
 
 __module__ = "atlases"
@@ -55,6 +57,8 @@ class Atlas(RoiBase):
     - FreesurferAtlas
     
     - HarvardOxfordAtlas
+
+    - SigSurfAtlas
     
     - LabelAtlas
     
@@ -288,7 +292,8 @@ class Atlas(RoiBase):
         
         cmd = ["tkregister2"]
 
-        cmd.append("--mov %s" % cfg.pathspec("meanfunc", self.analysis.paradigm, self.subject))
+        cmd.append("--mov %s" % cfg.pathspec("meanfunc", 
+                                             self.analysis.paradigm, self.subject))
         cmd.append("--reg %s" % self.regmat)
         cmd.append("--surf")
 
@@ -299,7 +304,7 @@ class Atlas(RoiBase):
         
 
     # Processing methods
-    def make_atlas(self, reg=1):
+    def make_atlas(self, reg=1, gen_new_atlas=False):
         """Run the neccessary preprocessing steps to make a mask or label atlas.
         
         For native-space atlases (Freesurfer and Label atlases), a subject
@@ -314,6 +319,13 @@ class Atlas(RoiBase):
             0 : do not create registration matrix
             1 : create registration matrix if it does not exist -- default
             2 : create or overwrite registration matrix
+        gen_new_atlas : bool, optional
+            For SigSurf atlases, a surface significance map only needs to be
+            analyzed for clusters once.  By default, if the surfcluster summary
+            file is found, this method will skip that step.  To force  a new
+            cluster summary table to be made, set to true.  This parameter is
+            only relevant for sigsurf atlases.
+
 
         Returns
         -------
@@ -323,6 +335,11 @@ class Atlas(RoiBase):
         res = RoiResult()
         if self.source == "mask":
             res(self._make_mask_atlas())
+            if self._atlas_exists: res(self._stats())
+        elif self.source == "sigsurf":
+            if not self._init_subject:
+                raise InitError("Subject")
+            res(self._make_sigsurf_atlas(gen_new_atlas))
             if self._atlas_exists: res(self._stats())
         elif self.source == "label":
             if not self._init_subject:
@@ -339,7 +356,7 @@ class Atlas(RoiBase):
                 % self.source)
         return res
 
-    def group_make_atlas(self, subjects=None, reg=1):
+    def group_make_atlas(self, subjects=None, reg=1, gen_new_atlas=False):
         """Run atlas preprocessing steps for a list of subjects.
         
         Prerequisite
@@ -358,7 +375,14 @@ class Atlas(RoiBase):
             0 : do not create registration matrices
             1 : create registration matrices if they do not exist -- default
             2 : create or overwrite registration matricies
-           
+        gen_new_atlas : bool, optional
+            For SigSurf atlases, a surface significance map only needs to be
+            analyzed for clusters once.  By default, if the surfcluster summary
+            file is found, this method will skip that step.  To force  a new
+            cluster summary table to be made, set to true.  The new table will
+            only be generated for the first subject in the gruop list.  This 
+            parameter is only relevant for sigsurf atlases.
+
         Returns
         -------
         RoiResult object
@@ -372,9 +396,13 @@ class Atlas(RoiBase):
         if self.space == "standard":
             result(self.make_atlas(reg))
         else:
-            for subject in subjects:
+            for i, subject in enumerate(subjects):
                 self.init_subject(subject)
-                res = self.make_atlas(reg)
+                if not i:
+                    gen_new_atlas = gen_new_atlas
+                else:
+                    gen_new_atlas = False
+                res = self.make_atlas(reg, gen_new_atlas)
                 print res
                 result(res)
         return result
@@ -418,6 +446,61 @@ class Atlas(RoiBase):
 
         return self._run(combine)
 
+    def _make_sigsurf_atlas(self, gen_new_atlas=False):
+        """Turn a second level sig image into an atlas."""
+        result = RoiResult()
+        if not os.path.isfile(self.surfclustersum) or gen_new_atlas:
+            result(self._surfcluster())
+            self._get_atlas_info_from_sum()
+            result(self._write_lut())
+        else:
+            self._get_atlas_info_from_sum()
+        result(self._resample_labels())
+        result(self._gen_annotation())
+        
+        return result
+
+    def _surfcluster(self):
+        """Run mri_surfcluster to get a list of significant labels."""
+
+        cmd = ["mri_surfcluster"]
+
+        cmd.append("--subject fsaverage")
+        cmd.append("--hemi %s" % self.hemi)
+        cmd.append("--in %s" % self.sourcefile)
+        cmd.append("--fdr %.3f" % self.fdrthresh)
+        cmd.append("--cortex")
+        cmd.append("--annot aparc")
+        cmd.append("--olab %s" % self.surfclusterlab) 
+        cmd.append("--sum %s" % self.surfclustersum)
+
+        return self._run(cmd)
+    
+    def _get_atlas_info_from_sum(self):
+        """Parse a surfcluster summary file and get label names/files."""
+
+        sumtable = np.genfromtxt(self.surfclustersum, str)
+        roihash = {}
+        self.sourcenames = []
+        self.sourcefiles = []
+        for row in sumtable:
+            if int(row[7]) >= self.minsize:
+                roiname = row[8]
+                if roiname in roihash:
+                    roihash[roiname] += 1
+                    roiname = "%s-%d" % (roiname, roihash[roiname])
+                else:
+                    roihash[roiname] = 1
+                self.sourcenames.append("%s_%s" % (self.hemi, roiname))
+                self.sourcefiles.append(
+                    os.path.join(self.sourcedir, "%s_%s-%.4d.label" 
+                                 % (self.hemi, self.atlasname, int(row[0]))))
+        self._sourcenames_to_lutdict()
+        self.regions = {}
+        self.regions[self.hemi] = self.lutdict.keys()
+        self.all_regions = {}
+        self.all_regions[self.hemi] = self.lutdict.keys()
+            
     def _make_label_atlas(self):
         """Turn a list of label files into a label annotation."""
         result = RoiResult(self._write_lut())
@@ -461,11 +544,10 @@ class Atlas(RoiBase):
 
         res = self._run(cmd)
 
-        if not self.debug: 
-            try:
-                res(self._copy_atlas())
-            except IOError:
-                res("IOError: Atlas copy failed")
+        try:
+            res(self._copy_atlas())
+        except IOError:
+            res("IOError: Atlas copy failed")
 
         return res
     
@@ -1105,6 +1187,55 @@ class HarvardOxfordAtlas(Atlas):
        self._init_subject = True
 
 
+class SigSurfAtlas(Atlas):
+    """Atlas made from a second level sig map on the surface."""
+    def __init__(self, atlas, subject, **kwargs):
+
+        if isinstance(atlas, str):
+            atlasdict = cfg.atlases(atlas)
+        else:
+            atlasdict = atlas
+        
+        Atlas.__init__(self, atlasdict, **kwargs)
+        
+        tree.make_sigsurf_atlas_tree()
+
+        self.space = "native"
+        self.hemi = self.atlasdict["hemi"]
+        self.iterhemi = [self.hemi]
+        self.fname = "%s.annot" % self.atlasname
+        self.sourcefile = self.atlasdict["file"]
+        self.fdrthresh = self.atlasdict["fdr"]
+        self.minsize = self.atlasdict["minsize"]
+
+        self.basedir = os.path.join(self.roidir, "atlases", "sigsurf", 
+                                    cfg.projectname())
+        self.lutfile = os.path.join(self.basedir, "lookup_tables", "%s.lut" % self.atlasname)
+        self.sourcedir = os.path.join(self.basedir, "source", self.atlasname)
+        self.surfclustersum = os.path.join(self.sourcedir, 
+                                           "%s.sum" % self.atlasname)
+        self.surfclusterlab = os.path.join(self.sourcedir,
+                                           "%s_%s" % (self.hemi, self.atlasname))
+
+        if os.path.isfile(self.surfclustersum):
+            self._get_atlas_info_from_sum()
+
+        if subject is not None: self.init_subject(subject)
+
+    # Initialization methods
+    def init_subject(self, subject):
+        """Initialize the atlas for a subject"""
+        self.subject = subject
+        self.atlasdir = os.path.join(self.basedir, subject, self.atlasname)
+        self.statsfile = os.path.join(self.atlasdir,
+                                      "%s." + self.atlasname + ".stats")
+        self.atlas = os.path.join(self.atlasdir, "%s." + self.fname)
+        self.origatlas = os.path.join(self.subjdir, subject, 
+                                      "label", "%s." + self.fname)
+        
+        self._init_subject = True
+
+
 class LabelAtlas(Atlas):
     """Atlas class for an atlas construced from surface labels.
 
@@ -1337,10 +1468,11 @@ def init_atlas(atlasdict, subject=None, paradigm=None, **kwargs):
         return FreesurferAtlas(atlasdict, paradigm, subject, **kwargs)
     elif atlasdict["source"] == "fsl": 
         return HarvardOxfordAtlas(atlasdict, subject, **kwargs)
+    elif atlasdict["source"] == "sigsurf":
+        return SigSurfAtlas(atlasdict, subject, **kwargs)
     elif atlasdict["source"] == "label": 
         return LabelAtlas(atlasdict, subject, **kwargs) 
     elif atlasdict["source"] == "mask": 
         return MaskAtlas(atlasdict, subject, **kwargs)
     elif atlasdict["source"] == "sphere":
         return SphereAtlas(atlasdict, subject, **kwargs)
-

@@ -41,7 +41,7 @@ __all__ = ["Analysis", "FirstLevelStats",
            "BetaImage", "ContrastImage", "TStatImage", "SigImage",
            "init_stat_object"]
 
-__module__ = "analysis"
+__module__ = "source"
 
 class Analysis(RoiBase):
     """Analysis object."""
