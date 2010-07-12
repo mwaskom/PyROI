@@ -40,6 +40,7 @@ import configinterface as cfg
 import source
 import treeutils as tree
 from exceptions import *
+from database import build_database
 import core
 from core import RoiBase, RoiResult
 
@@ -828,6 +829,8 @@ class Atlas(RoiBase):
         """Extract functional data for a group of subjects.
         
         See the docstring for the extract() method for more information.
+        The database function build_database() is automatically run after
+        all data is extracted.
         
         Parameters
         ----------
@@ -856,6 +859,7 @@ class Atlas(RoiBase):
             res = self.extract()
             print res
             result(res)
+        result(build_database(self.atlasname, self.analysis.dict, subjects))
         return result
 
 class FreesurferAtlas(Atlas):
@@ -951,8 +955,8 @@ class FreesurferAtlas(Atlas):
         for row in lutarray:
             self.lutdict[int(row[0])] = row[1]
         
-        convtable = {1:(10,49), 2:(11,50), 2:(12,51), 3:(13,52), 
-                     4:(17,53), 5:(18,54), 6:(26,58), 7:(28,60)}
+        convtable = {1:(10,49), 2:(11,50), 3:(12,51), 4:(13,52), 
+                     5:(17,53), 6:(18,54), 7:(26,58), 8:(28,60)}
         if self.fname == "aseg.mgz":
             self.regions = ([convtable[id][0] for id in self.atlasdict["regions"]] + 
                             [convtable[id][1] for id in self.atlasdict["regions"]])

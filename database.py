@@ -15,7 +15,26 @@ from exceptions import *
 __module__ = "database"
 
 def build_database(atlas, analysis, subjects=None):
-    """Good Python programmers write docstrings"""
+    """Build a text database for an atlas/analysis extraction.
+
+    The text database will be saved to $basedir/roi/analyses/$projectname/databases.
+
+    Parameters
+    ----------
+    atlas : str or dict
+        Atlas name or dictionary of parameters
+    analysis : int or dict
+        Analysis index or dictionary of parameters
+    subjects : list or str, optional
+        If None or missing, builds database for all subjects defined in config file.
+        If a string, builds database for the subject group named by that string.  If
+        a list, it builds the database for that list of subjects.
+        
+    Returns
+    -------
+    RoiResult object
+
+    """
     if not cfg.is_setup:
         raise SetupError
 
