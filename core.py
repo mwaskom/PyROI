@@ -108,41 +108,14 @@ class RoiResult(object):
     it will add that object's information to its internal result lists.  
     
     """
-    def __init__(self, cmdline=None, res=None, log=False, continue_log=False):
+    def __init__(self, cmdline=None, res=None, log=False, continue_log=False, logdir=None):
         
         self.cmdline = []
         self.stdout = []
         self.stderr = []
 
-        self.log = log
-        self.continue_log = continue_log
-
-        if self.log:
-            self.logdir = os.path.join(cfg.setup.basepath, "roi", "analysis",
-                                       cfg.projectname(), "logfiles")
-            self.oldlogdir = os.path.join(self.logdir, "archive") 
-
-            self.log_file = os.path.join(self.logdir, "pyroi.log")
-            self.loghistfile = os.path.join(self.logdir, ".logtimestamp")                   
-
-            if os.path.isfile(self.log_file):
-                try:
-                    oldtimestamp = open(self.loghistfile,"r").read()
-                except IOError:
-                    oldtimestamp = "unknown"
-                if not continue_log:
-                    shultil.move(self.log_file, 
-                                 os.path.join(self.oldlogdir, "pyroi_%s.log" % oldtimestamp))
-            if not continue_log: 
-                self.log_fid = open(self.log_file, "w")
-            else:
-                self.log_fid = open(self.log_file, "a")
-
-            newtimestamp = str(
-                datetime.now())[:-10].replace("-","").replace(":","").replace(" ","-")
-            histfid = open(self.loghistfile, "w")
-            histfid.write(newtimestamp)
-            histfid.close()
+        if log:
+            self._setup_log(log, continue_log, logdir)
 
         if cmdline is not None:
             self(cmdline, res)
@@ -188,6 +161,51 @@ class RoiResult(object):
     def last(self):
 
         print "\n".join([self.cmdline[-1], self.stdout[-1], self.stderr[-1]])
+
+    def _setup_log(self, log, continue_log, logdir):
+        """Set up the logging."""
+        self.log = log
+        self.continue_log = continue_log
+
+        if logdir is None:
+            self.logdir = os.path.join(cfg.setup.basepath, "roi", "analysis",
+                                       cfg.projectname(), "logfiles")
+            self._loghistfile = os.path.join(self.logdir, ".logtimestamp")                   
+            self._archive_log = True                                           
+            self._oldlogdir = os.path.join(self.logdir, "archive")
+        else:
+            self.logdir = logdir
+            self._archive_log = False
+        self.log_file = os.path.join(self.logdir, "pyroi.log")
+
+        if self._archive_log and os.path.isfile(self.log_file):
+            try:
+                oldtimestamp = open(self.loghistfile,"r").read()
+            except IOError:
+                oldtimestamp = "unknown"
+            if not continue_log:
+                shultil.move(self.log_file, 
+                             os.path.join(self.oldlogdir, "pyroi_%s.log" % oldtimestamp))
+        if not continue_log: 
+            self._log_fid = open(self.log_file, "w")
+            self._write_new_log_header()
+        else:
+            self._log_fid = open(self.log_file, "a")
+            self._write_continue_log_header()
+
+        newtimestamp = str(
+            datetime.now())[:-10].replace("-","").replace(":","").replace(" ","-")
+        if self._archive_log:
+            histfid = open(self.loghistfile, "w")
+            histfid.write(newtimestamp)
+            histfid.close()
+    
+    def _write_new_log_header(self):
+        pass
+
+    def _write_continue_log_header(self):
+        pass
+
 
 def import_config(module_name):
     """Import a customized config setup module into the cfg module.
