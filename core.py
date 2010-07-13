@@ -115,11 +115,11 @@ class RoiResult(object):
         self.continue_log = continue_log
 
         if self.log:
-            self.logdir = os.path.join(cfg.basedir, "roi", "analysis",
+            self.logdir = os.path.join(cfg.setup.basepath, "roi", "analysis",
                                        cfg.projectname(), "logfiles")
-            self.oldlogdir = os.path.join(cfg.logdir, "archive") 
+            self.oldlogdir = os.path.join(self.logdir, "archive") 
 
-            self.log_file = os.path.join(self.logdir, "pyroi_log.txt")
+            self.log_file = os.path.join(self.logdir, "pyroi.log")
             self.loghistfile = os.path.join(self.logdir, ".logtimestamp")                   
 
             if os.path.isfile(self.log_file):
@@ -127,11 +127,19 @@ class RoiResult(object):
                     oldtimestamp = open(self.loghistfile,"r").read()
                 except IOError:
                     oldtimestamp = "unknown"
-
-            self.log_fid = open(self.log_file, "w")
+                if not continue_log:
+                    shultil.move(self.log_file, 
+                                 os.path.join(self.oldlogdir, "pyroi_%s.log" % oldtimestamp))
+            if not continue_log: 
+                self.log_fid = open(self.log_file, "w")
+            else:
+                self.log_fid = open(self.log_file, "a")
 
             newtimestamp = str(
                 datetime.now())[:-10].replace("-","").replace(":","").replace(" ","-")
+            histfid = open(self.loghistfile, "w")
+            histfid.write(newtimestamp)
+            histfid.close()
 
         if cmdline is not None:
             self(cmdline, res)
@@ -158,6 +166,10 @@ class RoiResult(object):
             else:
                 self.stdout.append("")
                 self.stderr.append("")
+
+        if self.log:
+            pass
+
 
     def __str__(self):
 

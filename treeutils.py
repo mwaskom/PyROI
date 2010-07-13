@@ -37,15 +37,8 @@ def trim_analysis_tree(analysis):
 
     shutil.rmtree(analysisdir)
 
-def make_analysis_tree(analysis):
-    """Set up the directory tree for an analysis.
-    
-    Parameters
-    ----------
-    analysis: dict
-        Analysis dictionary.
-    
-    """
+def make_project_base_tree():
+    """Set up the project base of the analysis tree."""
     roidir = os.path.join(cfg.setup.basepath, "roi")
     analysisdir = os.path.join(roidir, "analysis")
 
@@ -55,11 +48,27 @@ def make_analysis_tree(analysis):
     dbdir = os.path.join(projdir, "databases")
     dbhistdir = os.path.join(dbdir, ".old")
 
-    analdir = os.path.join(projdir, core.get_analysis_name(analysis))
-    
-    analdirs = [roidir, analysisdir, projdir, logdir, logarcdir,  dbdir, dbhistdir, analdir]
+    projdirs = [roidir, analysisdir, projdir, logdir, logarcdir, dbdir, dbhistdir]
+    for direct in projdirs:
+        if not os.path.isdir(direct):
+            os.mkdir(direct)
 
-    for atlas in cfg.atlases().keys():
+def make_analysis_tree(analysis):
+    """Set up the directory tree for an analysis.
+    
+    Parameters
+    ----------
+    analysis: dict
+        Analysis dictionary.
+    
+    """
+    make_project_base_tree()
+
+    analdir = os.path.join(cfg.setup.basepath, "roi", "analysis", 
+        cfg.projectname(), core.get_analysis_name(analysis))
+    analdirs = [analdir]
+
+    for atlas in cfg.atlases():
         atlasdir = os.path.join(analdir, atlas)
         analdirs.append(atlasdir)
 

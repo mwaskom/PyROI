@@ -276,7 +276,7 @@ class Atlas(RoiBase):
         if self.atlasdict["source"] == "freesurfer":
             anat = os.path.join(self.subjdir, self.subject, "mri", "orig.mgz")
         else:
-            anat = os.path.join(os.getenv("FSL_DIR"), "data", "standard",
+            anat = os.path.join(os.getenv("FSLDIR"), "data", "standard",
                                 "avg152T1.nii.gz")
         cmd.append("%s:%s" % (anat, "colormap=grayscale"))
         cmd.append("%s:colormap=lut:lut=%s" % (self.atlas, self.lutfile))
@@ -1168,15 +1168,18 @@ class HarvardOxfordAtlas(Atlas):
 
         Atlas.__init__(self, atlasdict, **kwargs)
      
-        tree.make_fsl_atlas_tree()
-
         self.space = "standard"
         self.thresh = atlasdict["probthresh"]
         pckgdir = os.path.split(__file__)[0]
-        filename = "HarvardOxford-%d.nii" % self.thresh
-        self.atlas = os.path.join(pckgdir, "data", "HarvardOxford", filename)
+        filestem = "HarvardOxford-%d" % self.thresh
+        self.atlas = os.path.join(pckgdir, "data", "HarvardOxford", "%s.nii" % filestem)
         self.lutfile = os.path.join(os.path.split(__file__)[0], "data", 
                                  "HarvardOxford", "HarvardOxford-LUT.txt")
+        lutarray = np.genfromtxt(self.lutfile, str)
+        self.lutdict = {}
+        for row in lutarray:
+            self.lutdict[int(row[0])] = row[1]
+        self.statsfile = os.path.join(pckgdir, "data", "HarvardOxford", "%s.stats" % filestem) 
         self.regions = atlasdict["regions"]
 
         self.regionnames = [self.lutdict[id] for id in self.regions]
@@ -1384,6 +1387,7 @@ class MaskAtlas(Atlas):
                                     "mask", cfg.projectname())
         
         self.lutfile = os.path.join(self.basedir, "%s.lut" % self.atlasname)
+        self.statsfile = os.path.join(self.basedir, "%s.stats" % self.atlasname)
         self.regions = self.lutdict.keys()
         self.all_regions = self.regions
         self.regionnames = [self.lutdict[id] for id in self.regions]

@@ -54,7 +54,6 @@ if os.path.isfile(".roiconfigfile"):
 else:
     is_setup = False
 
-
 def projectname():
     """Return the project name string.
 
