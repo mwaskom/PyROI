@@ -650,13 +650,15 @@ class Atlas(RoiBase):
 
         return self._run(segstats)
 
-    def prepare_source_images(self, reg=1):
+    def prepare_source_images(self, analysis=None, reg=1):
         """Prepare the functional and statistical images for extraction.
         
         An analysis must be initialized in the atlas
 
         Parameters
         ----------
+        analysis : int, dict, or Analysis object, optional
+            Analysis to extract from.  Runs init_analysis() internally.
         reg : int, optional
             This option controls whether Freesurfer's bbregister program will 
             be run to register the mean functional volume to the anatomical so
@@ -671,6 +673,8 @@ class Atlas(RoiBase):
         RoiResult object
 
         """
+        if analysis is not None:
+            self.init_analysis(analysis) 
         if not self._init_analysis:
             raise InitError("Analysis")
         if not reg:
@@ -750,14 +754,19 @@ class Atlas(RoiBase):
 
         return result
 
-    def extract(self):
+    def extract(self, analysis=None):
         """Extract average functional data from select regions in an atlas.
         
         This prints a text file with the average statistic for each region
         to the $main_dir/roi/analysis/ directory structure.  It also saves
         a binary "volume" where each voxel represents a region in the atlas.
-        See the database functions to collect this data for statistical anal-
-        ysis.
+        See the database functions to collect this data for statistical 
+        analysis.
+
+        Parameters
+        ----------
+        analysis : int, dict, or Analysis object, optional
+            Analysis to extract from.  Runs init_analysis() internally.
 
         Returns
         -------
