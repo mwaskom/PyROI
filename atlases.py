@@ -1189,7 +1189,8 @@ class HarvardOxfordAtlas(Atlas):
         for row in lutarray:
             self.lutdict[int(row[0])] = row[1]
         self.statsfile = os.path.join(pckgdir, "data", "HarvardOxford", "%s.stats" % filestem) 
-        self.regions = atlasdict["regions"]
+        self.regions = atlasdict["regions"] + [id + 55 for id in atlasdict["regions"]]
+        self.regions.sort()
 
         self.regionnames = [self.lutdict[id] for id in self.regions]
         self.regionnames.sort()                                
