@@ -1,3 +1,6 @@
+"""
+Core classes and functions for the PyROI package.
+"""
 import os
 import sys
 import shutil
