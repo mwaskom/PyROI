@@ -10,10 +10,10 @@
 # anatomy_type volume
 # 
 # SegVolFile HarvardOxford-50.nii 
-# SegVolFileTimeStamp  2010/06/26 18:35:57 
+# SegVolFileTimeStamp  2010/07/13 11:20:39 
 # ColorTable HarvardOxford-LUT.txt 
 # ColorTableTimeStamp 2010/06/26 18:04:17 
-# VoxelVolume_mm3 8 
+# VoxelVolume_mm3 14.6228 
 # TableCol  1 ColHeader Index 
 # TableCol  1 FieldName Index 
 # TableCol  1 Units     NA 
@@ -32,113 +32,113 @@
 # NRows 110 
 # NTableCols 5 
 # ColHeaders  Index SegId NVoxels Volume_mm3 StructName 
-  1   1      1109     8872.0  L-Thalamus                     
-  2   2       416     3328.0  L-Caudate                      
-  3   3       721     5768.0  L-Putamen                      
-  4   4       233     1864.0  L-Pallidum                     
-  5   5       502     4016.0  L-Hippocampus                  
-  6   6       227     1816.0  L-Amygdala                     
-  7   7        68      544.0  L-Accumbens                    
-  8   8      4577    36616.0  L-Frontal-Pole                 
-  9   9       534     4272.0  L-Insular-ctx                  
- 10  10       579     4632.0  L-Superior-Frontal-Gyrus       
- 11  11       830     6640.0  L-Middle-Frontal-Gyrus         
- 12  12       124      992.0  L-Inferior-Frontal-Gyrus--pars-triang 
- 13  13       253     2024.0  L-Inferior-Frontal-Gyrus--pars-oper 
- 14  14      1129     9032.0  L-Precentral-Gyrus             
- 15  15      1383    11064.0  L-Temporal-Pole                
- 16  16        52      416.0  L-Superior-Temporal-Gyrus--ant 
- 17  17       301     2408.0  L-Superior-Temporal-Gyrus--post 
- 18  18       119      952.0  L-Middle-Temporal-Gyrus--ant   
- 19  19       497     3976.0  L-Middle-Temporal-Gyrus--post  
- 20  20       259     2072.0  L-Middle-Temporal-Gyrus--tempocc 
- 21  21       102      816.0  L-Inferior-Temporal-Gyrus--ant 
- 22  22       247     1976.0  L-Inferior-Temporal-Gyrus--post 
- 23  23       214     1712.0  L-Inferior-Temporal-Gyrus--tempocc 
- 24  24      1182     9456.0  L-Postcentral-Gyrus            
- 25  25       249     1992.0  L-Superior-Parietal-Lobule     
- 26  26       326     2608.0  L-Supramarginal-Gyrus--ant     
- 27  27       185     1480.0  L-Supramarginal-Gyrus--post    
- 28  28       195     1560.0  L-Angular-Gyrus                
- 29  29      2645    21160.0  L-Lateral-Occipital-ctx--sup   
- 30  30      1008     8064.0  L-Lateral-Occipital-ctx--inf   
- 31  31       206     1648.0  L-Intracalcarine-ctx           
- 32  32       237     1896.0  L-Frontal-Medial-ctx           
- 33  33       313     2504.0  L-Juxtapositional-Lobule-ctx   
- 34  34       298     2384.0  L-Subcallosal-ctx              
- 35  35       703     5624.0  L-Paracingulate-Gyrus          
- 36  36       539     4312.0  L-Cingulate-Gyrus--ant         
- 37  37       513     4104.0  L-Cingulate-Gyrus--post        
- 38  38      1071     8568.0  L-Precuneous-ctx               
- 39  39        99      792.0  L-Cuneal-ctx                   
- 40  40       905     7240.0  L-Frontal-Orbital-ctx          
- 41  41       272     2176.0  L-Parahippocampal-Gyrus--ant   
- 42  42       154     1232.0  L-Parahippocampal-Gyrus--post  
- 43  43       688     5504.0  L-Lingual-Gyrus                
- 44  44        91      728.0  L-Temporal-Fusiform-ctx--ant   
- 45  45       357     2856.0  L-Temporal-Fusiform-ctx--post  
- 46  46       220     1760.0  L-Temporal-Occipital-Fusiform-ctx 
- 47  47       254     2032.0  L-Occipital-Fusiform-Gyrus     
- 48  48       121      968.0  L-Frontal-Operculum-ctx        
- 49  49       521     4168.0  L-Central-Opercular-ctx        
- 50  50       221     1768.0  L-Parietal-Operculum-ctx       
- 51  51       114      912.0  L-Planum-Polare                
- 52  52        83      664.0  L-Heschl's-Gyrus               
- 53  53       138     1104.0  L-Planum-Temporale             
+  1   1       607     8876.0  L-Thalamus                     
+  2   2       226     3304.8  L-Caudate                      
+  3   3       385     5629.8  L-Putamen                      
+  4   4       122     1784.0  L-Pallidum                     
+  5   5       283     4138.3  L-Hippocampus                  
+  6   6       124     1813.2  L-Amygdala                     
+  7   7        43      628.8  L-Accumbens                    
+  8   8      2459    35957.5  L-Frontal-Pole                 
+  9   9       272     3977.4  L-Insular-ctx                  
+ 10  10       307     4489.2  L-Superior-Frontal-Gyrus       
+ 11  11       448     6551.0  L-Middle-Frontal-Gyrus         
+ 12  12        56      818.9  L-Inferior-Frontal-Gyrus--pars-triang 
+ 13  13       143     2091.1  L-Inferior-Frontal-Gyrus--pars-oper 
+ 14  14       624     9124.6  L-Precentral-Gyrus             
+ 15  15       744    10879.4  L-Temporal-Pole                
+ 16  16        32      467.9  L-Superior-Temporal-Gyrus--ant 
+ 17  17       158     2310.4  L-Superior-Temporal-Gyrus--post 
+ 18  18        51      745.8  L-Middle-Temporal-Gyrus--ant   
+ 19  19       283     4138.3  L-Middle-Temporal-Gyrus--post  
+ 20  20       146     2134.9  L-Middle-Temporal-Gyrus--tempocc 
+ 21  21        57      833.5  L-Inferior-Temporal-Gyrus--ant 
+ 22  22       140     2047.2  L-Inferior-Temporal-Gyrus--post 
+ 23  23       119     1740.1  L-Inferior-Temporal-Gyrus--tempocc 
+ 24  24       644     9417.1  L-Postcentral-Gyrus            
+ 25  25       134     1959.5  L-Superior-Parietal-Lobule     
+ 26  26       180     2632.1  L-Supramarginal-Gyrus--ant     
+ 27  27       104     1520.8  L-Supramarginal-Gyrus--post    
+ 28  28       110     1608.5  L-Angular-Gyrus                
+ 29  29      1450    21203.1  L-Lateral-Occipital-ctx--sup   
+ 30  30       554     8101.0  L-Lateral-Occipital-ctx--inf   
+ 31  31       127     1857.1  L-Intracalcarine-ctx           
+ 32  32       122     1784.0  L-Frontal-Medial-ctx           
+ 33  33       170     2485.9  L-Juxtapositional-Lobule-ctx   
+ 34  34       171     2500.5  L-Subcallosal-ctx              
+ 35  35       393     5746.8  L-Paracingulate-Gyrus          
+ 36  36       278     4065.1  L-Cingulate-Gyrus--ant         
+ 37  37       278     4065.1  L-Cingulate-Gyrus--post        
+ 38  38       591     8642.1  L-Precuneous-ctx               
+ 39  39        54      789.6  L-Cuneal-ctx                   
+ 40  40       487     7121.3  L-Frontal-Orbital-ctx          
+ 41  41       145     2120.3  L-Parahippocampal-Gyrus--ant   
+ 42  42        70     1023.6  L-Parahippocampal-Gyrus--post  
+ 43  43       374     5468.9  L-Lingual-Gyrus                
+ 44  44        50      731.1  L-Temporal-Fusiform-ctx--ant   
+ 45  45       197     2880.7  L-Temporal-Fusiform-ctx--post  
+ 46  46       128     1871.7  L-Temporal-Occipital-Fusiform-ctx 
+ 47  47       143     2091.1  L-Occipital-Fusiform-Gyrus     
+ 48  48        66      965.1  L-Frontal-Operculum-ctx        
+ 49  49       276     4035.9  L-Central-Opercular-ctx        
+ 50  50       112     1637.8  L-Parietal-Operculum-ctx       
+ 51  51        63      921.2  L-Planum-Polare                
+ 52  52        46      672.6  L-Heschl's-Gyrus               
+ 53  53        71     1038.2  L-Planum-Temporale             
  54  54         0        0.0  L-Supracalcarine-ctx           
- 55  55      1254    10032.0  L-Occipital-Pole               
- 56  56      1125     9000.0  R-Thalamus                     
- 57  57       459     3672.0  R-Caudate                      
- 58  58       756     6048.0  R-Putamen                      
- 59  59       245     1960.0  R-Pallidum                     
- 60  60       531     4248.0  R-Hippocampus                  
- 61  61       278     2224.0  R-Amygdala                     
- 62  62        59      472.0  R-Accumbens                    
- 63  63      5343    42744.0  R-Frontal-Pole                 
- 64  64       546     4368.0  R-Insular-ctx                  
- 65  65       639     5112.0  R-Superior-Frontal-Gyrus       
- 66  66       658     5264.0  R-Middle-Frontal-Gyrus         
- 67  67        78      624.0  R-Inferior-Frontal-Gyrus--pars-triang 
- 68  68       161     1288.0  R-Inferior-Frontal-Gyrus--pars-oper 
- 69  69      1005     8040.0  R-Precentral-Gyrus             
- 70  70      1389    11112.0  R-Temporal-Pole                
- 71  71        47      376.0  R-Superior-Temporal-Gyrus--ant 
- 72  72       329     2632.0  R-Superior-Temporal-Gyrus--post 
- 73  73        97      776.0  R-Middle-Temporal-Gyrus--ant   
- 74  74       480     3840.0  R-Middle-Temporal-Gyrus--post  
- 75  75       444     3552.0  R-Middle-Temporal-Gyrus--tempocc 
- 76  76        79      632.0  R-Inferior-Temporal-Gyrus--ant 
- 77  77       196     1568.0  R-Inferior-Temporal-Gyrus--post 
- 78  78       333     2664.0  R-Inferior-Temporal-Gyrus--tempocc 
- 79  79       896     7168.0  R-Postcentral-Gyrus            
- 80  80       373     2984.0  R-Superior-Parietal-Lobule     
- 81  81       270     2160.0  R-Supramarginal-Gyrus--ant     
- 82  82       292     2336.0  R-Supramarginal-Gyrus--post    
- 83  83       571     4568.0  R-Angular-Gyrus                
- 84  84      2489    19912.0  R-Lateral-Occipital-ctx--sup   
- 85  85       949     7592.0  R-Lateral-Occipital-ctx--inf   
- 86  86       226     1808.0  R-Intracalcarine-ctx           
- 87  87       331     2648.0  R-Frontal-Medial-ctx           
- 88  88       377     3016.0  R-Juxtapositional-Lobule-ctx   
- 89  89       404     3232.0  R-Subcallosal-ctx              
- 90  90       917     7336.0  R-Paracingulate-Gyrus          
- 91  91       992     7936.0  R-Cingulate-Gyrus--ant         
- 92  92       787     6296.0  R-Cingulate-Gyrus--post        
- 93  93      1561    12488.0  R-Precuneous-ctx               
- 94  94       219     1752.0  R-Cuneal-ctx                   
- 95  95       790     6320.0  R-Frontal-Orbital-ctx          
- 96  96       311     2488.0  R-Parahippocampal-Gyrus--ant   
- 97  97       139     1112.0  R-Parahippocampal-Gyrus--post  
- 98  98       816     6528.0  R-Lingual-Gyrus                
- 99  99        87      696.0  R-Temporal-Fusiform-ctx--ant   
-100 100       284     2272.0  R-Temporal-Fusiform-ctx--post  
-101 101       381     3048.0  R-Temporal-Occipital-Fusiform-ctx 
-102 102       268     2144.0  R-Occipital-Fusiform-Gyrus     
-103 103        74      592.0  R-Frontal-Operculum-ctx        
-104 104       438     3504.0  R-Central-Opercular-ctx        
-105 105       170     1360.0  R-Parietal-Operculum-ctx       
-106 106       111      888.0  R-Planum-Polare                
-107 107        53      424.0  R-Heschl's-Gyrus               
-108 108        62      496.0  R-Planum-Temporale             
-109 109        17      136.0  R-Supracalcarine-ctx           
-110 110      1163     9304.0  R-Occipital-Pole               
+ 55  55       677     9899.6  L-Occipital-Pole               
+ 56  56       629     9197.7  R-Thalamus                     
+ 57  57       255     3728.8  R-Caudate                      
+ 58  58       433     6331.7  R-Putamen                      
+ 59  59       129     1886.3  R-Pallidum                     
+ 60  60       284     4152.9  R-Hippocampus                  
+ 61  61       154     2251.9  R-Amygdala                     
+ 62  62        35      511.8  R-Accumbens                    
+ 63  63      2821    41250.9  R-Frontal-Pole                 
+ 64  64       320     4679.3  R-Insular-ctx                  
+ 65  65       367     5366.6  R-Superior-Frontal-Gyrus       
+ 66  66       367     5366.6  R-Middle-Frontal-Gyrus         
+ 67  67        46      672.6  R-Inferior-Frontal-Gyrus--pars-triang 
+ 68  68        94     1374.5  R-Inferior-Frontal-Gyrus--pars-oper 
+ 69  69       551     8057.2  R-Precentral-Gyrus             
+ 70  70       762    11142.6  R-Temporal-Pole                
+ 71  71        20      292.5  R-Superior-Temporal-Gyrus--ant 
+ 72  72       183     2676.0  R-Superior-Temporal-Gyrus--post 
+ 73  73        55      804.3  R-Middle-Temporal-Gyrus--ant   
+ 74  74       252     3684.9  R-Middle-Temporal-Gyrus--post  
+ 75  75       259     3787.3  R-Middle-Temporal-Gyrus--tempocc 
+ 76  76        49      716.5  R-Inferior-Temporal-Gyrus--ant 
+ 77  77       114     1667.0  R-Inferior-Temporal-Gyrus--post 
+ 78  78       170     2485.9  R-Inferior-Temporal-Gyrus--tempocc 
+ 79  79       515     7530.7  R-Postcentral-Gyrus            
+ 80  80       195     2851.4  R-Superior-Parietal-Lobule     
+ 81  81       140     2047.2  R-Supramarginal-Gyrus--ant     
+ 82  82       168     2456.6  R-Supramarginal-Gyrus--post    
+ 83  83       315     4606.2  R-Angular-Gyrus                
+ 84  84      1315    19229.0  R-Lateral-Occipital-ctx--sup   
+ 85  85       515     7530.7  R-Lateral-Occipital-ctx--inf   
+ 86  86       120     1754.7  R-Intracalcarine-ctx           
+ 87  87       179     2617.5  R-Frontal-Medial-ctx           
+ 88  88       209     3056.2  R-Juxtapositional-Lobule-ctx   
+ 89  89       206     3012.3  R-Subcallosal-ctx              
+ 90  90       495     7238.3  R-Paracingulate-Gyrus          
+ 91  91       550     8042.5  R-Cingulate-Gyrus--ant         
+ 92  92       452     6609.5  R-Cingulate-Gyrus--post        
+ 93  93       866    12663.4  R-Precuneous-ctx               
+ 94  94       119     1740.1  R-Cuneal-ctx                   
+ 95  95       439     6419.4  R-Frontal-Orbital-ctx          
+ 96  96       165     2412.8  R-Parahippocampal-Gyrus--ant   
+ 97  97        79     1155.2  R-Parahippocampal-Gyrus--post  
+ 98  98       439     6419.4  R-Lingual-Gyrus                
+ 99  99        42      614.2  R-Temporal-Fusiform-ctx--ant   
+100 100       158     2310.4  R-Temporal-Fusiform-ctx--post  
+101 101       200     2924.6  R-Temporal-Occipital-Fusiform-ctx 
+102 102       150     2193.4  R-Occipital-Fusiform-Gyrus     
+103 103        37      541.0  R-Frontal-Operculum-ctx        
+104 104       239     3494.9  R-Central-Opercular-ctx        
+105 105        93     1359.9  R-Parietal-Operculum-ctx       
+106 106        67      979.7  R-Planum-Polare                
+107 107        30      438.7  R-Heschl's-Gyrus               
+108 108        30      438.7  R-Planum-Temporale             
+109 109        12      175.5  R-Supracalcarine-ctx           
+110 110       618     9036.9  R-Occipital-Pole               
