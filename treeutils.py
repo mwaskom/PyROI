@@ -20,6 +20,8 @@ __all__ = ["trim_analysis_tree", "make_analysis_tree",
            "make_fs_atlas_tree", "make_reg_tree", "make_sigsurf_tree",
            "make_label_atlas_tree", "make_mask_atlas_tree"]
 
+__module__ = "treeutils"
+
 def trim_analysis_tree(analysis):
     """Remove a analysis tree and all of its contents.
     
