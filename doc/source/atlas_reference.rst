@@ -4,8 +4,12 @@
 Atlas Reference
 ===============
 
-.. toctree::
-    :max depth: 2
+.. include:: aseg_id_table.rst
 
-    freesurfer_surf.rst
+.. include:: aparc_id_table.rst
+
+.. include:: aparc_2009_id_table.rst
+
+.. include:: harvard_oxford_id_table.rst
+
 

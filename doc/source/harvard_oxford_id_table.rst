@@ -1,0 +1,65 @@
+.. _harvard_oxford_id_table:
+
+Harvard Oxford Atlas
+--------------------
+
+===   =====================================
+ID     Region
+===   =====================================
+1      Thalamus
+2      Caudate
+3      Putamen
+4      Pallidum
+5      Hippocampus
+6      Amygdala
+7      Accumbens
+8      Frontal-Pole
+9      Insular-ctx
+10     Superior-Frontal-Gyrus
+11     Middle-Frontal-Gyrus
+12     Inferior-Frontal-Gyrus--pars-triang
+13     Inferior-Frontal-Gyrus--pars-oper
+14     Precentral-Gyrus
+15     Temporal-Pole
+16     Superior-Temporal-Gyrus--ant
+17     Superior-Temporal-Gyrus--post
+18     Middle-Temporal-Gyrus--ant
+19     Middle-Temporal-Gyrus--post
+20     Middle-Temporal-Gyrus--tempocc
+21     Inferior-Temporal-Gyrus--ant
+22     Inferior-Temporal-Gyrus--post
+23     Inferior-Temporal-Gyrus--tempocc
+24     Postcentral-Gyrus
+25     Superior-Parietal-Lobule
+26     Supramarginal-Gyrus--ant
+27     Supramarginal-Gyrus--post
+28     Angular-Gyrus
+29     Lateral-Occipital-ctx--sup
+30     Lateral-Occipital-ctx--inf
+31     Intracalcarine-ctx
+32     Frontal-Medial-ctx
+33     Juxtapositional-Lobule-ctx
+34     Subcallosal-ctx
+35     Paracingulate-Gyrus
+36     Cingulate-Gyrus--ant
+37     Cingulate-Gyrus--post
+38     Precuneous-ctx
+39     Cuneal-ctx
+40     Frontal-Orbital-ctx
+41     Parahippocampal-Gyrus--ant
+42     Parahippocampal-Gyrus--post
+43     Lingual-Gyrus
+44     Temporal-Fusiform-ctx--ant
+45     Temporal-Fusiform-ctx--post
+46     Temporal-Occipital-Fusiform-ctx
+47     Occipital-Fusiform-Gyrus
+48     Frontal-Operculum-ctx
+49     Central-Opercular-ctx
+50     Parietal-Operculum-ctx
+51     Planum-Polare
+52     Heschl's-Gyrus
+53     Planum-Temporale
+54     Supracalcarine-ctx
+55     Occipital-Pole
+===   =====================================
+
