@@ -154,6 +154,8 @@ Entry Formats
 
 - manifold: "volume" or "surface"
 
+- fname: string
+
 - hemi: "lh" or "rh"
 
 - probthresh: integer
