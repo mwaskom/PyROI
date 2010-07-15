@@ -149,6 +149,7 @@ Entry Formats
 - file: string
 - thresh: tuple ("sig" or "fdr", float)
 - probthresh: integer
+- sourcelevel: "subject" or "group"
 - sourcedir: string
 - sourcefiles: "all" or list of strings 
 - coordsys: "mni", "tal", or "vox"
@@ -163,7 +164,7 @@ Note: source is required for all atlas types
 - fsl: probthresh, regions
 - sigsurf: hemi, file, thresh, minsize
 - mask: sourcedir, sourcelabels
-- label: sourcedir, sourcelabels
+- label: hemi, sourcelebel, sourcedir, sourcelabels
 - sphere: coordsys, radius, centers
 
 Variable Name
@@ -173,36 +174,42 @@ Variable Name
 """
 
 atlases = {"": 
-               {"source":  "freesurfer",
+               {"source": "freesurfer",
                "manifold": "volume",
                "fname":    ".mgz",
                "regions": [ ]},
            "": 
-               {"source":   "freesurfer",
+               {"source": "freesurfer",
                 "manifold": "surface",
                 "fname":    ".annot",
                 "regions": [ ]},
            "":
-               {"source":    "fsl",
+               {"source": "fsl",
                 "probthresh":  ,
                 "regions",   []},
-               
            "":
-               {"source":    "label",
+               {"source": "sigsurf",
                 "hemi": "",
+                "file": ""
+                "thresh": ("",)
+                "minsize": },
+           "":
+               {"source": "label",
+                "hemi": "",
+                "sourcelevel": ""
                 "sourcedir": "",
                 "sourcefiles": ["", ""],
            "":
-               {"source":      "mask",
+               {"source": "mask",
                 "sourcedir":   "",
-                "sourcefiles": []}
+                "sourcefiles": ["", ""]}
            "":
-               {"source":   "sphere",
+               {"source": "sphere",
                 "coordsys": "",
                 "radius":   ,
                 "centers":
-                  {"one" : ( , , ),
-                   "two" : ( , , )}
+                  {"" : ( , , ),
+                   "" : ( , , )}
                 }
    
 

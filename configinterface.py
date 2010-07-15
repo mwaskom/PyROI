@@ -236,7 +236,7 @@ def _prep_sigsurf_atlas(atlasdict):
 
 def _prep_label_atlas(atlasdict):
     """Prepare a label atlas dictionary"""
-    atlasfields = ["atlasname", "source", "hemi", "sourcedir", "sourcefiles"]
+    atlasfields = ["atlasname", "source", "hemi", "sourcelevel", "sourcedir", "sourcefiles"]
     _check_fields(atlasfields, atlasdict)
     
     if not os.path.isdir(fssubjdir()):
@@ -247,12 +247,31 @@ def _prep_label_atlas(atlasdict):
         atlasdict["sourcedir"] = os.path.join(setup.basepath, atlasdict["sourcedir"])
 
     atlasdict["manifold"] = "surface"
-
+    
+    atlasdict["sourcelevel"] = atlasdict["sourcelevel"].lower()
+    if not atlasdict["sourcelevel"] in ["subject", "group"]:
+        raise SetupError("Sourcelevel for %s atlas must be 'subject' or 'group'" 
+                         % atlasdict["atlasname"])
+    subj = subjects()[0]
     if atlasdict["sourcefiles"] == "all" or ["all"]:
-        atlasdict["sourcefiles"] = glob(os.path.join(atlasdict["sourcedir"], "*.label"))
+        if atlasdict["sourcelevel"] =="group":
+            atlasdict["sourcefiles"] = glob(os.path.join(
+                                           atlasdict["sourcedir"], "*.label"))
+        else:                                           
+            dir = atlasdict["sourcedir"].replace("$subject", subj)
+            atlasdict["sourcefiles"] = glob(os.path.join(dir, "*.label"))
         if not atlasdict["sourcefiles"]:
             raise SetupError("Using 'all' for %s atlas found no label images"
                                 % atlasdict["atlasname"])
+
+    if atlasdict["sourcelevel"] == "subject":
+        nlabels = len(atlasdict["sourcefiles"])
+        for subj in subjects():
+            ll = glob(os.path.join(atlasdict["sourcedir"].replace("$subject", subj),
+                                   "*.label"))
+            if len(ll) != nlabels:
+                warn("Not all subjects for atlas %s have the same number of "
+                     "labels in their sourcedirectory" % atlasdict["atlasname"])
 
     lfiles = atlasdict["sourcefiles"]
     if not isinstance(lfiles, list):
@@ -264,7 +283,7 @@ def _prep_label_atlas(atlasdict):
             lfile, ext = os.path.splitext(lfile)
         lfiles[i] = os.path.join(atlasdict["sourcedir"], lfile + ".label")
         lnames.append(lfile)
-        if not os.path.isfile(lfiles[i]):
+        if atlasdict["sourcelevel"] == "group" and not os.path.isfile(lfiles[i]):
             warn("%s does not exist." % lfiles[i])
     atlasdict["sourcefiles"] = lfiles
     atlasdict["sourcenames"] = lnames
