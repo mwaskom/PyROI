@@ -198,7 +198,7 @@ def _prep_fsl_atlas(atlasdict):
 
 def _prep_sigsurf_atlas(atlasdict):
     """Prepare a sigsurf atlas dictionary."""
-    atlasfields = ["atlasname", "source", "hemi", "file", "fdr", "minsize"]
+    atlasfields = ["atlasname", "source", "hemi", "file", "thresh", "minsize"]
     _check_fields(atlasfields, atlasdict)
 
     atlasdict["manifold"] = "surface"
@@ -207,12 +207,18 @@ def _prep_sigsurf_atlas(atlasdict):
         raise SetupError("Using sigsurf atlas with illegitimite "
                             "Freesurfer Subjects Directory path")
 
-    if isinstance(atlasdict["fdr"], str):
+    if not isinstance(atlasdict["thresh"], tuple):
         try:
-            atlasdict["fdr"] = float(atlasdict["fdr"])
-        except ValueError:
-            raise SetupError("FDR thresh setting for %s atlas does not appear "
-                             "to be a number" % atlasdict["atlasname"])
+            atlasdict["fdr"] = tuple((atlasdict["thresh"]))
+        except TypeError:
+            raise SetupError("The thresh entry for atlas %s is not a tuple."
+                             % atlasdict["atlasname"])
+    if not (len(atlasdict["thresh"]) == 2 or 
+       not isinstance(atlasdict["thresh"][0], str) or
+       not isinstance(atlasdict["thresh"][1], float)):
+        raise SetupError("The thresh entry for atlas %s must be a two-tuple of the form "
+                         "(str, float)" % atlasdict["atlasname"])
+
     if isinstance(atlasdict["minsize"], str):
         try:
             atlasdict["fdr"] = int(atlasdict["fdr"])

@@ -1,18 +1,18 @@
 .. _aseg_id_table:
 
-Aseg
-----
+Aseg -- Subcortical Atlas
+-------------------------
 
 ===   ====================
 ID     Region
 ===   ====================
-1      thalamus
-2      caudate
-3      putamen
-4      pallidum
-5      hippocampus
-6      amygdala
-7      accumbens
-8      ventral-dc
+10     Thalamus
+11     Caudate
+12     Putamen
+13     Pallidum
+17     Hippocampus
+18     Amygdala
+26     Accumbens
+28     Ventral-dc
 ===   ====================
 
