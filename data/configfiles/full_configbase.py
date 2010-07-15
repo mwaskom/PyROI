@@ -304,10 +304,10 @@ contrasts = {"" :  {"": ,
 """
 Specify the absolute path to your main directory and relative paths
 from that directory to those containing certain types of images.  You 
-may include ``$paradigm``, ``$subject``, and ``$contrast`` wildcards in
-the path strings, which will be replaced appropriately as the program runs.
-After replacement,each variable should pick out a single directory in your
-file system.
+may include ``$paradigm``, ``$subject``, ``group``, and ``$contrast`` 
+wildcards in the path strings, which will be replaced appropriately as the 
+program runs.  After replacement,each variable should pick out a single 
+directory in your file system.
 
 A directory will be created within the basepath directory called ``roi``,
 which is where all files created by PyROI will be stored.

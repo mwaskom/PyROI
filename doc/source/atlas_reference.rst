@@ -1,15 +1,11 @@
 .. _atlas_reference:
 
-===============
 Atlas Reference
 ===============
 
-.. include:: aseg_id_table.rst
+.. toctree::
+    :maxdepth: 2
 
-.. include:: aparc_id_table.rst
-
-.. include:: aparc_2009_id_table.rst
-
-.. include:: harvard_oxford_id_table.rst
-
+    freesurfer_ref.rst
+    harvard_oxford_ref.rst
 
