@@ -146,6 +146,8 @@ Entry Formats
 - manifold: "volume" or "surface"
 - fname: string
 - hemi: "lh" or "rh"
+- file: string
+- thresh: tuple ("sig" or "fdr", float)
 - probthresh: integer
 - sourcedir: string
 - sourcefiles: "all" or list of strings 
@@ -159,6 +161,7 @@ Required Entries
 Note: source is required for all atlas types
 - freesurfer: manifold, fname, regions
 - fsl: probthresh, regions
+- sigsurf: hemi, file, thresh, minsize
 - mask: sourcedir, sourcelabels
 - label: sourcedir, sourcelabels
 - sphere: coordsys, radius, centers

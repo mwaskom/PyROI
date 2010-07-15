@@ -469,11 +469,14 @@ class Atlas(RoiBase):
         cmd.append("--subject fsaverage")
         cmd.append("--hemi %s" % self.hemi)
         cmd.append("--in %s" % self.sourcefile)
-        cmd.append("--fdr %.3f" % self.fdrthresh)
         cmd.append("--cortex")
         cmd.append("--annot aparc")
         cmd.append("--olab %s" % self.surfclusterlab) 
         cmd.append("--sum %s" % self.surfclustersum)
+        if self.threshtype == "fdr":
+            cmd.append("--fdr %.3f" % self.thresh)
+        else:
+            cmd.append("--thmin %.3f" % self.thresh)
 
         return self._run(cmd)
     
@@ -1222,7 +1225,8 @@ class SigSurfAtlas(Atlas):
         self.iterhemi = [self.hemi]
         self.fname = "%s.annot" % self.atlasname
         self.sourcefile = self.atlasdict["file"]
-        self.fdrthresh = self.atlasdict["fdr"]
+        self.threshtype = self.atlasdict["thresh"][0]
+        self.threshold = self.atlasdict["thresh"][1]
         self.minsize = self.atlasdict["minsize"]
 
         self.basedir = os.path.join(self.roidir, "atlases", "sigsurf", 

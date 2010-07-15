@@ -115,7 +115,9 @@ class RoiResult(object):
         self.stderr = []
 
         if log:
-            self._setup_log(log, continue_log, logdir)
+            self._setup_log(continue_log, logdir)
+        else:
+            self.log = False
 
         if cmdline is not None:
             self(cmdline, res)
@@ -162,9 +164,9 @@ class RoiResult(object):
 
         print "\n".join([self.cmdline[-1], self.stdout[-1], self.stderr[-1]])
 
-    def _setup_log(self, log, continue_log, logdir):
+    def _setup_log(self, continue_log, logdir):
         """Set up the logging."""
-        self.log = log
+        self.log = True
         self.continue_log = continue_log
 
         if logdir is None:

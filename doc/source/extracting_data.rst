@@ -66,8 +66,6 @@ Here's the standard workflow for a single subject extraction:
 
 - Create the atlas image
 
-- Initialize the atlas for an analysis
-
 - Prepare the source images
 
 - Extract the data
@@ -77,9 +75,8 @@ In code, this is what that looks like::
     >>> atlas = roi.init_atlas("atlas_name")
     >>> atlas.init_subject("subj_id")
     >>> res = atlas.make_atlas()
-    >>> atlas.init_analysis(1)
-    >>> atlas.prepare_source_images()
-    >>> res = atlas.extract()
+    >>> res = atlas.prepare_source_images(1)
+    >>> res = atlas.extract(1)
 
 The extraction method  will produce three files.  One will be a text 
 file summarizing the regions from which data was extracted and the size
@@ -126,8 +123,7 @@ Something that wasn't discussed above is that native space atlases
 (currently this means just Freesurfer atlases) must be initialized with 
 a paradigm -- corresponding to the main analysis paradigm -- before they
 can be initialized with a subject.  However, *another* thing that wasn't
-d
-iscussed is that both paradigm initialization and subject initialization
+discussed is that both paradigm initialization and subject initialization
 can be acheived through the ``init_atlas()`` method::
 
     >>> atlas = roi.init_atlas("atlas_name", "subj_id", "par_name")
@@ -220,8 +216,15 @@ whereas surface atlases will be displayed in tksurfer.
 Preparing source images
 -----------------------
 
-Once the atlas image has been created, initialize the atlas object with an
-analysis.  Analyses are keyed by their index in the analysis list, although
+For most analyses, the source images will need to be preprocessed before
+they are ready for extraction.  This is accomplished with the 
+``prepare_source_images()`` method on the atlas object.  The atlas must
+be initalized with an analysis so that it will prepare the right source
+images.  this can be accomplished either by running the ``init_analysis()``
+method or by providing that information to the ``prepare_source_images()``
+method.
+
+Analyses are keyed by their index in the analysis list, although
 note that these indices, unlike others in Python, are *not* zero-based.  In
 other words, calling ``atlas.init_analysis(1)`` will initialize the atlas
 object with the analysis defined by the first dictionary of analysis
@@ -229,11 +232,10 @@ parameters.  Any argument that takes an analysis index will also take an
 analysis dictionary that is returned by the ``roi.cfg.analysis()``
 function, if you find this confusing or just want to be safe.
 
-For most analyses, the source images will need to be preprocessed before
-they are ready for extraction.  If parameter or contrast effect sizes are
-going to be extracted, the individual volumes containing those statistics
-will be concatenated into a single volume with as many frames as there are
-regressors/contrasts specified in your config file.  
+If parameter or contrast effect sizes are going to be extracted, the 
+individual volumes containing those statistics will be concatenated into 
+a single volume with as many frames as there are regressors/contrasts 
+specified in your config file.  
 
 If you are preparing images for extraction with a surface atlas, the 
 statistical volumes will be sampled to the surface.  The same registration
@@ -283,20 +285,34 @@ the result object::
 
 If you call a result object on a different result object (or call it on a
 function that returns one), it will add the information in the latter
-object to its internal records.  In this way, result objects can be used in
-a script to easily create a log object, which you can then write to a file
-after you finish your processing::
+object to its internal records.  The ``RoiResult`` object also supports
+logging, but setting the argument ``log`` to ``True`` when you instantiate
+the object::
 
-    >>> result = roi.RoiResult()
+    >>> result = roi.RoiResult(log=True)
+
+By default, this will write a log file to your project directory in
+``$BASEPATH/roi/analysis/$PROJECTNAME/logfiles``, although you can
+specify a different log directory::
+
+    >>> result = roi.RoiResult(log=True, logdir="/path/to/my/log")
+
+If you are writing to your project directory, PyROI will look for an
+old log file and archive it when you open a new one.  If you would rather
+add to the previously existing logfile, however, use the ``continue_log``
+argument::
+    
+    >>> result = roi.RoiResult(log=True, continue_log=True)
+
+No matter how you set up your log, you could then run through some processing
+steps::
+
     >>> res = atlas.make_atlas()
+    >>> result(res)
+    >>> res = atlas.prepare_source_images()
     >>> result(res)
     >>> res = atlas.extract()
     >>> result(res)
-    >>> log = open("log_file.txt", "w")
-    >>> log.write("%s" % str(result))
-    >>> log.close()
 
-You can also print the last group of command lines and system pipe
-information by calling the ``res.latest()`` method.
-
+And all of the information will be automatically written to your log file.
 

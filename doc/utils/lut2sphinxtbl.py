@@ -49,13 +49,18 @@ fid.write("%s   %s\nID     Region\n%s   %s\n" % (leftline, rightline, leftline, 
 for row in lutarr:
     name = row[1]
     if not re.match("[rR](h|ight|\-).*", name) and not re.match("[Uu]nknown", name):
-        m = re.match("(([lL])(h|eft|\-))(.*)", name)
+        id = row[0][-3:]
+        if len(id) > 3:
+            id = int(id[-3:])
+        else:
+            id = int(id)
+        m = re.match("(([lL])(h|eft|\-)(\-*))(.*)", name)
         if m:
-            name = name[len(m.group(1)):]
+            name = name[len(m.group(1)):].capitalize()
         space = ""
-        for i in range(7-len(row[0])):
+        for i in range(7-len(str(id))):
             space = "".join([space, " "])
-        fid.write("%s%s%s\n" % (row[0], space, name))
+        fid.write("%d%s%s\n" % (id, space, name))
 
 fid.write("%s   %s\n\n" % (leftline, rightline))
 
