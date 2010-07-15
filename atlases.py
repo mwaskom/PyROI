@@ -516,10 +516,15 @@ class Atlas(RoiBase):
         """Resample label files from fsaverage surface to native surfaces."""
         res = RoiResult()
         for i, label in enumerate(self.sourcefiles):
-         
+            if self.sourcelevel == "subject":
+                label = label.replace("$subject", self.subject)
+                sourcesubj = self.subject
+            else:
+                sourcesubj = "fsaverage"
+
             cmd = ["mri_label2label"]
 
-            cmd.append("--srcsubject fsaverage")
+            cmd.append("--srcsubject %s" % sourcesubj)
             cmd.append("--srclabel %s"  % label)
             cmd.append("--trgsubject %s" % self.subject)
             cmd.append("--hemi %s" % self.hemi)
@@ -1318,6 +1323,7 @@ class LabelAtlas(Atlas):
         self.basedir = os.path.join(self.roidir, "atlases", "label", 
                                     cfg.projectname())
         
+        self.sourcelevel = atlasdict["sourcelevel"]
         self.lutfile = os.path.join(self.basedir,"%s.lut" % self.atlasname)
         self.regions = {}
         self.regions[self.hemi] = self.lutdict.keys()
@@ -1338,7 +1344,6 @@ class LabelAtlas(Atlas):
         self.atlas = os.path.join(self.atlasdir, "%s." + self.fname)
         self.origatlas = os.path.join(self.subjdir, subject, 
                                       "label", "%s." + self.fname)
-        
         self._init_subject = True
 
 
