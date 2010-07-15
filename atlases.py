@@ -294,7 +294,8 @@ class Atlas(RoiBase):
         cmd = ["tkregister2"]
 
         cmd.append("--mov %s" % cfg.pathspec("meanfunc", 
-                                             self.analysis.paradigm, self.subject))
+                                             self.analysis.paradigm, 
+                                             self.subject, self.subjgroup))
         cmd.append("--reg %s" % self.regmat)
         cmd.append("--surf")
 
@@ -1011,6 +1012,7 @@ class FreesurferAtlas(Atlas):
         if not self._init_paradigm:
             raise InitError("Paradigm")
         self.subject = subject
+        self.subjgroup = cfg.subjects(subject=subject)
         if self.manifold == "surface":
             pardir = ""
             fname = "%s." + self.fname
@@ -1025,7 +1027,7 @@ class FreesurferAtlas(Atlas):
             ext = "mgz"
 
         self.meanfuncimg = cfg.pathspec("meanfunc", self.paradigm,
-                                        self.subject)
+                                        self.subject, self.subjgroup)
         self.regmat = os.path.join(self.roidir, "reg", self.paradigm,
                                    subject, "func2orig.dat")
 

@@ -54,36 +54,42 @@ analysis = [{"par": "", "extract": ""},
 
 
 atlases = {"": 
-               {"source":  "freesurfer",
+               {"source": "freesurfer",
                "manifold": "volume",
                "fname":    ".mgz",
                "regions": [ ]},
            "": 
-               {"source":   "freesurfer",
+               {"source": "freesurfer",
                 "manifold": "surface",
                 "fname":    ".annot",
                 "regions": [ ]},
            "":
-               {"source":    "fsl",
+               {"source": "fsl",
                 "probthresh":  ,
                 "regions",   []},
-               
            "":
-               {"source":    "label",
+               {"source": "sigsurf",
                 "hemi": "",
+                "file": ""
+                "thresh": ("",)
+                "minsize": },
+           "":
+               {"source": "label",
+                "hemi": "",
+                "sourcelevel": ""
                 "sourcedir": "",
                 "sourcefiles": ["", ""],
            "":
-               {"source":      "mask",
+               {"source": "mask",
                 "sourcedir":   "",
-                "sourcefiles": []}
+                "sourcefiles": ["", ""]}
            "":
-               {"source":   "sphere",
+               {"source": "sphere",
                 "coordsys": "",
                 "radius":   ,
                 "centers":
-                  {"one" : ( , , ),
-                   "two" : ( , , )}
+                  {"" : ( , , ),
+                   "" : ( , , )}
                 }
    
 

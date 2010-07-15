@@ -557,7 +557,7 @@ def contrasts(par=None, type="con-img", format=".nii"):
                         "not understood: use 'T-map', 'sig', or 'con-img'")
 
 
-def pathspec(imgtype, paradigm=None, subject=None, contrast=None):
+def pathspec(imgtype, paradigm=None, subject=None, group=None, contrast=None):
     """Return the path to directories containing various first-level components.
 
     Parameters
@@ -584,7 +584,8 @@ def pathspec(imgtype, paradigm=None, subject=None, contrast=None):
     
     vardict = {"$paradigm" : paradigm,
                "$contrast" : contrast,
-               "$subject" : subject}
+               "$subject" : subject,
+               "$group" : group}
 
     imgdict = {"beta": betapath,
                "meanfunc": meanfuncpath,

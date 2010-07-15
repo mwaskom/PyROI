@@ -177,8 +177,9 @@ class BetaImage(FirstLevelStats):
     def init_subject(self, subject):
         """Initialize the object for a subject"""
         self.subject = subject
+        self.subjgroup = cfg.subjects(subject=subject)
         self.betapath = cfg.pathspec("beta", self.analysis.paradigm,
-                                        self.subject)
+                                        self.subject, self.subjgroup)
         self.extractlist = []
         for img in self.betalist:
             self.extractlist.append(os.path.join(self.betapath, img))
@@ -205,10 +206,11 @@ class ContrastImage(FirstLevelStats):
     def init_subject(self, subject):
         """Initialize the object for a subject"""
         self.subject = subject
+        self.subjgroup = cfg.subjects(subject=subject)
         self.extractlist = []
         for name, image in self.imgdict.items():
             self.conpath = cfg.pathspec("contrast", self.analysis.paradigm,
-                                        self.subject, name)
+                                        self.subject, self.subjgroup, name)
             self.extractlist.append(os.path.join(self.conpath, image))
 
         self.roistatdir = os.path.join(self.roidir, "levelone", "contrast",
@@ -243,8 +245,9 @@ class TStatImage(FirstLevelStats):
     def init_subject(self, subject):
         """Initialize the object for a subject"""
         self.subject = subject
+        self.subjgroup = cfg.subjects(subject=subject)
         conpath = cfg.pathspec("contrast", self.analysis.maskpar,
-                                       subject, self.analysis.maskcon)
+                                       subject, self.subjgroup, self.analysis.maskcon)
         self.timg = os.path.join(conpath, 
                                  self.imgdict[self.analysis.maskcon])
         self.extractvol = self.timg                                 
