@@ -108,7 +108,6 @@ class Atlas(RoiBase):
 
     def __str__(self):
         """Provides an easily readable summary of inforamtion about the atlas."""
-
         repr = ""
         repr = "\n".join((repr, "Name -- %s" % self.atlasname))
         sourcedict = dict(freesurfer="Freesurfer",
