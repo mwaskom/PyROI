@@ -199,7 +199,7 @@ class ContrastImage(FirstLevelStats):
     def __init__(self, analysis, **kwargs):
 
         FirstLevelStats.__init__(self, analysis, **kwargs)
-        self.imgdict = cfg.contrasts(self.analysis.maskpar, "con-img", ".img")
+        self.imgdict = cfg.contrasts(self.analysis.paradigm, "con-img", ".img")
         self.statsdir = os.path.join(self.roidir, "levelone", "contrast")
 
     # Initialization methods
@@ -327,7 +327,7 @@ class SigImage(FirstLevelStats):
 
         self._init_subject = True                                               
 
-def init_stat_object(analysis):
+def init_stat_object(analysis, **kwargs):
     """Initalize the proper first level statistic class with an analysis object.
     
     This initializes the proper object for extraction (corresponding to the main
@@ -348,8 +348,8 @@ def init_stat_object(analysis):
     if isinstance(analysis, int) or isinstance(analysis, dict):
         analysis = Analysis(analysis)
     if analysis.extract == "beta":
-        return BetaImage(analysis)
+        return BetaImage(analysis, **kwargs)
     elif analysis.extract == "contrast":
-        return ContrastImage(analysis)
+        return ContrastImage(analysis, **kwargs)
     elif analysis.extract in ["timecourse", "tstat", "sig"]:
         raise NotImplementedError("%s cannot yet be extracted." % analysis.extract)

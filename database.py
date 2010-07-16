@@ -9,7 +9,7 @@ import numpy as np
 
 import atlases
 import configinterface as cfg
-from core import RoiResult, get_analysis_name
+from core import RoiBase, RoiResult, get_analysis_name
 from exceptions import *
 
 __module__ = "database"
@@ -22,8 +22,8 @@ def build_database(atlas, analysis, subjects=None):
 
     Parameters
     ----------
-    atlas : str or dict
-        Atlas name or dictionary of parameters
+    atlas : str, dict, or Atlas object
+        Atlas name or dictionary of parameters or instance of Atlas subclass
     analysis : int or dict
         Analysis index or dictionary of parameters
     subjects : list or str, optional
@@ -44,7 +44,8 @@ def build_database(atlas, analysis, subjects=None):
         analysis = cfg.analysis(analysis)
     if subjects is None or isinstance(subjects, str):
         subjects = cfg.subjects(subjects)
-    atlas = atlases.init_atlas(atlas, paradigm = analysis["par"])
+    if not isinstance(atlas, RoiBase):
+        atlas = atlases.init_atlas(atlas, paradigm = analysis["par"])
 
     # Get the name, current date, and database directory
     name = atlas.atlasname + "_" + get_analysis_name(analysis)
