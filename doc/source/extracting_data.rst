@@ -100,19 +100,81 @@ thing, but for a group of subjects::
     >>> res = atlas.group_extract(1)
 
 This will create the same three summary files as before, but for each
-subject in the group.  Having shown you the ease with which you can extract
-data for a group, let's now go over each step in a bit more detail.
+subject in the group.  
+
+Getting Information About an Atlas
+----------------------------------
+
+To print some information about an atlas, simply use it as a string.  The
+easiest way to do this is just to print it::
+
+    >>> atlas = roi.init_atlas("aseg")
+    >>> print aseg
+    
+    Name -- aseg
+    Source -- Freesurfer
+    Region Names -- lh-hippocampus
+                    lh-pallidum
+                    rh-hippocampus
+                    rh-pallidum
+
+After you initalize an subject for an atlas object, there will be more information::
+    
+    >>> aseg.init_subject("SAD_022")
+    >>> print aseg
+    Name -- aseg
+    Source -- Freesurfer
+    Region Names -- lh-hippocampus
+                    lh-pallidum
+                    rh-hippocampus
+                    rh-pallidum
+
+    Subject -- SAD_020
+    Atlas Image Exists -- No
+
+    >>> res = aseg.make_atlas()
+    >>> print aseg
+    Name -- aseg
+    Source -- Freesurfer
+    Region Names -- lh-hippocampus
+                    lh-pallidum
+                    rh-hippocampus
+                    rh-pallidum
+
+    Subject -- SAD_020
+    Atlas Image Exists -- Yes
+    Atlas Image -- ...roi/atlases/freesurfer/volume/novelfaces/SAD_022/aseg 
+
+You can also check whether the source image exists, so that you don't need to
+run the ``prepare_source_images()`` method.  To do so, you will first have to
+initialize an analysis for the atlas::
+
+    >>> aseg._init_analysis(1)
+    >>> print aseg
+    Name -- aseg
+    Source -- Freesurfer
+    Region Names -- lh-hippocampus
+                    lh-pallidum
+                    rh-hippocampus
+                    rh-pallidum
+
+    Subject -- SAD_020
+    Atlas Image Exists -- No
+
+    Analysis -- NF_nomask_beta
+    Source Image Exists -- No
 
 
 Initializing an atlas
 ---------------------
 
-The first step is always to initialize an atlas object.  There are five
-different atlas classes, one for each type of atlase: FreesurferAtlas(),
-HarvardOxfordAtlas(), MaskAtlas(), LabelAtlas(), and SphereAtlas().  The
-``init_atlas()`` function provides a common interface to these classes.  It can
-be called with either the name of an atlas or a dictionary of atlas
-parameters.  For instance, doing this::
+Having shown you the ease with which you can extract data for a whole group,
+let's now go over each step in a bit more detail.  The first step is always
+to initialize an atlas object.  There are six different atlas classes, one
+for each type of atlas: FreesurferAtlas(), HarvardOxfordAtlas(), MaskAtlas(),
+SigSurfAtlas(), LabelAtlas(), and SphereAtlas().  The ``init_atlas()`` function
+provides a common interface to these classes.  It can be called with either the
+name of an atlas or a dictionary of atlas parameters.  For instance, doing this::
 
     >>> atlasdict = roi.cfg.atlases("atlas_name")
     >>> atlas = roi.init_atlas(atlasdict)
@@ -192,10 +254,20 @@ into a single atlas volume.
 Label atlases
 ^^^^^^^^^^^^^
 
-Label atlases are created from labels in fsaverage space.  First, these
-labels are resampled back to the native surfaces via Freesurfer's spherical
-transformation.  Then, the label files are combined into one annotation
-file, which is used as the atlas.
+Label atlases are created from labels that are either in individual subject
+space or fsaverage (Freesurfer's built-in standard surface template) space.
+If the label source is fsaverage, the labels are first resampled back to the
+native surfaces via Freesurfer's spherical transformation.  Then, the label
+files are combined into one annotation file, which is used as the atlas.
+
+Sig Surf atlases
+^^^^^^^^^^^^^^^^
+
+SigSurf atlases are created by thresholding a second-level significance map
+at a given threshold, after FDR correction, if specified.  All vertices that
+remain "active" above this threshold are grouped into clusters based on 
+contiguity, and then these clusters are extracted as labels and processed
+as using the same steps as label atlases.
 
 Sphere atlases
 ^^^^^^^^^^^^^^
