@@ -102,7 +102,7 @@ thing, but for a group of subjects::
 This will create the same three summary files as before, but for each
 subject in the group.  
 
-Getting Information About an Atlas
+Getting information about an atlas
 ----------------------------------
 
 To print some information about an atlas, simply use it as a string.  The
@@ -122,6 +122,7 @@ After you initalize an subject for an atlas object, there will be more informati
     
     >>> aseg.init_subject("SAD_022")
     >>> print aseg
+    
     Name -- aseg
     Source -- Freesurfer
     Region Names -- lh-hippocampus
@@ -134,6 +135,7 @@ After you initalize an subject for an atlas object, there will be more informati
 
     >>> res = aseg.make_atlas()
     >>> print aseg
+    
     Name -- aseg
     Source -- Freesurfer
     Region Names -- lh-hippocampus
@@ -151,6 +153,7 @@ initialize an analysis for the atlas::
 
     >>> aseg._init_analysis(1)
     >>> print aseg
+
     Name -- aseg
     Source -- Freesurfer
     Region Names -- lh-hippocampus
@@ -164,9 +167,14 @@ initialize an analysis for the atlas::
     Analysis -- NF_nomask_beta
     Source Image Exists -- No
 
+Just note that this information does not track when your atlas or source images
+are out of data relative to your config file.  In other words, if you add regions
+to an atlas dictionary, or add constrasts to the paradigm you're extracting from,
+(for example), printing the atlas will report that the atlas and source images 
+exist even though they should be recreated.
 
-Initializing an atlas
----------------------
+Extraction in more detail
+-------------------------
 
 Having shown you the ease with which you can extract data for a whole group,
 let's now go over each step in a bit more detail.  The first step is always
@@ -319,7 +327,7 @@ images will be converted to -log10(p) images to confrom with the operation
 of the Freesurfer binaries used to perform the extraction
 
 
-Results and Logging
+Results and logging
 -------------------
 
 In the code snippets above, you may have noticed that processing method
@@ -358,7 +366,7 @@ the result object::
 If you call a result object on a different result object (or call it on a
 function that returns one), it will add the information in the latter
 object to its internal records.  The ``RoiResult`` object also supports
-logging, but setting the argument ``log`` to ``True`` when you instantiate
+logging, by setting the argument ``log`` to ``True`` when you instantiate
 the object::
 
     >>> result = roi.RoiResult(log=True)

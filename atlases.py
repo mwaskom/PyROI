@@ -158,11 +158,11 @@ class Atlas(RoiBase):
                     exists = "No"
                 repr = "\n".join((repr, 
                     "Source Image%s Exist%s -- %s"%(s1,s2,exists)))
-                if self._atlas_exists():
+                if self._source_exists():
                     if self.manifold == "surface":
                         source = ("...%s"
-                                 % self.analysis.source.replace(
-                                    cfg.setup.basepath, "")[1:])
+                                  % self.analysis.source.replace(
+                                     cfg.setup.basepath, "")[1:])
                         repr = "\n".join((repr, "Source Image%s -- %s" 
                                           % (s1, source % self.iterhemi[0])))
                         if len(self.iterhemi) == 2:
@@ -243,7 +243,7 @@ class Atlas(RoiBase):
             self.analysis.masksign = analysis.masksign
         else:
             self.mask = False
-        sourceimg = source.init_stat_object(analysis)
+        sourceimg = source.init_stat_object(analysis, debug=self.debug)
         sourceimg.init_subject(self.subject)
         if self.manifold == "surface":
             self.analysis.source = sourceimg.extractsurf
@@ -761,7 +761,7 @@ class Atlas(RoiBase):
 
         """
         if analysis is not None:
-            self.init_analysis(analysis) 
+            self.init_analysis(analysis)
         if not self._init_analysis:
             raise InitError("Analysis")
         if not reg:
@@ -790,17 +790,17 @@ class Atlas(RoiBase):
                     maskreg = FSRegister(self.analysis.maskpar, self.subject)
                     if reg==2 or (reg==1 and not os.path.isfile(maskreg.regmat)):
                         res(maskreg.register())
-        extractvols = source.init_stat_object(self.analysis)
+        extractvols = source.init_stat_object(self.analysis, debug=self.debug)
         extractvols.init_subject(self.subject)
         res(extractvols.concatenate())
         if self.manifold == "surface":
             res(extractvols.sample_to_surface())
         if self.mask:
-            tstat = source.TStatImage(self.analysis)
+            tstat = source.TStatImage(self.analysis, debug=self.debug)
             tstat.init_subject(self.subject)
             res(tstat.convert_to_sig())
             if self.manifold == "surface":
-                sig = source.SigImage(self.analysis)
+                sig = source.SigImage(self.analysis, debug=self.debug)
                 sig.init_subject(self.subject)
                 res(sig.sample_to_surface())
 
@@ -834,8 +834,7 @@ class Atlas(RoiBase):
         result = RoiResult()
         for subject in subjects:
             self.init_subject(subject)
-            self.init_analysis(analysis)
-            res = self.prepare_source_images(reg)
+            res = self.prepare_source_images(analysis, reg=reg)
             print res
             result(res)
 
@@ -870,8 +869,10 @@ class Atlas(RoiBase):
         """
         if not self._init_analysis:
             raise InitError("Analysis")
-        elif not self._atlas_exists:
-            raise PreprocessError(self.atlas)
+        elif not self._atlas_exists():
+            raise PreprocessError("The atlas")
+        elif not self._source_exists():
+            raise PreprocessError("The source")
 
         if self.manifold == "volume":
             return self._vol_extract()

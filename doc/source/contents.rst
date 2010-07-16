@@ -10,3 +10,4 @@ Documentation Contents
    getting_started.rst
    config_file.rst
    extracting_data.rst
+   errors.rst
