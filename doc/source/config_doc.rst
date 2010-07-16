@@ -158,7 +158,13 @@ Entry Formats
 
 - hemi: "lh" or "rh"
 
+- file: string
+
+- thresh: tuple ("sig" or "fdr", float)
+
 - probthresh: integer
+
+- sourcelevel: "subject" or "group"
 
 - sourcedir: string
 
@@ -181,9 +187,11 @@ Note: source is required for all atlas types
 
 - fsl: probthresh, regions
 
+- sigsurf: hemi, file, thresh, minsize
+
 - mask: sourcedir, sourcelabels
 
-- label: sourcedir, sourcelabels
+- label: hemi, sourcelebel, sourcedir, sourcelabels
 
 - sphere: coordsys, radius, centers
 
@@ -289,10 +297,10 @@ First Level Datapaths
 
 Specify the absolute path to your main directory and relative paths
 from that directory to those containing certain types of images.  You 
-may include ``$paradigm``, ``$subject``, and ``$contrast`` wildcards in
-the path strings, which will be replaced appropriately as the program runs.
-After replacement,each variable should pick out a single directory in your
-file system.
+may include ``$paradigm``, ``$subject``, ``group``, and ``$contrast`` 
+wildcards in the path strings, which will be replaced appropriately as the 
+program runs.  After replacement,each variable should pick out a single 
+directory in your file system.
 
 A directory will be created within the basepath directory called ``roi``,
 which is where all files created by PyROI will be stored.

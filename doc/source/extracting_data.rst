@@ -247,8 +247,8 @@ images will be converted to -log10(p) images to confrom with the operation
 of the Freesurfer binaries used to perform the extraction
 
 
-Processing Results
-------------------
+Results and Logging
+-------------------
 
 In the code snippets above, you may have noticed that processing method
 calls were assigned to a variable called ``res``.  All processing methods
