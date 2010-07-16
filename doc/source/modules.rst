@@ -12,10 +12,10 @@ Atlases
 .. automodule:: atlases
     :members:
 
-Analysis
---------
+Source
+------
 
-.. automodule:: analysis
+.. automodule:: source
     :members:
 
 .. _core:

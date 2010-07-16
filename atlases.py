@@ -19,7 +19,7 @@ SphereAtlas        :  Methods for the creation of user-defined atlases from
 
 Functions
 ---------
-init_atlas         :  Common interface to atlas classes
+init_atlas         :  Common interface to instantiation of atlas classes
 
 See the docstrings for different classes for more information and usage examples
 
@@ -107,8 +107,74 @@ class Atlas(RoiBase):
         self.init_analysis(analysis)
 
     def __str__(self):
-        """String representation."""
-        return __repr__()
+        """Provides an easily readable summary of inforamtion about the atlas."""
+
+        repr = ""
+        repr = "\n".join((repr, "Name -- %s" % self.atlasname))
+        sourcedict = dict(freesurfer="Freesurfer",
+                          fsl="Harvard Oxford Atlas",
+                          sigsurf="SigSurf",
+                          label="Label",
+                          mask="Mask",
+                          sphere="Sphere")
+        repr = "\n".join((repr, "Source -- %s" % sourcedict[self.source]))
+        if hasattr(self, "regionnames"):
+            names = "Region Names -- %s" % self.regionnames[0]
+            for i, name in enumerate(self.regionnames):
+                if i: names = "\n".join((names, "                %s" % name))
+            repr = "\n".join((repr, names))
+        if self._init_subject:
+            repr = "\n".join((repr, ""))
+            repr = "\n".join((repr, "Subject -- %s" % self.subject))
+            if self.manifold == "surface":
+                if len(self.iterhemi) == 2:
+                    s1 = "s"; s2 = ""
+                else:
+                    s1 = ""; s2 = "s"
+            else:
+                s1 = ""; s2 = "s"
+            if self._atlas_exists():
+                exists = "Yes"
+            else:
+                exists = "No"
+            repr = "\n".join((repr, "Atlas Image%s Exist%s -- %s"%(s1,s2,exists)))
+            if self._atlas_exists():
+                if self.manifold == "surface":
+                    atlas = ("...%s"
+                             % self.atlas.replace(cfg.setup.basepath, "")[1:])
+                    repr = "\n".join((repr, "Atlas Image%s -- %s" 
+                                      % (s1, atlas % self.iterhemi[0])))
+                    if len(self.iterhemi) == 2:
+                        repr = "\n".join((repr,"                %s" 
+                                          % atlas
+                                          % self.iterhemi[1]))
+                else:
+                    repr = "\n".join((repr, "Atlas Image -- %s" % self.atlas))
+            if self._init_analysis:
+                repr = "\n".join((repr, ""))
+                repr = "\n".join((repr, "Analysis -- %s" % self.analysis.name))
+                if self._source_exists():
+                    exists = "Yes"
+                else:
+                    exists = "No"
+                repr = "\n".join((repr, 
+                    "Source Image%s Exist%s -- %s"%(s1,s2,exists)))
+                if self._atlas_exists():
+                    if self.manifold == "surface":
+                        source = ("...%s"
+                                 % self.analysis.source.replace(
+                                    cfg.setup.basepath, "")[1:])
+                        repr = "\n".join((repr, "Source Image%s -- %s" 
+                                          % (s1, source % self.iterhemi[0])))
+                        if len(self.iterhemi) == 2:
+                            repr = "\n".join((repr,"                 %s" 
+                                              % source
+                                              % self.iterhemi[1]))
+                    else:
+                        repr = "\n".join((repr, "Source Image -- %s" 
+                                                 % self.analysis.source))
+
+        return repr
 
     def _atlas_exists(self):
         """Return whether the atlas file exists."""
@@ -123,6 +189,19 @@ class Atlas(RoiBase):
                     exists.append(False)
             return all(exists)
 
+    def _source_exists(self):
+        """Return whether the atlas file exists."""
+        if self.manifold == "volume":
+            return os.path.isfile(self.source)
+        else:
+            exists = []
+            for hemi in self.iterhemi:
+                if os.path.isfile(self.analysis.source % hemi):
+                    exists.append(True)
+                else:  
+                    exists.append(False)
+            return all(exists)
+        
     # Initialization methods
     def init_paradigm(self, paradigm):
         """Initialize the atlas with a paradigm.

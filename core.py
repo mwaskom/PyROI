@@ -231,8 +231,8 @@ def import_config(module_name):
     used for configuration with the __file__ attribute of the
     setup module within the config interface::
 
-    >>> roi.cfg.setup.__file__
-    '/mindhive/gablab/myconfigfile.pyc'
+        >>> roi.cfg.setup.__file__
+        '/mindhive/gablab/myconfigfile.pyc'
 
     Parameters
     ----------
