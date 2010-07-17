@@ -191,7 +191,7 @@ class Atlas(RoiBase):
     def _source_exists(self):
         """Return whether the atlas file exists."""
         if self.manifold == "volume":
-            return os.path.isfile(self.source)
+            return os.path.isfile(self.analysis.source)
         else:
             exists = []
             for hemi in self.iterhemi:

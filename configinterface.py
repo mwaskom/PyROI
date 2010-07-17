@@ -241,7 +241,7 @@ def _prep_label_atlas(atlasdict):
     
     if not os.path.isdir(fssubjdir()):
         raise SetupError("Using label atlas with illegitimite "
-                            "Freesurfer Subjects Directory path")
+                         "Freesurfer Subjects Directory path")
 
     if not os.path.isabs(atlasdict["sourcedir"]):
         atlasdict["sourcedir"] = os.path.join(setup.basepath, atlasdict["sourcedir"])
