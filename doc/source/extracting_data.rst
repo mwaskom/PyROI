@@ -28,21 +28,16 @@ file that is not in the working directory.
 Either method imports your config file into the ``setup`` module of the
 config interface module, which is loaded as ``roi.cfg`` automatically
 when you start pyroi.  You can always check whether a config file has
-been imported with the ``is_setup`` attribute of the config interface 
-module::
+been imported with the ``config_file_path()`` function. If the file was
+imported, this returns the path of the file PyROI is using::
 
-    >>> roi.cfg.is_setup
-    False
+    >>> roi.config_file_path()
+    /users/mwaskom/roidevelopment.py
 
-    >>> roi.import_config("my_config_file.py")
-    >>> roi.cfg.is_setup
-    True
+Otherwise, it will tell you that it has not been imported::
 
-To see which file actually provided the configuration information, check
-the ``__file__`` attribute of the internal ``roi.cfg.setup`` module::
-
-    >>> roi.cfg.setup.__file__
-    'my_config_file.py'
+    >>> roi.config_file_path()
+    Config file not imported.
 
 
 Using the config file
