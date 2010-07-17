@@ -252,9 +252,10 @@ def _prep_label_atlas(atlasdict):
     if not atlasdict["sourcelevel"] in ["subject", "group"]:
         raise SetupError("Sourcelevel for %s atlas must be 'subject' or 'group'" 
                          % atlasdict["atlasname"])
+
     subj = subjects()[0]
-    if atlasdict["sourcefiles"] == "all" or ["all"]:
-        if atlasdict["sourcelevel"] =="group":
+    if atlasdict["sourcefiles"] == "all" or atlasdict["sourcefiles"] == ["all"]:
+        if atlasdict["sourcelevel"] == "group":
             atlasdict["sourcefiles"] = glob(os.path.join(
                                            atlasdict["sourcedir"], "*.label"))
         else:                                           
@@ -281,6 +282,7 @@ def _prep_label_atlas(atlasdict):
         path, lfile = os.path.split(lfile)
         if lfile.endswith(".label"):
             lfile, ext = os.path.splitext(lfile)
+        hemi = atlasdict["hemi"]
         lfiles[i] = os.path.join(atlasdict["sourcedir"], lfile + ".label")
         lnames.append(lfile)
         if atlasdict["sourcelevel"] == "group" and not os.path.isfile(lfiles[i]):

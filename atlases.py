@@ -587,23 +587,22 @@ class Atlas(RoiBase):
     def _make_label_atlas(self):
         """Turn a list of label files into a label annotation."""
         result = RoiResult(self._write_lut())
-        result(self._resample_labels())
+        if self.sourcelevel == "group":
+            result(self._resample_labels())
         result(self._gen_annotation())
         return result
 
     def _resample_labels(self):
         """Resample label files from fsaverage surface to native surfaces."""
         res = RoiResult()
+        subjlevel = bool(self.sourcelevel == "subject")
         for i, label in enumerate(self.sourcefiles):
-            if self.sourcelevel == "subject":
+            if subjlevel:
                 label = label.replace("$subject", self.subject)
-                sourcesubj = self.subject
-            else:
-                sourcesubj = "fsaverage"
 
             cmd = ["mri_label2label"]
 
-            cmd.append("--srcsubject %s" % sourcesubj)
+            cmd.append("--srcsubject fsaverage")
             cmd.append("--srclabel %s"  % label)
             cmd.append("--trgsubject %s" % self.subject)
             cmd.append("--hemi %s" % self.hemi)
@@ -662,7 +661,7 @@ class Atlas(RoiBase):
         result = RoiResult()
         if self.manifold == "volume":
             if reg==2 or (reg==1 and not os.path.isfile(self.regmat)):
-                reg = FSRegister()
+                reg = FSRegister(debug=self.debug)
                 reg.init_paradigm(self.paradigm)
                 reg.init_subject(self.subject)
                 result(reg.register())
@@ -783,11 +782,11 @@ class Atlas(RoiBase):
 
         res = RoiResult()
         if self.manifold == "surface":
-            sourcereg = FSRegister(self.analysis.paradigm, self.subject)
+            sourcereg = FSRegister(self.analysis.paradigm, self.subject, debug=self.debug)
             if reg==2 or (reg==1 and not os.path.isfile(sourcereg.regmat)):
                 res(sourcereg.register())
                 if self.mask and self.analysis.maskpar != self.analysis.paradigm:
-                    maskreg = FSRegister(self.analysis.maskpar, self.subject)
+                    maskreg = FSRegister(self.analysis.maskpar, self.subject, self.debug)
                     if reg==2 or (reg==1 and not os.path.isfile(maskreg.regmat)):
                         res(maskreg.register())
         extractvols = source.init_stat_object(self.analysis, debug=self.debug)
