@@ -1,0 +1,16 @@
+1  lh-thalamus                           0   118 14  0
+2  lh-caudate                            122 186 220 0
+3  lh-putamen                            236 13  176 0
+4  lh-pallidum                           12  48  255 0
+5  lh-hippocampus                        220 216 20  0
+6  lh-amygdala                           103 255 255 0
+7  lh-accumbens                          255 165 0   0
+8  lh-ventral-dc                         165 42  42  0
+9  rh-thalamus                           0   118 14  0
+11  rh-caudate                            122 186 220 0
+12  rh-putamen                            236 13  176 0
+13  rh-pallidum                           13  48  255 0
+14  rh-hippocampus                        220 216 20  0
+15  rh-amygdala                           103 255 255 0
+16  rh-accumbens                          255 165 0   0
+17  rh-ventralDC                          165 42  42  0

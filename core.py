@@ -10,7 +10,7 @@ from datetime import datetime
 import nipype.interfaces.base as pypebase
 import configinterface as cfg
 
-__all__ = ["RoiResult", "import_config", "write_config_base"]
+__all__ = ["RoiResult", "import_config", "write_config_base", "config_file_path"]
 
 __module__ = "core"
 
@@ -296,6 +296,21 @@ def write_config_base(filename, force=False, clean=False):
 
     shutil.copy(sourcefile, filename)
     
+def config_file_path():
+    """Return the file location of an imported config file or report that it doesn't exist.
+
+    Returns
+    -------
+    Config file path if import was successful, or None if not
+    """
+    if hasattr(cfg, "setup"):
+        return cfg.setup.__file__
+    else:
+        print "Config file not imported."
+        return None
+
+
+#XXX Privatize these    
 def get_analysis_name_list(full=True):
     """Return a list of analysis names in PyROI format.
 
