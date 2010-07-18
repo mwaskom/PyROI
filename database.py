@@ -54,7 +54,9 @@ def build_database(atlas, analysis, subjects=None):
     dbdir = os.path.join(cfg.setup.basepath, "roi", "analysis",
                          cfg.projectname(), "databases")
     dbfile = os.path.join(dbdir, name + ".txt")                         
-
+    dbtmpfile = os.path.join(dbdir, ".tmp1-" + name + ".txt")
+    rectmpfile = os.path.join(dbdir, ".tmp2-" + name + ".txt")
+    
     # Hist file has names and dates of writing of old databases
     histfile = os.path.join(dbdir, "." + cfg.projectname() + "_history.npy")
     try:
@@ -64,10 +66,10 @@ def build_database(atlas, analysis, subjects=None):
             if dbhist.ndim > 1: 
                 nameidx = np.where(dbhist == name)
                 dateidx = (nameidx[0], nameidx[1]+1)
-                olddate = dbhist[dateidx]
+                olddate = dbhist[dateidx][0]
                 dbhist[dateidx] = newdate
             else:
-                olddate = dbhist[1]
+                olddate = dbhist[1][0]
                 dbhist[1] = newdate
 
             archfile = os.path.join(dbdir, ".old", name + "_" + olddate + ".txt")
@@ -106,10 +108,27 @@ def build_database(atlas, analysis, subjects=None):
     nrois = addrois.shape[0]
     addrois = addrois.reshape(nrois, 1)
 
+    # Make sure surface rois start with hemi (fixes destrieux lut problem)
+    splitrois = np.vsplit(addrois, len(atlas.iterhemi))
+    if atlas.manifold == "surface":
+        for idx, hemi in enumerate(atlas.iterhemi):
+            for i, row in enumerate(splitrois[idx]):
+                roiname = row[0]
+                if not roiname.startswith(hemi):
+                    try:
+                        surfrois = np.vstack((surfrois, np.array([hemi + "-" + roiname],)))
+                    except NameError:
+                        surfrois = np.array([hemi + "-" + roiname],)
+        addrois = surfrois
+
+
+    # Build the database
     for subject in subjects:
         atlas.init_subject(subject)
         atlas.init_analysis(analysis)
+        # Volume atlases
         if atlas.manifold == "volume":
+            # Read the SegStats output files
             addfunc = np.genfromtxt(atlas.functxt)
             addfunc = np.transpose(addfunc)
             addsubj = np.array([subject for i in range(nrois)]).reshape(nrois, 1)
@@ -120,14 +139,17 @@ def build_database(atlas, analysis, subjects=None):
             addsize = np.array([getsize(id) for id in atlas.regions]).reshape(nrois, 1)
             addmask = np.array([getmask(id) for id in atlas.regions]).reshape(nrois, 1)
             
+            # Append this subject's rows
             subj = np.vstack((subj, addsubj))
             rois = np.vstack((rois, addrois))
             size = np.vstack((size, addsize))
             func = np.vstack((func, addfunc))
             mask = np.vstack((mask, addmask))
         else:
+            # Surface atlases are handled differently
             splitrois = np.vsplit(addrois, len(atlas.iterhemi))
             for idx, hemi in enumerate(atlas.iterhemi):
+                # Read the SegStats output files
                 addfunc = np.genfromtxt(atlas.functxt % hemi)
                 addfunc = np.transpose(addfunc)
                 addsubj = np.array([subject for i in range(nrois/2)]).reshape(nrois/2, 1)
@@ -135,23 +157,31 @@ def build_database(atlas, analysis, subjects=None):
                 maskarr = np.genfromtxt(atlas.funcstats % hemi, int)
                 getsize = lambda id: sizearr[np.where(sizearr[:,1] == id), 2].flat[0]
                 getmask = lambda id: maskarr[np.where(maskarr[:,1] == id), 2].flat[0]
-                addsize = np.array( \
+                addsize = np.array(
                     [getsize(id) for id in atlas.regions[hemi]]).reshape(nrois/2, 1)
-                addmask = np.array( \
+                addmask = np.array(
                     [getmask(id) for id in atlas.regions[hemi]]).reshape(nrois/2, 1)
-                for i, row in enumerate(splitrois[idx]):
-                    roiname = row[0]
-                    if not roiname.startswith(hemi):
-                        splitrois[idx][i] = hemi + "-" + roiname
 
+                # Append this subject's rows
                 subj = np.vstack((subj, addsubj))
                 rois = np.vstack((rois, splitrois[idx]))
                 size = np.vstack((size, addsize))
                 func = np.vstack((func, addfunc))
                 mask = np.vstack((mask, addmask))
 
-    finaldb = np.hstack((subj, rois, size, func, mask))
-    np.savetxt(dbfile, finaldb, "%s", "\t")
+    # Possible hack to sort by ROI using a recarray
+    fulldb = np.hstack((subj, rois, size, func, mask))
+    head = fulldb[0,:]
+    np.savetxt(dbtmpfile, fulldb, "%s", "\t")
+    recdb = np.recfromtxt(dbtmpfile, names=True)
+    sortdb = np.sort(recdb, order=["rois", "subjects"])
+    np.savetxt(rectmpfile, sortdb, "%s", "\t")
+    finalbody = np.genfromtxt(rectmpfile, str)
+    final = np.vstack((head, finalbody))
+    np.savetxt(dbfile, final, "%s", "\t")
+    os.remove(dbtmpfile)
+    os.remove(rectmpfile)
+
     # Write the updated history file
     np.save(histfile, dbhist)
 

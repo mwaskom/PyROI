@@ -961,16 +961,6 @@ class Atlas(RoiBase):
 class FreesurferAtlas(Atlas):
     """Class for Freesurfer atlases.
 
-    Parameters
-    ----------
-    atlas : str or dict
-        The name of an atlas defined in your setup module, or a dictionary
-        of atlas parameters.
-    paradigm : str, optional
-        The name of a paradigm to initialize the atlas for. 
-    subject : str, optional
-        The name of a subject to initialize the atlas for.  
-
     Examples
     --------
     
@@ -1024,7 +1014,17 @@ class FreesurferAtlas(Atlas):
         
     """
     def __init__(self, atlas, paradigm=None, subject=None, **kwargs):
-               
+        """
+        Parameters
+        ----------
+        atlas : str or dict
+            The name of an atlas defined in your setup module, or a dictionary
+            of atlas parameters.
+        paradigm : str, optional
+            The name of a paradigm to initialize the atlas for. 
+        subject : str, optional
+            The name of a subject to initialize the atlas for.  
+        """
         if isinstance(atlas, str):
             atlasdict = cfg.atlases(atlas)
         else:
@@ -1218,14 +1218,6 @@ class FSRegister(FreesurferAtlas):
 class HarvardOxfordAtlas(Atlas):
     """Class for the HarvardOxford atlas included with FSL.   
 
-    Parameters
-    ----------
-    atlas : str or dict
-        The name of an atlas defined in your setup module, or a dictionary
-        of atlas parameters.
-    subject : str, optional
-        The name of a subject to initialize the atlas for. 
-
     Examples
     --------
 
@@ -1257,7 +1249,15 @@ class HarvardOxfordAtlas(Atlas):
 
     """
     def __init__(self, atlas, subject=None, **kwargs):
-
+        """
+        Parameters
+        ----------
+        atlas : str or dict
+            The name of an atlas defined in your setup module, or a 
+            dictionary of atlas parameters.
+        subject : str, optional
+            The name of a subject to initialize the atlas for. 
+        """
         if isinstance(atlas, str):
             atlasdict = cfg.atlases(atlas)
         else:
@@ -1269,14 +1269,16 @@ class HarvardOxfordAtlas(Atlas):
         self.thresh = atlasdict["probthresh"]
         pckgdir = os.path.split(__file__)[0]
         filestem = "HarvardOxford-%d" % self.thresh
-        self.atlas = os.path.join(pckgdir, "data", "HarvardOxford", "%s.nii" % filestem)
+        self.atlas = os.path.join(pckgdir, "data", "
+                                  HarvardOxford", "%s.nii" % filestem)
         self.lutfile = os.path.join(os.path.split(__file__)[0], "data", 
                                  "HarvardOxford", "HarvardOxford-LUT.txt")
         lutarray = np.genfromtxt(self.lutfile, str)
         self.lutdict = {}
         for row in lutarray:
             self.lutdict[int(row[0])] = row[1]
-        self.statsfile = os.path.join(pckgdir, "data", "HarvardOxford", "%s.stats" % filestem) 
+        self.statsfile = os.path.join(pckgdir, "data", 
+                                      "HarvardOxford", "%s.stats" % filestem) 
         self.regions = atlasdict["regions"] + [id + 55 for id in atlasdict["regions"]]
         self.regions.sort()
 
@@ -1293,7 +1295,11 @@ class HarvardOxfordAtlas(Atlas):
 
 
 class SigSurfAtlas(Atlas):
-    """Atlas made from a second level sig map on the surface."""
+    """Atlas made from a second level sig map on the average surface.
+    
+    
+    
+    """
     def __init__(self, atlas, subject=None, **kwargs):
 
         if isinstance(atlas, str):
@@ -1345,14 +1351,6 @@ class SigSurfAtlas(Atlas):
 class LabelAtlas(Atlas):
     """Atlas class for an atlas construced from surface labels.
 
-    Parameters
-    ----------
-    atlas : str or dict
-        The name of an atlas defined in your setup module, or a dictionary
-        of atlas parameters.
-    subject : str, optional
-        The name of a subject to initialize the atlas for.
-
     Examples
     --------
 
@@ -1385,7 +1383,16 @@ class LabelAtlas(Atlas):
 
     """
     def __init__(self, atlas, subject=None, **kwargs):
+        """
+        Parameters
+        ----------
+        atlas : str or dict
+            The name of an atlas defined in your setup module, or a dictionary
+            of atlas parameters.
+        subject : str, optional
+            The name of a subject to initialize the atlas for.
 
+        """
         if isinstance(atlas, str):
             atlasdict = cfg.atlases(atlas)
         else:
@@ -1430,14 +1437,6 @@ class LabelAtlas(Atlas):
 class MaskAtlas(Atlas):
     """Class for atlases constructed from binary volume masks.
 
-    Parameters
-    ----------
-    atlas : str or dict
-        The name of an atlas defined in your setup module, or a dictionary
-        of atlas parameters.
-    subject : str, optional
-        The name of a subject to initialize the atlas for.
-
     Examples
     --------
 
@@ -1471,6 +1470,15 @@ class MaskAtlas(Atlas):
 
     """
     def __init__(self, atlasdict, subject=None, **kwargs):
+        """
+        Parameters
+        ----------
+        atlas : str or dict
+            The name of an atlas defined in your setup module, or a dictionary
+            of atlas parameters.
+        subject : str, optional
+            The name of a subject to initialize the atlas for.
+        """
 
         if isinstance(atlasdict, str):
             atlasdict = cfg.atlases(atlasdict)
