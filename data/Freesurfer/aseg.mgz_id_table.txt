@@ -1,0 +1,8 @@
+1      Thalamus
+2      Caudate
+3      Putamen
+4      Pallidum
+5      Hippocampus
+6      Amygdala
+7      Accumbens
+8      Ventral-dc
