@@ -2,11 +2,13 @@
 Core classes and functions for the PyROI package.
 """
 import os
+import re
 import sys
 import shutil
 import subprocess
 from copy import deepcopy
 from datetime import datetime
+import numpy as np
 import nipype.interfaces.base as pypebase
 import configinterface as cfg
 
@@ -309,8 +311,54 @@ def config_file_path():
         print "Config file not imported."
         return None
 
+def find_id(term, atlastype=None):
+    """Search for IDs whose region name contains some term.
+    
+    This function can be used to search for ids to use with 
+    the built-in macroanatomical atlases.  Because many of 
+    the region names contain abbreviations, it is best to 
+    use shortened search terms (e.g., `cingul` to seach for
+    regions in the cingulate).  This search will hopefully 
+    get smarter in the future.
 
-#XXX Privatize these    
+    Parameters
+    ----------
+    term : str
+        Term to search for (not case sensitive)
+    atlastype : {"freesurfer" | "fsl"}, optional
+        Atlas type to search regions of.  Searches all if absent.
+    """
+
+    seed = re.compile(term, re.I)
+    freesurftbls = ["aseg.mgz", "aparc.annot", "aparc.a2009s.annot"]
+    harvoxtbls = ["HarvardOxford"]
+    if atlastype is None:
+        tbls = freesurftbls + harvoxtbls
+    elif atlastype.lower() == "freesurfer":
+        tbls = freesurftbls
+    elif atlastype.lower() == "fsl" or atlastype.lower() == "harvardoxford":
+        tbls = freesurftbls
+    dirstem = os.path.join(os.path.split(__file__)[0], "data")
+    res = ""
+    for lut in tbls:
+        tabres = ""
+        if lut in freesurftbls: 
+            dir = os.path.sep.join((dirstem, "Freesurfer"))
+        else:
+            dir = os.path.sep.join((dirstem, "HarvardOxford"))
+        tblarr = np.genfromtxt(os.path.join(dir, "%s_id_table.txt" % lut), str)
+        for row in tblarr:
+            if re.search(seed, row[1]):
+                line = ": ".join((row[1], row[0]))
+                tabres = "".join((tabres, "\n", line))
+        if tabres:
+            line = ""
+            for i in range(len(lut)):
+                line = "".join((line, "-"))
+            res = "".join((res, "\n\n", lut, "\n", line, tabres))
+    print res[1:]
+
+#XXX Semi-privatize these    
 def get_analysis_name_list(full=True):
     """Return a list of analysis names in PyROI format.
 
