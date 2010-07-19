@@ -98,6 +98,8 @@ paradigms = {"": "",
              "": ""}
 
 
+level1program = ""
+
 hrfcomponents = 1
 
 betastoextract = []
@@ -106,9 +108,9 @@ conditions = {"":   ["",""],
               "":   ["",""]}
 
 
-contrasts = {"" :  {"": ,
-                    "": },
-             "" :  {"": }}
+contrasts = {"" :  {"": 1,
+                    "": 2},
+             "" :  {"": 1}}
 
 
 basepath = ""
@@ -117,6 +119,8 @@ betapath = ""
 
 contrastpath = ""
 
+
+regmatpath = ""
 
 timecoursepath = ""
 
