@@ -300,13 +300,12 @@ def _prep_mask_atlas(atlasdict):
     
     imgregexp = re.compile("[\w\.-]+\.(img)|(nii)|(nii\.gz)|(mgh)|(mgz)$")
 
-    if atlasdict["sourcefiles"] == "all" or ["all"]:
+    if atlasdict["sourcefiles"] == "all" or atlasdict["sourcefiles"] == ["all"]:
         refiles = []
         gfiles = glob(os.path.join(atlasdict["sourcedir"],"*"))
         for gfile in gfiles:
-            m = imgregexp.search(gfile)
-            if m:
-                refiles.append(m.group())
+            if imgregexp.search(gfile):
+                refiles.append(gfile)
         if refiles:
             atlasdict["sourcefiles"] = refiles
         else:
@@ -339,7 +338,7 @@ def _prep_mask_atlas(atlasdict):
         lfile, ext = os.path.splitext(lfile)
         lnames.append(lfile)
         if not os.path.isfile(lfiles[i]):
-            warn("%s does not exist." % lfiles[i])
+            raise SetupError("%s does not exist." % lfiles[i])
     atlasdict["sourcefiles"] = lfiles
     atlasdict["sourcenames"] = lnames
     return atlasdict

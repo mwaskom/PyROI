@@ -423,11 +423,11 @@ class Atlas(RoiBase):
                       
         try:                      
             res(switch[self.source]())
+            if self._atlas_exists:
+                res(self._stats())
         except KeyError:
             res("No make_atlas processing neccessary for %s atlases." 
                 % self.source)
-        if self._atlas_exists:
-            res(self._stats())
         return res
 
     def group_make_atlas(self, subjects=None, reg=1, gen_new_atlas=False):
@@ -865,9 +865,9 @@ class Atlas(RoiBase):
         """
         if not self._init_analysis:
             raise InitError("Analysis")
-        elif not self._atlas_exists():
+        elif not self._atlas_exists() and not self.debug:
             raise PreprocessError("The atlas")
-        elif not self._source_exists():
+        elif not self._source_exists() and not self.debug:
             raise PreprocessError("The source")
 
         if self.manifold == "volume":
@@ -952,7 +952,8 @@ class Atlas(RoiBase):
             res = self.extract()
             print res
             result(res)
-        result(build_database(self.atlasname, self.analysis.dict, subjects))
+        if not self.debug:
+            result(build_database(self.atlasname, self.analysis.dict, subjects))
         return result
 
 class FreesurferAtlas(Atlas):

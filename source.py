@@ -118,7 +118,7 @@ class FirstLevelStats(RoiBase):
         """Sample an extraction volume to the surface."""
         if not self._init_subject:
             raise InitError("Subject")
-        if not os.path.isfile(self.regmat):
+        if not os.path.isfile(self.regmat) and not self.debug:
             raise PreprocessError(self.regmat)
 
         res = RoiResult()
@@ -189,9 +189,8 @@ class BetaImage(FirstLevelStats):
         self.extractvol = os.path.join(self.roistatdir, "task_betas.mgz")
         self.extractsurf = os.path.join(self.roistatdir, "%s.task_betas.mgz")
 
-        self._regtreepath = os.path.join(self.roidir, "reg", 
-                                         self.analysis.paradigm)
-
+        self._regtreepath = os.path.join(self.roidir, "reg", self.analysis.paradigm,
+                                         subject, "func2orig.dat")
         cfgreg = cfg.pathspec("regmat", self.analysis.paradigm, self.subject,
                               self.subjgroup)
         if cfgreg:
@@ -199,8 +198,6 @@ class BetaImage(FirstLevelStats):
         else: 
             self.regmat = self._regtreepath
 
-        self.regmat = os.path.join(self.roidir, "reg", self.analysis.paradigm,
-                                   subject, "func2orig.dat")
         
         self._init_subject = True
 

@@ -102,6 +102,8 @@ def build_database(atlas, analysis, subjects=None):
 
     if atlas.manifold == "volume":
         addrois = np.array([atlas.lutdict[id] for id in atlas.regions])
+    elif len(atlas.iterhemi) == 1:
+        addrois = np.array([atlas.lutdict[id] for id in atlas.regions[atlas.iterhemi[0]]])
     else:
         addrois = np.array([atlas.lutdict[id] for id in atlas.regions['lh']] + 
                            [atlas.lutdict[id] for id in atlas.regions['rh']])
@@ -110,7 +112,7 @@ def build_database(atlas, analysis, subjects=None):
 
     # Make sure surface rois start with hemi (fixes destrieux lut problem)
     splitrois = np.vsplit(addrois, len(atlas.iterhemi))
-    if atlas.manifold == "surface":
+    if atlas.manifold == "surface" and len(atlas.iterhemi) == 2:
         for idx, hemi in enumerate(atlas.iterhemi):
             for i, row in enumerate(splitrois[idx]):
                 roiname = row[0]
@@ -127,7 +129,7 @@ def build_database(atlas, analysis, subjects=None):
         atlas.init_subject(subject)
         atlas.init_analysis(analysis)
         # Volume atlases
-        if atlas.manifold == "volume":
+        if atlas.manifold == "volume" or len(atlas.iterhemi) == 1:
             # Read the SegStats output files
             addfunc = np.genfromtxt(atlas.functxt)
             addfunc = np.transpose(addfunc)
@@ -146,7 +148,7 @@ def build_database(atlas, analysis, subjects=None):
             func = np.vstack((func, addfunc))
             mask = np.vstack((mask, addmask))
         else:
-            # Surface atlases are handled differently
+            # Bilateral surface atlases are handled differently
             splitrois = np.vsplit(addrois, len(atlas.iterhemi))
             for idx, hemi in enumerate(atlas.iterhemi):
                 # Read the SegStats output files
