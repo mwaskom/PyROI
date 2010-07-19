@@ -28,13 +28,10 @@ if os.path.isfile(".roiconfigfile"):
     module = open(".roiconfigfile","r").read()
     
     # Get rid of any extraneous whitespace
-    m = re.search("\w+", module)
-    if m:
-        module = m.group()
+    module = module.strip()
 
     # Trim the file extension if it exists
-    if module.endswith(".py"):
-        module = pmodule[:-3]
+    module = module.strip(".py")
     
     # Import the module
     try:
@@ -50,7 +47,7 @@ if os.path.isfile(".roiconfigfile"):
         is_setup = False
     
     # Clean up
-    del m, module
+    del module
 else:
     is_setup = False
 
@@ -73,7 +70,7 @@ def analysis(dictnumber=None):
     dictnumber : int, optional
         If included, the function returns the dictionary at this index.
         Otherwise, it returns the full list.  Note that indexing for this
-        function is 1-based, unlike most python sequences.        
+        function is 1-based, unlike normal python sequences.        
 
     Returns
     -------
@@ -126,19 +123,16 @@ def atlases(atlasname=None):
         if "source" not in dictionary:
             raise SetupError("Source missing from %s atlas dictionary" % name)
         dictionary["source"] = dictionary["source"].lower()
-        if dictionary["source"] == "freesurfer":
-            dictionary = _prep_freesurfer_atlas(dictionary)
-        elif dictionary["source"] == "fsl":
-            dictionary = _prep_fsl_atlas(dictionary)
-        elif dictionary["source"] == "label":
-            dictionary = _prep_label_atlas(dictionary)
-        elif dictionary["source"] == "sigsurf":
-            dictionary = _prep_sigsurf_atlas(dictionary)
-        elif dictionary["source"] == "mask":
-            dictionary = _prep_mask_atlas(dictionary)
-        elif dictionary["source"] == "sphere":
-            dictionary = _prep_sphere_atlas(dictionary)
-        else:
+        switch = dict(freesurfer = _prep_freesurfer_atlas,
+                      fsl        = _prep_fsl_atlas,
+                      label      = _prep_label_atlas,
+                      sigsurf    = _prep_sigsurf_atlas,
+                      mask       = _prep_mask_atlas,
+                      sphere     = _prep_sphere_atlas)
+
+        try:
+            dictionary = switch[dictionary["source"]](dictionary)
+        except KeyError:
             raise SetupError("Source setting '%s' for %s atlas not understood"
                                 % (dictionary["source"], name))
 
@@ -253,8 +247,10 @@ def _prep_label_atlas(atlasdict):
         raise SetupError("Sourcelevel for %s atlas must be 'subject' or 'group'" 
                          % atlasdict["atlasname"])
 
+    usedall = False
     subj = subjects()[0]
     if atlasdict["sourcefiles"] == "all" or atlasdict["sourcefiles"] == ["all"]:
+        usedall = True
         if atlasdict["sourcelevel"] == "group":
             atlasdict["sourcefiles"] = glob(os.path.join(
                                            atlasdict["sourcedir"], "*.label"))
@@ -270,9 +266,10 @@ def _prep_label_atlas(atlasdict):
         for subj in subjects():
             ll = glob(os.path.join(atlasdict["sourcedir"].replace("$subject", subj),
                                    "*.label"))
-            if len(ll) != nlabels:
-                warn("Not all subjects for atlas %s have the same number of "
-                     "labels in their sourcedirectory" % atlasdict["atlasname"])
+            if usedall and len(ll) != nlabels:
+                raise SetupError("Not all subjects for atlas %s have the same "
+                                 "number of labels in their sourcedirectory" 
+                                 % atlasdict["atlasname"])
 
     lfiles = atlasdict["sourcefiles"]
     if not isinstance(lfiles, list):
@@ -303,13 +300,12 @@ def _prep_mask_atlas(atlasdict):
     
     imgregexp = re.compile("[\w\.-]+\.(img)|(nii)|(nii\.gz)|(mgh)|(mgz)$")
 
-    if atlasdict["sourcefiles"] == "all" or ["all"]:
+    if atlasdict["sourcefiles"] == "all" or atlasdict["sourcefiles"] == ["all"]:
         refiles = []
         gfiles = glob(os.path.join(atlasdict["sourcedir"],"*"))
         for gfile in gfiles:
-            m = imgregexp.search(gfile)
-            if m:
-                refiles.append(m.group())
+            if imgregexp.search(gfile):
+                refiles.append(gfile)
         if refiles:
             atlasdict["sourcefiles"] = refiles
         else:
@@ -342,7 +338,7 @@ def _prep_mask_atlas(atlasdict):
         lfile, ext = os.path.splitext(lfile)
         lnames.append(lfile)
         if not os.path.isfile(lfiles[i]):
-            warn("%s does not exist." % lfiles[i])
+            raise SetupError("%s does not exist." % lfiles[i])
     atlasdict["sourcefiles"] = lfiles
     atlasdict["sourcenames"] = lnames
     return atlasdict
@@ -369,8 +365,30 @@ def fssubjdir():
     subjdir = fs.FSInfo.subjectsdir(dirpath)
     """
 
-    return fs.FSInfo.subjectsdir(os.getenv("SUBJECTS_DIR"))
+    path = fs.FSInfo.subjectsdir(os.getenv("SUBJECTS_DIR"))
+    if path:
+        return path
+    else:
+        raise Exception("Freesurfer subjects directory could not be determined "
+                        "from environment variables.")
 
+def first_level_program():
+    """Return the program used for first-level analysis.
+    
+    If the config file does not have a level1program attribute, return "spm"
+    for backwards compatability with original config files.
+
+    Returns
+    -------
+    str : "SPM" or "FSL"
+    """
+    try:
+        if setup.level1program.upper() not in ["SPM"]:
+            raise SetupError("First level program %s not understood or not supported."
+                             % setup.level1program)
+        return setup.level1program.upper()
+    except AttributeError:
+        return "spm"
 
 def paradigms(parname=None, case="upper"):
     """Return paradigm information.
@@ -565,7 +583,7 @@ def pathspec(imgtype, paradigm=None, subject=None, group=None, contrast=None):
     Parameters
     -----------
     imgtype : str
-        "beta", "meanfunc", "timecourse," or "contrast"
+        "beta", "meanfunc", "regmat", "timecourse," or "contrast"
     paradigm : str
         full paradigm name
     subject : str 
@@ -580,6 +598,7 @@ def pathspec(imgtype, paradigm=None, subject=None, group=None, contrast=None):
     """
     basepath = setup.basepath
     betapath = setup.betapath
+    regpath = setup.regmatpath
     meanfuncpath = setup.meanfuncpath
     contrastpath = setup.contrastpath
     timecoursepath = setup.timecoursepath
@@ -591,6 +610,7 @@ def pathspec(imgtype, paradigm=None, subject=None, group=None, contrast=None):
 
     imgdict = {"beta": betapath,
                "meanfunc": meanfuncpath,
+               "regmat" : regpath,
                "contrast": contrastpath,
                "timecourse": timecoursepath}
     
@@ -598,7 +618,11 @@ def pathspec(imgtype, paradigm=None, subject=None, group=None, contrast=None):
 
     for var in vardict:
         if var in varpath:
-            varpath = varpath.replace(var,vardict[var])
+            if vardict[var]:
+                varpath = varpath.replace(var,vardict[var])
+            else:
+                raise Exception("Wildcard '%s' found in path, but no argument "
+                                "given for it." % var)
 
     if imgtype in ["beta", "contrast"]:
         return varpath

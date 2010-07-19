@@ -185,12 +185,12 @@ class RoiResult(object):
 
         if self._archive_log and os.path.isfile(self.log_file):
             try:
-                oldtimestamp = open(self.loghistfile,"r").read()
+                oldtimestamp = open(self._loghistfile,"r").read()
             except IOError:
                 oldtimestamp = "unknown"
             if not continue_log:
-                shultil.move(self.log_file, 
-                             os.path.join(self.oldlogdir, "pyroi_%s.log" % oldtimestamp))
+                shutil.move(self.log_file, 
+                             os.path.join(self._oldlogdir, "pyroi_%s.log" % oldtimestamp))
         if not continue_log: 
             self._log_fid = open(self.log_file, "w")
             self._write_new_log_header()
@@ -201,7 +201,7 @@ class RoiResult(object):
         newtimestamp = str(
             datetime.now())[:-10].replace("-","").replace(":","").replace(" ","-")
         if self._archive_log:
-            histfid = open(self.loghistfile, "w")
+            histfid = open(self._loghistfile, "w")
             histfid.write(newtimestamp)
             histfid.close()
     

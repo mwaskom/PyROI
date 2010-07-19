@@ -413,25 +413,19 @@ class Atlas(RoiBase):
             
         """
         res = RoiResult()
-        if self.source == "mask":
-            res(self._make_mask_atlas())
-            if self._atlas_exists: res(self._stats())
-        elif self.source == "sigsurf":
-            if not self._init_subject:
-                raise InitError("Subject")
-            res(self._make_sigsurf_atlas(gen_new_atlas))
-            if self._atlas_exists: res(self._stats())
-        elif self.source == "label":
-            if not self._init_subject:
-                raise InitError("Subject")
-            res(self._make_label_atlas())
-            if self._atlas_exists: res(self._stats())
-        elif self.source == "freesurfer":
-            if not self._init_subject:
-                raise InitError("Subject")
-            res(self._make_freesurfer_atlas(reg))
-            if self._atlas_exists: res(self._stats())
-        else:
+        if self.space == "native" and not self._init_subject:
+            raise InitError("Subject")
+        switch = dict(freesurfer = self._make_freesurfer_atlas,
+                      label      = self._make_label_atlas,
+                      sigsurf    = self._make_sigsurf_atlas,
+                      mask       = self._make_mask_atlas,
+                      sphere     = self._make_sphere_atlas)
+                      
+        try:                      
+            res(switch[self.source]())
+            if self._atlas_exists:
+                res(self._stats())
+        except KeyError:
             res("No make_atlas processing neccessary for %s atlases." 
                 % self.source)
         return res
@@ -655,7 +649,8 @@ class Atlas(RoiBase):
         """Run atlas preprocessing steps for a Freesurfer atlas."""
         if not os.path.isfile(self.regmat) and not reg:
             print ("\nRegistration matrix not found for %s."
-                   "\nCall method with a different setting for the `reg` argument to create."
+                   "\nCall method with a different setting for the `reg` argument "
+                   "to create."
                    % self.subject)
             return
         result = RoiResult()
@@ -685,11 +680,11 @@ class Atlas(RoiBase):
 
         return self._run(transform)
 
+    def _make_sphere_atlas(self):
+        raise NotImplementedError
+
     def _stats(self):
         """Generate a summary of voxel/vertex counts for all regions in an atlas."""
-        if not self._init_subject and self.space == "native":
-            raise InitError("Subject")
-        
         if self.manifold == "volume":
             return self._vol_stats()
         else:
@@ -716,6 +711,7 @@ class Atlas(RoiBase):
 
         cmd.append("--annot %s %s %s" % (self.subject, hemi, self.atlasname))
         cmd.append("--sum %s" % self.statsfile % hemi)
+        cmd.append("--ctab %s" % self.lutfile)
         ids = self.all_regions[hemi]
         ids.sort()
         for id in ids:
@@ -732,6 +728,7 @@ class Atlas(RoiBase):
         ids = self.all_regions
         ids.sort()
         segstats.inputs.segid = ids
+        segstats.inputs.colortable = self.lutfile
         segstats.inputs.sumfile = self.statsfile
 
         return self._run(segstats)
@@ -868,9 +865,9 @@ class Atlas(RoiBase):
         """
         if not self._init_analysis:
             raise InitError("Analysis")
-        elif not self._atlas_exists():
+        elif not self._atlas_exists() and not self.debug:
             raise PreprocessError("The atlas")
-        elif not self._source_exists():
+        elif not self._source_exists() and not self.debug:
             raise PreprocessError("The source")
 
         if self.manifold == "volume":
@@ -955,7 +952,8 @@ class Atlas(RoiBase):
             res = self.extract()
             print res
             result(res)
-        result(build_database(self.atlasname, self.analysis.dict, subjects))
+        if not self.debug:
+            result(build_database(self.atlasname, self.analysis.dict, subjects))
         return result
 
 class FreesurferAtlas(Atlas):
@@ -1104,10 +1102,15 @@ class FreesurferAtlas(Atlas):
             origdir = "mri"
             ext = "mgz"
 
+        self._regtreepath = os.path.join(self.roidir, "reg", self.paradigm,
+                                        subject, "func2orig.dat")
         self.meanfuncimg = cfg.pathspec("meanfunc", self.paradigm,
                                         self.subject, self.subjgroup)
-        self.regmat = os.path.join(self.roidir, "reg", self.paradigm,
-                                   subject, "func2orig.dat")
+        cfgreg = cfg.pathspec("regmat", self.paradigm, self.subject, self.subjgroup)
+        if cfgreg:
+            self.regmat = cfgreg
+        else: 
+            self.regmat = self._regtreepath
 
         if self.manifold != "reg":
             self.origatlas = os.path.join(self.subjdir, subject, origdir, fname)
@@ -1174,7 +1177,7 @@ class FSRegister(FreesurferAtlas):
         reg.inputs.subject_id = self.subject
         reg.inputs.sourcefile = self.meanfuncimg
         reg.inputs.t2_contrast = True
-        reg.inputs.outregfile = self.regmat       
+        reg.inputs.outregfile = self._regtreepath      
         if method == "fsl":
             reg.inputs.init_fsl = True
         elif method == "spm":
@@ -1223,18 +1226,15 @@ class HarvardOxfordAtlas(Atlas):
 
     Single Subject:
     
-    >>> fslatlas = roi.HavardOxfordAtlas("fsl")
-    >>> analysis = roi.cfg.analysis(1)
-    >>> fslatlas(analysis)
-    >>> res = fslatlas.prepare_source_images()
-    >>> res = fslatlas.extract()
+    >>> fslatlas = roi.init_atlas("fsl_atlas")
+    >>> res = fslatlas.prepare_source_images(1)
+    >>> res = fslatlas.extract(1)
     
     Group:
     
     >>> fslatlas = roi.HarvardOxfordAtlas("fsl")
-    >>> analysis = roi.cfg.analysis(1)
-    >>> res = fslatlas.group_prepare_source_images(analysis)
-    >>> res = fslatlas.group_extract()
+    >>> res = fslatlas.group_prepare_source_images(1)
+    >>> res = fslatlas.group_extract(1)
 
     Atlas Information
     -----------------
@@ -1257,6 +1257,7 @@ class HarvardOxfordAtlas(Atlas):
             dictionary of atlas parameters.
         subject : str, optional
             The name of a subject to initialize the atlas for. 
+
         """
         if isinstance(atlas, str):
             atlasdict = cfg.atlases(atlas)
@@ -1297,11 +1298,42 @@ class HarvardOxfordAtlas(Atlas):
 class SigSurfAtlas(Atlas):
     """Atlas made from a second level sig map on the average surface.
     
+    Examples
+    --------
+
+    Single Subject:
     
+    >>> surfatlas = roi.init_atlas("surfatlas", "subj_id")
+    >>> res = surfatlas.make_atlas()
+    >>> res = fslatlas.prepare_source_images(1)
+    >>> res = fslatlas.extract(1)
+    
+    Group:
+    
+    >>> surfatlas = roi.init_atlas("surfatlas", "subj_id")
+    >>> res = surfatlas.group_prepare_source_images(1)
+    >>> res = surfatlas.group_extract(1)
+
+    Atlas Information
+    -----------------
+    A SigSurf atlas is created by taking a surface significance map 
+    in fsaverage space, thresholding it (possibly with FDR correction),
+    and turning the contiguous blobs that remain above threshold into
+    regions of interest.  This obviates manually creating labels to
+    extract from ROIs defined by second-level analyses.
     
     """
     def __init__(self, atlas, subject=None, **kwargs):
+        """
+        Parameters
+        ----------
+        atlas : str or dict
+            The name of an atlas defined in your setup module, or a 
+            dictionary of atlas parameters.
+        subject : str, optional
+            The name of a subject to initialize the atlas for. 
 
+        """
         if isinstance(atlas, str):
             atlasdict = cfg.atlases(atlas)
         else:
@@ -1319,6 +1351,7 @@ class SigSurfAtlas(Atlas):
         self.threshtype = self.atlasdict["thresh"][0]
         self.threshold = self.atlasdict["thresh"][1]
         self.minsize = self.atlasdict["minsize"]
+        self.sourcelevel = "group"
 
         self.basedir = os.path.join(self.roidir, "atlases", "sigsurf", 
                                     cfg.projectname())
