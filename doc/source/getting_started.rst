@@ -1,6 +1,5 @@
 .. _getting_started:
 
-===============
 Getting Started
 ===============
 
@@ -18,14 +17,11 @@ packages and external binaries.  All required Python packages run in
 the NiPype environment, which is setup automatically as part of the
 ``SetupPyROI.sh`` script execution.
 
-Much of the underlying processing takes place with Freesurfer binaries.
-Although Mindhive users should have Freesurfer set up automatically,
-those running older versions may experience strange behavior.  PyROI
-was developed and tested with Freesurfer 4.5, which can be set up with
-these commands::
-
-    export FREESURFER_HOME=/software/Freesurfer/current
-    source $FREESURFER_HOME/SetUpFreeSurfer.sh
+Much of the underlying processing takes place with Freesurfer and FSL
+binaries.  Although Mindhive users should have Freesurfer set up 
+automatically, those running older versions may experience strange behavior.  
+As such, running the PyROI setup script automatically sets up Freesurfer 4.5
+and FSL 4.1.
 
 To test that everything worked properly, open up IPython::
 

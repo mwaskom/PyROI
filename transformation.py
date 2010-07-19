@@ -1,5 +1,3 @@
-# emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
-# vi: set ft=python sts=4 ts=4 sw=4 et:
 ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
 #
 #   See COPYING file distributed along with the PyMVPA package for the
@@ -13,7 +11,7 @@ import numpy as np
 if __debug__:
     from mvpa.base import debug
 
-class TypeProxy:
+class TypeProxy():
     """
     Simple class to convert from and then back to original type
     working with list, tuple, ndarray and having
@@ -31,7 +29,7 @@ class TypeProxy:
 #   def __getitem__(self, value): return self.__type(value)
 
 
-class TransformationBase:
+class TransformationBase():
     """
     Basic class to describe a transformation. Pretty much an interface
     """

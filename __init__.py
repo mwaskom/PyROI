@@ -1,7 +1,7 @@
 """Package for functional neuroimaging region of interest analysis in Python"""
 from atlases import *
+from core import *
 from database import build_database
-from core import RoiResult, import_config, write_config_base, config_file_path
 import source
 import exceptions
 import treeutils as tree
