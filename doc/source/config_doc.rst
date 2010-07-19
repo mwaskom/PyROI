@@ -154,9 +154,17 @@ Entry Formats
 
 - manifold: "volume" or "surface"
 
+- fname: string
+
 - hemi: "lh" or "rh"
 
+- file: string
+
+- thresh: tuple ("sig" or "fdr", float)
+
 - probthresh: integer
+
+- sourcelevel: "subject" or "group"
 
 - sourcedir: string
 
@@ -179,9 +187,11 @@ Note: source is required for all atlas types
 
 - fsl: probthresh, regions
 
+- sigsurf: hemi, file, thresh, minsize
+
 - mask: sourcedir, sourcelabels
 
-- label: sourcedir, sourcelabels
+- label: hemi, sourcelebel, sourcedir, sourcelabels
 
 - sphere: coordsys, radius, centers
 
@@ -221,11 +231,12 @@ Variable Name
 First Level Design
 ------------------
 
-Specify the task-related elements of your first-level design matrix.
-The hrfcomponents variable specifies how many different beta images
-are associated with each task condition. The betastoextract variable 
-specifies which regressors to extract if multiple regressors are
-associated with each task condition.  It can be "all" or a list of 
+Specify the task-related elements of your first-level design matrix,
+And the program that was used to analyze it (currently is supported, but
+FSL should be soon. The hrfcomponents variable specifies how many different
+beta images are associated with each task condition. The betastoextract 
+variable specifies which regressors to extract if multiple regressors 
+are associated with each task condition.  It can be "all" or a list of 
 integers corresponding to the components. The conditions variable links
 paradigm names (as specified above) to a list of short names (ideally
 4 or 5 letters) for the task conditions in that paradigm. The order of
@@ -234,6 +245,8 @@ beta images.
 
 Formats
 ^^^^^^^
+
+- "SPM"
 
 
 - integer
@@ -245,8 +258,10 @@ Formats
 Variable Names
 ^^^^^^^^^^^^^^
 
-- ``hrfcomponents``
+- ``level1program``
 
+
+- ``hrfcomponents``
 
 - ``betastoextract``
 
@@ -287,10 +302,10 @@ First Level Datapaths
 
 Specify the absolute path to your main directory and relative paths
 from that directory to those containing certain types of images.  You 
-may include ``$paradigm``, ``$subject``, and ``$contrast`` wildcards in
-the path strings, which will be replaced appropriately as the program runs.
-After replacement,each variable should pick out a single directory in your
-file system.
+may include ``$paradigm``, ``$subject``, ``group``, and ``$contrast`` 
+wildcards in the path strings, which will be replaced appropriately as the 
+program runs.  After replacement,each variable should pick out a single 
+directory in your file system.
 
 A directory will be created within the basepath directory called ``roi``,
 which is where all files created by PyROI will be stored.
@@ -301,8 +316,15 @@ contrast effect size estimates and T stastic images (currently, PyROI
 assumes these are in the same directory).  The timecourse path leads to
 functional timecourses at your desired level of preprocessing, and the 
 meanfunctionalpath should lead to a single-frame mean image created from
-your timecouse.  See the note below on the special usage for the timecourse
-and mean functional variables.
+your timecouse.  Finally, the regmat path leads to a .dat registration file
+created by the Freesurfer program bbregister.  This matrix should align a
+subject's natve-space functional volume to the cortical surfaces.  If you
+have not run bbregister on your subjects, simply leave this variable as 
+something that evaluates to False (e.g., ``""``), and PyROI will perform
+the registration.
+
+See the note below on the special usage for the timecourse, regmat, and mean
+functional variables.
 
 
 Format
