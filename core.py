@@ -131,26 +131,33 @@ class RoiResult(object):
             self.cmdline.extend(cmdline.cmdline)
             self.stdout.extend(cmdline.stdout)
             self.stderr.extend(cmdline.stderr)
+            logentry = ""
+            for i, entry in enumerate(cmdline.cmdline):
+                logentry = "\n".join((logentry, cmdline.cmdline[i],
+                                      cmdline.stdout[i], cmdline.stderr[i]))
         elif cmdline is None:
             self.cmdline.append("")
             self.stdout.append("")
             self.stderr.append("")
+            logentry = ""
         else:
             self.cmdline.append(cmdline)
-
+            logentry = cmdline
             if isinstance(res, list):
                 self.stdout.append(res[0])
                 self.stderr.append(res[1])
+                logentry = "\n".join((logentry, res[0], res[1]))
             elif res is not None:
                 self.stdout.append(res.runtime.stdout)
                 self.stderr.append(res.runtime.stderr)
+                logentry = "\n".join((logentry, res.runtime.stdout, res.runtime.stderr))
             else:
                 self.stdout.append("")
                 self.stderr.append("")
 
+        logentry = logentry + "\n"
         if self.log:
-            pass
-
+            self._log_fid.write(logentry)
 
     def __str__(self):
 
