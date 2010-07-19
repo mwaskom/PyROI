@@ -188,6 +188,17 @@ class BetaImage(FirstLevelStats):
                                        self.analysis.paradigm, subject)
         self.extractvol = os.path.join(self.roistatdir, "task_betas.mgz")
         self.extractsurf = os.path.join(self.roistatdir, "%s.task_betas.mgz")
+
+        self._regtreepath = os.path.join(self.roidir, "reg", 
+                                         self.analysis.paradigm)
+
+        cfgreg = cfg.pathspec("regmat", self.analysis.paradigm, self.subject,
+                              self.subjgroup)
+        if cfgreg:
+            self.regmat = cfgreg
+        else: 
+            self.regmat = self._regtreepath
+
         self.regmat = os.path.join(self.roidir, "reg", self.analysis.paradigm,
                                    subject, "func2orig.dat")
         

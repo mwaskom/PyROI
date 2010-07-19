@@ -237,11 +237,12 @@ paradigms = {"": "",
 
 #--------------------------<First Level Design>----------------------------#
 """
-Specify the task-related elements of your first-level design matrix.
-The hrfcomponents variable specifies how many different beta images
-are associated with each task condition. The betastoextract variable 
-specifies which regressors to extract if multiple regressors are
-associated with each task condition.  It can be "all" or a list of 
+Specify the task-related elements of your first-level design matrix,
+And the program that was used to analyze it (currently is supported, but
+FSL should be soon. The hrfcomponents variable specifies how many different
+beta images are associated with each task condition. The betastoextract 
+variable specifies which regressors to extract if multiple regressors 
+are associated with each task condition.  It can be "all" or a list of 
 integers corresponding to the components. The conditions variable links
 paradigm names (as specified above) to a list of short names (ideally
 4 or 5 letters) for the task conditions in that paradigm. The order of
@@ -250,6 +251,7 @@ beta images.
 
 Formats
 -------
+- "SPM"
 
 - integer
 
@@ -259,6 +261,8 @@ Formats
 
 Variable Names
 --------------
+- ``level1program``
+
 - ``hrfcomponents``
 
 - ``betastoextract``
@@ -266,6 +270,8 @@ Variable Names
 - ``conditions``
 
 """
+
+level1program = ""
 
 hrfcomponents = 1
 
@@ -296,9 +302,9 @@ Variable Name
 
 """
 
-contrasts = {"" :  {"": ,
-                    "": },
-             "" :  {"": }}
+contrasts = {"" :  {"": 1,
+                    "": 2},
+             "" :  {"": 1}}
 
 #------------------------<First Level Datapaths>---------------------------#
 """
@@ -318,8 +324,15 @@ contrast effect size estimates and T stastic images (currently, PyROI
 assumes these are in the same directory).  The timecourse path leads to
 functional timecourses at your desired level of preprocessing, and the 
 meanfunctionalpath should lead to a single-frame mean image created from
-your timecouse.  See the note below on the special usage for the timecourse
-and mean functional variables.
+your timecouse.  Finally, the regmat path leads to a .dat registration file
+created by the Freesurfer program bbregister.  This matrix should align a
+subject's natve-space functional volume to the cortical surfaces.  If you
+have not run bbregister on your subjects, simply leave this variable as 
+something that evaluates to False (e.g., ``""``), and PyROI will perform
+the registration.
+
+See the note below on the special usage for the timecourse, regmat, and mean
+functional variables.
 
 
 Format
@@ -354,6 +367,8 @@ character (*) in the file name.  As there should only be one of each
 image type for each paradigm/subject, the wildcard should be choosen
 to match only one file in the directory.
 """
+
+regmatpath = ""
 
 timecoursepath = ""
 
