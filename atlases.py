@@ -1269,7 +1269,7 @@ class HarvardOxfordAtlas(Atlas):
         self.thresh = atlasdict["probthresh"]
         pckgdir = os.path.split(__file__)[0]
         filestem = "HarvardOxford-%d" % self.thresh
-        self.atlas = os.path.join(pckgdir, "data",
+        self.atlas = os.path.join(pckgdir, "data", 
                                   "HarvardOxford", "%s.nii" % filestem)
         self.lutfile = os.path.join(os.path.split(__file__)[0], "data", 
                                  "HarvardOxford", "HarvardOxford-LUT.txt")

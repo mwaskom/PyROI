@@ -12,7 +12,8 @@ import numpy as np
 import nipype.interfaces.base as pypebase
 import configinterface as cfg
 
-__all__ = ["RoiResult", "import_config", "write_config_base", "config_file_path"]
+__all__ = ["RoiResult",
+           "import_config", "write_config_base", "config_file_path", "find_id"]
 
 __module__ = "core"
 
