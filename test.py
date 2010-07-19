@@ -1,3 +1,5 @@
+#! /usr/bin/env python
+
 """Initial testing framework: merely loop through the atlases/analyses from the
 development config file on debug and run the various methods.  Should suffice for
 now... """
@@ -5,6 +7,7 @@ now... """
 import sys
 import pyroi as roi
 
+res = roi.RoiResult(log=True, logdir=".")
 native=True
 standard=True
 if "--no-native" in sys.argv: native=False
@@ -14,7 +17,6 @@ if native:
     # Native space analyses
 
     roi.import_config("/u2/mwaskom/roidevelopment_native.py")
-    res = roi.RoiResult(log=True)
 
     path = roi.config_file_path()
     res("Config file: %s" % path)
@@ -30,7 +32,6 @@ if standard:
     # Standard space analyses
 
     roi.import_config("/u2/mwaskom/roidevelopment_standard.py")
-    res = roi.RoiResult(log=True)
 
     path = roi.config_file_path()
     res("Config file: %s" % path)
