@@ -344,6 +344,8 @@ Variable Names
 
 ``contrastpath``
 
+``regmatpath``
+
 ``timecoursepath``
 
 ``meanfuncpath``
@@ -352,7 +354,9 @@ For the timecoursepath and meanfuncpath variables, specify the path to
 your images as above, but also include a file template with a wildcard
 character (*) in the file name.  As there should only be one of each 
 image type for each paradigm/subject, the wildcard should be choosen
-to match only one file in the directory.
+to match only one file in the directory.  If you are using standard-
+space analyses, you should leave the regmatpath and meanfuncpath as
+empty strings.
 
 
 Subjects
