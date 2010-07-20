@@ -31,8 +31,9 @@ if os.path.isfile(".roiconfigfile"):
     module = module.strip()
 
     # Trim the file extension if it exists
-    module = module.strip(".py")
-    
+    if module.endswith(".py"):
+        module = os.path.splitext(module)[0]
+
     # Import the module
     try:
         if not module: raise ImportError
@@ -186,7 +187,8 @@ def _prep_fsl_atlas(atlasdict):
     atlasdict["manifold"] = "volume"
 
     if atlasdict["probthresh"] not in [25, 50]:
-        raise SetupError("HarvardOxford atlas probthresh setting must be either 25 or 50.")
+        raise SetupError("HarvardOxford atlas probthresh setting must "
+                         "be either 25 or 50.")
 
     if not isinstance(atlasdict["regions"], list):
         atlasdict["regions"] = [atlasdict["regions"]]
@@ -616,7 +618,9 @@ def pathspec(imgtype, paradigm=None, subject=None, group=None, contrast=None):
                "regmat" : regpath,
                "contrast": contrastpath,
                "timecourse": timecoursepath}
-    
+   
+    if not imgdict[imgtype]:
+        return None
     varpath = os.path.join(basepath, imgdict[imgtype])
 
     for var in vardict:

@@ -583,7 +583,22 @@ class Atlas(RoiBase):
         result = RoiResult(self._write_lut())
         if self.sourcelevel == "group":
             result(self._resample_labels())
+        else:
+            result(self._copy_labels())
         result(self._gen_annotation())
+        return result
+
+    def _copy_labels(self):
+        """Copy labels from the sourcedir to the roi atlas hierarchy."""
+        result = RoiResult()
+        for i, labelfile in enumerate(self.sourcefiles):
+            shutil.copyfile(labelfile.replace("$subject", self.subject),
+                            os.path.join(self.basedir, self.subject, self.atlasname,
+                                         self.sourcenames[i] + ".label"))
+            result("cp %s %s" % (labelfile.replace("$subject", self.subject),
+                                 os.path.join(self.basedir, self.subject,
+                                              self.atlasname,
+                                              self.sourcenames[i] + ".label")))
         return result
 
     def _resample_labels(self):
@@ -1062,8 +1077,10 @@ class FreesurferAtlas(Atlas):
             if self.fname == "aparc.annot":
                 self.regions["lh"] = [1000 + id for id in self.atlasdict["regions"]]
                 self.regions["rh"] = [2000 + id for id in self.atlasdict["regions"]]
-                self.all_regions["lh"] = [1000 + id for id in self.lutdict.keys()]
-                self.all_regions["rh"] = [2000 + id for id in self.lutdict.keys()]
+                self.all_regions["lh"] = \
+                    [id for id in self.lutdict.keys() if id < 2000]
+                self.all_regions["rh"] = \
+                    [id for id in self.lutdict.keys() if id >= 2000]
                 self.regionnames = ([self.lutdict[id] for id in self.regions['lh']] + 
                                     [self.lutdict[id] for id in self.regions['rh']]) 
             else:

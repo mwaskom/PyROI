@@ -131,7 +131,10 @@ def build_database(atlas, analysis, subjects=None):
         # Volume atlases
         if atlas.manifold == "volume" or len(atlas.iterhemi) == 1:
             # Read the SegStats output files
-            addfunc = np.genfromtxt(atlas.functxt)
+            if atlas.manifold == "volume":
+                addfunc = np.genfromtxt(atlas.functxt)
+            else:
+                addfunc = np.genfromtxt(atlas.functxt % atlas.hemi)
             addfunc = np.transpose(addfunc)
             addsubj = np.array([subject for i in range(nrois)]).reshape(nrois, 1)
             sizearr = np.genfromtxt(atlas.statsfile, int)
