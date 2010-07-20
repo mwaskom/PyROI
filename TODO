@@ -1,3 +1,4 @@
 For version 0.2:
 Transition to NiPype 0.3
-Wrap nipype interfaces in Bunch
+Wrap nipype interfaces in Node
+Add group specification to database name
