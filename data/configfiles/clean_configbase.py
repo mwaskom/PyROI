@@ -65,32 +65,32 @@ atlases = {"":
                 "regions": [ ]},
            "":
                {"source": "fsl",
-                "probthresh":  ,
-                "regions",   []},
+                "probthresh": 0,
+                "regions":   [ ]},
            "":
                {"source": "sigsurf",
                 "hemi": "",
-                "file": ""
-                "thresh": ("",)
-                "minsize": },
+                "file": "",
+                "thresh": ("",0.),
+                "minsize": 0},
            "":
                {"source": "label",
                 "hemi": "",
-                "sourcelevel": ""
+                "sourcelevel": "",
                 "sourcedir": "",
-                "sourcefiles": ["", ""],
+                "sourcefiles": ["", ""]},
            "":
                {"source": "mask",
                 "sourcedir":   "",
-                "sourcefiles": ["", ""]}
+                "sourcefiles": ["", ""]},
            "":
                {"source": "sphere",
                 "coordsys": "",
-                "radius":   ,
+                "radius":   0.,
                 "centers":
-                  {"" : ( , , ),
-                   "" : ( , , )}
-                }
+                  {"" : (0.,0.,0.),
+                   "" : (0.,0.,0.)}
+                }}
    
 
 
