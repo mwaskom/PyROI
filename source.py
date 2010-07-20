@@ -225,9 +225,15 @@ class ContrastImage(FirstLevelStats):
                                        self.analysis.paradigm, subject)
         self.extractvol = os.path.join(self.roistatdir, "all_contrasts.mgz") 
         self.extractsurf = os.path.join(self.roistatdir, "%s.all_contrasts.mgz")
-        self.regmat = os.path.join(self.roidir, "reg", self.analysis.paradigm,
-                                   subject, "func2orig.dat")
-        
+        self._regtreepath = os.path.join(self.roidir, "reg", self.analysis.paradigm,
+                                         subject, "func2orig.dat")
+        cfgreg = cfg.pathspec("regmat", self.analysis.paradigm, self.subject,
+                              self.subjgroup)
+        if cfgreg:
+            self.regmat = cfgreg
+        else: 
+            self.regmat = self._regtreepath
+
         self._init_subject = True
 
 
@@ -265,8 +271,14 @@ class TStatImage(FirstLevelStats):
                                         "sig", ".nii")[self.analysis.maskcon]
         self.sigimg = os.path.join(self.sigpath, imagefname)
 
-        self.regmat = os.path.join(self.roidir, "reg", self.analysis.maskpar,
-                                   subject, "func2orig.dat")
+        self._regtreepath = os.path.join(self.roidir, "reg", self.analysis.maskpar,
+                                         subject, "func2orig.dat")
+        cfgreg = cfg.pathspec("regmat", self.analysis.maskpar, self.subject,
+                              self.subjgroup)
+        if cfgreg:
+            self.regmat = cfgreg
+        else: 
+            self.regmat = self._regtreepath
         self.roistatdir = os.path.join(self.roidir, "levelone", "contrast",
                                        self.analysis.paradigm, subject)
         self.sigsurf = os.path.join(self.roistatdir, "%s." + imagefname)
@@ -328,8 +340,14 @@ class SigImage(FirstLevelStats):
         self.extractvol = self.sigvol
         self.sigsurf = os.path.join(self.sigpath, "%s." + imagefname)
         self.extractsurf = self.sigsurf
-        self.regmat = os.path.join(self.roidir, "reg", self.analysis.maskpar,
-                                   subject, "func2orig.dat")
+        self._regtreepath = os.path.join(self.roidir, "reg", self.analysis.maskpar,
+                                         subject, "func2orig.dat")
+        cfgreg = cfg.pathspec("regmat", self.analysis.maskpar, self.subject,
+                              self.subjgroup)
+        if cfgreg:
+            self.regmat = cfgreg
+        else: 
+            self.regmat = self._regtreepath
         self.roistatdir = os.path.join(self.roidir, "levelone", "contrast",
                                        self.analysis.paradigm, subject)
 
