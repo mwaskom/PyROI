@@ -160,7 +160,7 @@ Program Errors
 
 Python (and some of the external modules that PyROI runs behind the scenes) provide many other
 error types that you might run into.  When you get an error after running a function that
-took some import, the first thing to check is that you're using the function correctly and
+took some input, the first thing to check is that you're using the function correctly and
 didn't make any mistakes in the input.  Using IPython's build in help can be useful here -- 
 simply type a ``?`` after any object (variables, classes, functions, or class methods)
 to view the docstring for that object::

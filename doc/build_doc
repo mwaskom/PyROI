@@ -5,8 +5,13 @@ import sys
 
 args = sys.argv
 
-os.system("python ../data/configfiles/make_clean_config.py")
-os.system("python ../data/configfiles/extract_config_doc.py")
+if len(args) == 1:
+    print "build_doc [--nocfg] [--nosphinx] [--noweb]"
+    sys.exit(0)
+
+if "--nocfg" not in args:
+    os.system("python ../data/configfiles/make_clean_config.py")
+    os.system("python ../data/configfiles/extract_config_doc.py")
 if "--nosphinx" not in args:
     os.system("make html")
 if "--noweb" not in args:

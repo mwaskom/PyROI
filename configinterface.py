@@ -114,6 +114,8 @@ def atlases(atlasname=None):
     """
     atlasdicts = deepcopy(setup.atlases)
 
+    # Remove null atlas name if people kept cfg base atlases
+    del atlasdict[""]
     for name, dictionary in atlasdicts.items():
         dictionary["atlasname"] = name
         for k, v in dictionary.items():
