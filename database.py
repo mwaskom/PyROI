@@ -112,8 +112,8 @@ def build_database(atlas, analysis, subjects=None):
     addrois = addrois.reshape(nrois, 1)
 
     # Make sure surface rois start with hemi (fixes destrieux lut problem)
-    splitrois = np.vsplit(addrois, len(atlas.iterhemi))
     if atlas.manifold == "surface" and len(atlas.iterhemi) == 2:
+        splitrois = np.vsplit(addrois, len(atlas.iterhemi))
         for idx, hemi in enumerate(atlas.iterhemi):
             for i, row in enumerate(splitrois[idx]):
                 roiname = row[0]
