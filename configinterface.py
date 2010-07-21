@@ -42,9 +42,10 @@ if os.path.isfile(".roiconfigfile"):
         is_setup = True
         f.close()
         del f, name, desc
-    except ImportError:
-        print ("\nFound .roiconfigfile, but config module import failed."
-               "\nYou will need to use the `import_setup()' function.")
+    except ImportError, err:
+        print ("\nFound .roiconfigfile, but config module import failed with the message:"
+               "\n'%s'"
+               "\nYou will need to use the `import_setup()' function." % err)
         is_setup = False
     
     # Clean up

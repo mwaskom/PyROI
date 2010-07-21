@@ -798,7 +798,7 @@ class Atlas(RoiBase):
             if reg==2 or (reg==1 and not os.path.isfile(sourcereg.regmat)):
                 res(sourcereg.register())
                 if self.mask and self.analysis.maskpar != self.analysis.paradigm:
-                    maskreg = FSRegister(self.analysis.maskpar, self.subject, self.debug)
+                    maskreg = FSRegister(self.analysis.maskpar, self.subject, debug=self.debug)
                     if reg==2 or (reg==1 and not os.path.isfile(maskreg.regmat)):
                         res(maskreg.register())
         extractvols = source.init_stat_object(self.analysis, debug=self.debug)
@@ -1609,12 +1609,12 @@ class SphereAtlas(Atlas):
         self._init_subject = True
 
 
-def init_atlas(atlasdict, subject=None, paradigm=None, **kwargs):
+def init_atlas(atlas, *args, **kwargs):
     """Initialize the proper atlas class with an atlas dictionary.
     
     Parameters
     ----------
-    atlasdict : str or dict
+    atlas : str or dict
         Atlas name or a dictionary of atlas parameters
     subject : str, optional
         If included, the atlas will be initialized for this subject
@@ -1627,17 +1627,22 @@ def init_atlas(atlasdict, subject=None, paradigm=None, **kwargs):
     Atlas object
 
     """
-    if isinstance(atlasdict, str):
-        atlasdict = cfg.atlases(atlasdict)
-    if atlasdict["source"] == "freesurfer": 
-        return FreesurferAtlas(atlasdict, paradigm, subject, **kwargs)
-    elif atlasdict["source"] == "fsl": 
-        return HarvardOxfordAtlas(atlasdict, subject, **kwargs)
-    elif atlasdict["source"] == "sigsurf":
-        return SigSurfAtlas(atlasdict, subject, **kwargs)
-    elif atlasdict["source"] == "label": 
-        return LabelAtlas(atlasdict, subject, **kwargs) 
-    elif atlasdict["source"] == "mask": 
-        return MaskAtlas(atlasdict, subject, **kwargs)
-    elif atlasdict["source"] == "sphere":
-        return SphereAtlas(atlasdict, subject, **kwargs)
+    par = None
+    sub = None
+    for arg in args:
+        if arg in cfg.paradigms():
+            par = arg
+        elif arg in cfg.subjects():
+            sub = arg
+
+    if isinstance(atlas, str):
+        atlas = cfg.atlases(atlas)
+
+    switch = dict(freesurfer = FreesurferAtlas,
+                  fsl        = HarvardOxfordAtlas,
+                  sigsurf    = SigSurfAtlas,
+                  label      = LabelAtlas,
+                  mask       = MaskAtlas,
+                  sphere     = SphereAtlas)
+    source = atlas["source"]                  
+    return switch[source](atlas, subject=sub, paradigm=par, **kwargs)

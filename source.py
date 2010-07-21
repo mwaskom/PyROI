@@ -332,6 +332,7 @@ class SigImage(FirstLevelStats):
     def init_subject(self, subject):
         """Initialize the object for a subject"""
         self.subject = subject
+        self.subjgroup = cfg.subjects(subject=subject)
         self.sigpath = os.path.join(self.statsdir, self.analysis.maskpar,
                                    subject)
         imagefname = cfg.contrasts(self.analysis.maskpar,

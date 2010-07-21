@@ -121,7 +121,10 @@ def build_database(atlas, analysis, subjects=None):
                         surfrois = np.vstack((surfrois, np.array([hemi + "-" + roiname],)))
                     except NameError:
                         surfrois = np.array([hemi + "-" + roiname],)
-        addrois = surfrois
+        try:                        
+            addrois = surfrois
+        except UnboundLocalError:
+            pass
 
 
     # Build the database

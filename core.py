@@ -314,7 +314,7 @@ def config_file_path():
     Config file path if import was successful, or None if not
     """
     if hasattr(cfg, "setup"):
-        return cfg.setup.__file__
+        return os.path.abspath(cfg.setup.__file__)
     else:
         print "Config file not imported."
         return None

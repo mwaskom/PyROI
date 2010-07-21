@@ -23,7 +23,7 @@ if native:
 
     for anal in roi.cfg.analysis():
         for name in roi.cfg.atlases():
-            atlas = roi.init_atlas(name, paradigm=anal["par"], debug=True)
+            atlas = roi.init_atlas(name, anal["par"], debug=True)
             res(atlas.group_make_atlas())
             res(atlas.group_prepare_source_images(anal))
             res(atlas.group_extract(anal))
@@ -38,7 +38,7 @@ if standard:
 
     for anal in roi.cfg.analysis():
         for name in roi.cfg.atlases():
-            atlas = roi.init_atlas(name, paradigm=anal["par"], debug=True)
+            atlas = roi.init_atlas(name, anal["par"], debug=True)
             res(atlas.group_make_atlas())
             res(atlas.group_prepare_source_images(anal))
             res(atlas.group_extract(anal))
