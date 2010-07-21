@@ -45,7 +45,7 @@ def build_database(atlas, analysis, subjects=None):
     if subjects is None or isinstance(subjects, str):
         subjects = cfg.subjects(subjects)
     if not isinstance(atlas, RoiBase):
-        atlas = atlases.init_atlas(atlas, paradigm = analysis["par"])
+        atlas = atlases.init_atlas(atlas, analysis["par"])
 
     # Get the name, current date, and database directory
     name = atlas.atlasname + "_" + get_analysis_name(analysis)
@@ -90,6 +90,7 @@ def build_database(atlas, analysis, subjects=None):
 
     # Initialize the array components
     subj = np.array("subjects")
+    grp = np.array("group")
     rois = np.array("rois")
     size = np.array("base-%s" % units)
     mask = np.array("final-%s" % units)
@@ -121,10 +122,12 @@ def build_database(atlas, analysis, subjects=None):
                         surfrois = np.vstack((surfrois, np.array([hemi + "-" + roiname],)))
                     except NameError:
                         surfrois = np.array([hemi + "-" + roiname],)
-        try:                        
+                else:
+                    try:
+                        surfrois = np.vstack((surfrois, np.array([roiname],)))
+                    except NameError:
+                        surfrois = np.array([roiname],)
             addrois = surfrois
-        except UnboundLocalError:
-            pass
 
 
     # Build the database
@@ -136,23 +139,37 @@ def build_database(atlas, analysis, subjects=None):
             # Read the SegStats output files
             if atlas.manifold == "volume":
                 addfunc = np.genfromtxt(atlas.functxt)
+                sizearr = np.genfromtxt(atlas.statsfile, int)
+                maskarr = np.genfromtxt(atlas.funcstats, int)
+                if sizearr.ndim == 1: sizearr = sizearr.reshape(1,len(sizearr))
+                if maskarr.ndim == 1: maskarr = maskarr.reshape(1,len(maskarr))
+                getsize = lambda id: sizearr[np.where(sizearr[:,1] == id), 2].flat[0]
+                getmask = lambda id: maskarr[np.where(maskarr[:,1] == id), 2].flat[0]
+                addsize = np.array([getsize(id) for id in atlas.regions]).reshape(nrois, 1)
+                addmask = np.array([getmask(id) for id in atlas.regions]).reshape(nrois, 1)
             else:
-                addfunc = np.genfromtxt(atlas.functxt % atlas.hemi)
+                h = atlas.hemi
+                addfunc = np.genfromtxt(atlas.functxt % h)
+                sizearr = np.genfromtxt(atlas.statsfile % h, int)
+                maskarr = np.genfromtxt(atlas.funcstats % h, int)
+                if sizearr.ndim == 1: sizearr = sizearr.reshape(1,len(sizearr))
+                if maskarr.ndim == 1: maskarr = maskarr.reshape(1,len(maskarr))
+                getsize = lambda id: sizearr[np.where(sizearr[:,1] == id), 2].flat[0]
+                getmask = lambda id: maskarr[np.where(maskarr[:,1] == id), 2].flat[0]
+                addsize = np.array([getsize(id) for id in atlas.regions[h]]).reshape(nrois, 1)
+                addmask = np.array([getmask(id) for id in atlas.regions[h]]).reshape(nrois, 1)
             addfunc = np.transpose(addfunc)
             addsubj = np.array([subject for i in range(nrois)]).reshape(nrois, 1)
-            sizearr = np.genfromtxt(atlas.statsfile, int)
-            maskarr = np.genfromtxt(atlas.funcstats, int)
-            getsize = lambda id: sizearr[np.where(sizearr[:,1] == id), 2].flat[0]
-            getmask = lambda id: maskarr[np.where(maskarr[:,1] == id), 2].flat[0]
-            addsize = np.array([getsize(id) for id in atlas.regions]).reshape(nrois, 1)
-            addmask = np.array([getmask(id) for id in atlas.regions]).reshape(nrois, 1)
+            group = cfg.subjects(subject=subject)
+            addgrp = np.array([group for i in range(nrois)]).reshape(nrois, 1)
             
             # Append this subject's rows
-            subj = np.vstack((subj, addsubj))
-            rois = np.vstack((rois, addrois))
-            size = np.vstack((size, addsize))
             func = np.vstack((func, addfunc))
+            size = np.vstack((size, addsize))
             mask = np.vstack((mask, addmask))
+            subj = np.vstack((subj, addsubj))
+            grp = np.vstack((grp, addgrp))
+            rois = np.vstack((rois, addrois))
         else:
             # Bilateral surface atlases are handled differently
             splitrois = np.vsplit(addrois, len(atlas.iterhemi))
@@ -161,8 +178,12 @@ def build_database(atlas, analysis, subjects=None):
                 addfunc = np.genfromtxt(atlas.functxt % hemi)
                 addfunc = np.transpose(addfunc)
                 addsubj = np.array([subject for i in range(nrois/2)]).reshape(nrois/2, 1)
+                group = cfg.subjects(subject=subject)
+                addgrp = np.array([group for i in range(nrois/2)]).reshape(nrois/2, 1)
                 sizearr = np.genfromtxt(atlas.statsfile % hemi, int)
                 maskarr = np.genfromtxt(atlas.funcstats % hemi, int)
+                if sizearr.ndim == 1: sizearr = sizearr.reshape(1,len(sizearr))
+                if maskarr.ndim == 1: maskarr = maskarr.reshape(1,len(maskarr))
                 getsize = lambda id: sizearr[np.where(sizearr[:,1] == id), 2].flat[0]
                 getmask = lambda id: maskarr[np.where(maskarr[:,1] == id), 2].flat[0]
                 addsize = np.array(
@@ -172,17 +193,18 @@ def build_database(atlas, analysis, subjects=None):
 
                 # Append this subject's rows
                 subj = np.vstack((subj, addsubj))
+                grp = np.vstack((grp, addgrp))
                 rois = np.vstack((rois, splitrois[idx]))
                 size = np.vstack((size, addsize))
                 func = np.vstack((func, addfunc))
                 mask = np.vstack((mask, addmask))
 
     # Possible hack to sort by ROI using a recarray
-    fulldb = np.hstack((subj, rois, size, func, mask))
+    fulldb = np.hstack((subj, grp, rois, size, func, mask))
     head = fulldb[0,:]
     np.savetxt(dbtmpfile, fulldb, "%s", "\t")
     recdb = np.recfromtxt(dbtmpfile, names=True)
-    sortdb = np.sort(recdb, order=["rois", "subjects"])
+    sortdb = np.sort(recdb, order=["rois", "group", "subjects"])
     np.savetxt(rectmpfile, sortdb, "%s", "\t")
     finalbody = np.genfromtxt(rectmpfile, str)
     final = np.vstack((head, finalbody))
