@@ -53,12 +53,11 @@ runs, so we must specify the beta image numbers for each run::
 For our ROI analysis, there are three contrasts of interest.  For the
 social paradigm, we will call them "AFvNF" for angry versus neutral
 faces, and "NFvNS" for neutral faces versus neutral scenes.  In the
-novelfaces paradigm, there are several contrasts, but we only care 
-about the third one for our ROI analysis: "NvF", or novel versus familiar::
+novelfaces paradigm, we have "NvF", or novel versus familiar::
 
     contrasts = {"social" :  {"AFvNF": 1,
                               "NFvNS": 2}
-                 "novelfaces" :  {"NvF": 3}}
+                 "novelfaces" :  {"NvF": 1}}
 
 Now we have to specify where the output of our first-level analysis lives::
 
@@ -69,8 +68,7 @@ Now we have to specify where the output of our first-level analysis lives::
     contrastpath = "native/l1output/$paradigm/$subject/contrast/"
 
 In other words, the full path to a subject/paradigm's contrast images is
-``/mindhive/gablab/sad/PyROI_Example_Data/native/l1output/$paradigm/
-$subject/contrast/``.  
+``/mindhive/gablab/sad/PyROI_Example_Data/native/l1output/$paradigm/$subject/contrast/``.  
 
 Our first-level processing stream included generating registering our
 mean functionals to our structural images, so we'll give the paths to
@@ -88,16 +86,13 @@ as an empty string::
 Now we've reached the point where we'll be setting up what we want to do with
 PyROI.  First, the "analysis" list, for what we'll be extracting and how.  We
 want to look at the contrast effect size images from the social paradigm and
-the parameter estimate images from the novelty paradigm::
+the parameter estimate images from the novelty paradigm.  For the novelty analysis,
+we also want to apply a thresholded mask to the atlas before extraction, using the
+faces vs. scenes contrast from the social paradigm, thresholded so that only positively
+activated voxels with a significance above 1.3 (or, in other words, with a p-value 
+less than 0.05) within the ROIs in our atlases will be extracted::
 
     analysis = [{"par": "social", "extract": "contrast"},
-    
-For the novelty analysis, we also want to apply a thresholded mask to the
-atlas before extraction, using the faces vs. scenes contrast from the
-social paradigm, thresholded so that only positively activated voxels with a
-significance above 1.3 (or, in other words, with a p-value less than 0.05)
-within the ROIs in our atlases will be extracted::
-
                 {"par": "novelfaces", "extract": "beta", "maskpar": "social",
                  "maskcon": "NFvNS", "maskthresh": 1.3,"masksign": "pos"}]
 
