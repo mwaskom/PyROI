@@ -15,7 +15,7 @@ imported PyROI like this::
 PyROI will look for a file called ``.roiconfigfile`` in your working directory,
 and, if it finds it, attempt to import the config module defined within.  This
 file is automatically generated when you produce a config file skeleton with the
-``write_config_base()`` function, but you rename your file, etc., you will have 
+:func:`write_config_base` function, but you rename your file, etc., you will have 
 to update the ``.roiconfigfile`` accordingly.  If this file does not exist or 
 if the import fails, you will have to manually import a config file with the
 ``import_config()`` function::
@@ -28,7 +28,7 @@ file that is not in the working directory.
 Either method imports your config file into the ``setup`` module of the
 config interface module, which is loaded as ``roi.cfg`` automatically
 when you start pyroi.  You can always check whether a config file has
-been imported with the ``config_file_path()`` function. If the file was
+been imported with the :func:`config_file_path` function. If the file was
 imported, this returns the path of the file PyROI is using::
 
     >>> roi.config_file_path()
@@ -84,7 +84,7 @@ each ROI in each frame of the input image.  The third will be a binary
 
 As convenient as this is, it still would be a hassle to type it out for
 each subject in your project.  You could get the subject list from the 
-``roi.cfg.subjects()`` function, and write a for loop to iterate over
+:func:`roi.cfg.subjects` function, and write a for loop to iterate over
 the list, but there is a better way: all public processing methods on
 atlases classes in PyROI have a "group" counterpart that does the same 
 thing, but for a group of subjects::
@@ -143,7 +143,7 @@ After you initalize an subject for an atlas object, there will be more informati
     Atlas Image -- ...roi/atlases/freesurfer/volume/novelfaces/SAD_022/aseg 
 
 You can also check whether the source image exists, so that you don't need to
-run the ``prepare_source_images()`` method.  To do so, you will first have to
+run the :meth:`prepare_source_images` method.  To do so, you will first have to
 initialize an analysis for the atlas::
 
     >>> aseg._init_analysis(1)
@@ -163,7 +163,7 @@ initialize an analysis for the atlas::
     Source Image Exists -- No
 
 Just note that this information does not track when your atlas or source images
-are out of data relative to your config file.  In other words, if you add regions
+are out of date relative to your config file.  In other words, if you add regions
 to an atlas dictionary, or add constrasts to the paradigm you're extracting from,
 (for example), printing the atlas will report that the atlas and source images 
 exist even though they should be recreated.
@@ -174,8 +174,9 @@ Extraction in more detail
 Having shown you the ease with which you can extract data for a whole group,
 let's now go over each step in a bit more detail.  The first step is always
 to initialize an atlas object.  There are six different atlas classes, one
-for each type of atlas: FreesurferAtlas(), HarvardOxfordAtlas(), MaskAtlas(),
-SigSurfAtlas(), LabelAtlas(), and SphereAtlas().  The ``init_atlas()`` function
+for each type of atlas: :class:`FreesurferAtlas`, :class:`HarvardOxfordAtlas`,
+:class:`MaskAtlas`, :class:`SigSurfAtlas`, :class:`LabelAtlas`, and 
+:class:`SphereAtlas`.  The :func:`init_atlas` function
 provides a common interface to these classes.  It can be called with either the
 name of an atlas or a dictionary of atlas parameters.  For instance, doing this::
 
@@ -184,25 +185,26 @@ name of an atlas or a dictionary of atlas parameters.  For instance, doing this:
 
 Will do the same thing as the first line in the above snippets of code.  
 
-Something that wasn't discussed above is that native space atlases
+Something that wasn't discussed above is that native space anatomical atlases
 (currently this means just Freesurfer atlases) must be initialized with 
 a paradigm -- corresponding to the main analysis paradigm -- before they
 can be initialized with a subject.  However, *another* thing that wasn't
 discussed is that both paradigm initialization and subject initialization
-can be acheived through the ``init_atlas()`` method::
+can be acheived through the :meth:`init_atlas` method::
 
     >>> atlas = roi.init_atlas("atlas_name", "subj_id", "par_name")
 
-Note that, because of the order of arguments, if you want to initialize a
-paradigm but not a subject (so you can use group processing methods),
-you'll need to use a keyword argument::
+You can pass a paradigm and subject name to the :func:`init_atlas` function
+in any order, and the atlas object will be initialized with the information
+you pass.  Note that certain atlas types will require a paradigm name to be 
+passed with a subj_id, or else you will get an :class:`InitError`.  
 
-    >>> atlas = roi.init_atlas("atlas_name", paradigm="par_name")
-
-Otherwise, you can just use the ``init_paradigm()`` method::
+You can also initialize this information with the :meth:`init_subject` and
+:meth:`init_paradigm` methods::
 
     >>> atlas = roi.init_atlas("atlas_name")
     >>> atlas.init_paradigm("par_name")
+    >>> atlas.init_subject("subj_id")
 
 
 Making the atlases
@@ -210,7 +212,7 @@ Making the atlases
 
 For all classes but the HarvardOxfordAtlas class, some preprocessing needs
 to be done to create the final atlas image before data can be extracted.
-This all occurs when you call the ``make_atlas()`` method on the atlas
+This all occurs when you call the :meth:`make_atlas` method on the atlas
 object, but here I will discuss what is happening behind the scenes for
 each class.  Note that the native-space atlases (Freesurfer and Label
 atlases) need to be initialized with a subject before the atlas is made,
@@ -226,11 +228,13 @@ aparc.a2009s.annot.
 For volume atlases, the atlas images are sampled from anatomical space
 (where voxels are 1mm isotropic) to native functional space (where voxel
 size depends on the scan parameters).  Before this resampling happens, the
-mean functional scan for the analysis paradigm is registered to the T1
-image using Freesurfer's bbregister program.  
+mean functional scan for the analysis paradigm must be registered to the T1
+image using Freesurfer's bbregister program.
 
-Registration can take quite a bit of time, however, so the default behavior
-for the ``make_atlas()`` method is only to create a registration matrix if
+If a registration matrix file template was included in the config file,
+this matrix will be used.  Otherwise, PyROI will create one.  Registration
+can take quite a bit of time, however, so the default behavior for the 
+:meth:`make_atlas` method is only to create a registration matrix if
 it is not found.  This behavior can be controlled with the ``reg`` argument
 of the method.  By default it is set to ``1``; setting it to ``2`` will
 cause all registration matrices to be created, overwriting any that might
@@ -244,7 +248,7 @@ file they create already exists.
 
 Finally, although bbregister typically works very well, it is good practice
 to check the registration and, optionally, adjust it.  This can be done with
-the ``check_registration()`` method, which will open up a tkregister2 window.
+the :meth:`check_registration` method, which will open up a tkregister2 window.
 
 Mask atlases
 ^^^^^^^^^^^^
@@ -284,7 +288,7 @@ Viewing the final atlas
 ^^^^^^^^^^^^^^^^^^^^^^^
 
 Once an atlas has been created, it can be visually inspected by calling the
-``display()`` method.  If it is a volume atlas, this will open up Freeview,
+:meth:`display` method.  If it is a volume atlas, this will open up Freeview,
 whereas surface atlases will be displayed in tksurfer.
 
 
@@ -293,10 +297,10 @@ Preparing source images
 
 For most analyses, the source images will need to be preprocessed before
 they are ready for extraction.  This is accomplished with the 
-``prepare_source_images()`` method on the atlas object.  The atlas must
+:meth:`prepare_source_images` method on the atlas object.  The atlas must
 be initalized with an analysis so that it will prepare the right source
-images.  this can be accomplished either by running the ``init_analysis()``
-method or by providing that information to the ``prepare_source_images()``
+images.  this can be accomplished either by running the :meth"`init_analysis`
+method or by providing that information to the ``prepare_source_images`
 method.
 
 Analyses are keyed by their index in the analysis list, although
@@ -304,7 +308,7 @@ note that these indices, unlike others in Python, are *not* zero-based.  In
 other words, calling ``atlas.init_analysis(1)`` will initialize the atlas
 object with the analysis defined by the first dictionary of analysis
 parameters.  Any argument that takes an analysis index will also take an
-analysis dictionary that is returned by the ``roi.cfg.analysis()``
+analysis dictionary that is returned by the :func:`roi.cfg.analysis`
 function, if you find this confusing or just want to be safe.
 
 If parameter or contrast effect sizes are going to be extracted, the 
@@ -327,7 +331,7 @@ Results and logging
 
 In the code snippets above, you may have noticed that processing method
 calls were assigned to a variable called ``res``.  All processing methods
-return an instance of the RoiResult() class, which holds the command lines
+return an instance of the :class:`RoiResult` class, which holds the command lines
 used to call external binaries and any information that they returned
 through the stdout or stderr pipes.  To see this information, simply print
 the result object::
