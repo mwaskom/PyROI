@@ -1,4 +1,9 @@
 For version 0.2:
+Add multiple run specification for beta config
 Transition to NiPype 0.3
 Wrap nipype interfaces in Node
+Get config information from pypeline scripts
+Change .roiconfigfile to contain username
+
+Maybe:
 Add group specification to database name
