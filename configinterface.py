@@ -227,7 +227,7 @@ def _prep_sigsurf_atlas(atlasdict):
                              "to be a number" % atlasdict["atlasname"])
 
     if not os.path.isabs(atlasdict["file"]):
-        atlasdict["file"] = os.path.join(setup.basedir, atlasdict["file"])
+        atlasdict["file"] = os.path.join(setup.basepath, atlasdict["file"])
     if not os.path.isfile(atlasdict["file"]):
         raise SetupError("%s source image %s does not exist" 
                          % (atlasdict["atlasname"], atlasdict["file"]))

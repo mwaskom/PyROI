@@ -547,9 +547,9 @@ class Atlas(RoiBase):
         cmd.append("--olab %s" % self.surfclusterlab) 
         cmd.append("--sum %s" % self.surfclustersum)
         if self.threshtype == "fdr":
-            cmd.append("--fdr %.3f" % self.thresh)
+            cmd.append("--fdr %.3f" % self.threshold)
         else:
-            cmd.append("--thmin %.3f" % self.thresh)
+            cmd.append("--thmin %.3f" % self.threshold)
 
         return self._run(cmd)
     
