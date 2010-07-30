@@ -56,9 +56,10 @@ Currently, PyROI supports only the following recon-all atlases:
 
 This means that you will not be able to use the Destrieux parcellation
 (which defines both gyral and sulcul regions) if you processed your
-T1s with a Freesurfer version older than 4.5.  See Mike Waskom for 
-a standalone program that will automate the creation of the 2009
-parcellation for older datasets.
+T1s with a Freesurfer version older than 4.5.  See the gen_2009_parc
+command-line program (which is accessible once you've sourced the
+PyROI environment) for the creation of this parcellation in older
+datasets.
 
 If you are going to be sharing a dataset with other users of PyROI
 (ie, you have the same basepath in your config files), it is advisable
