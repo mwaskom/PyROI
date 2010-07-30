@@ -5,7 +5,7 @@ import sys
 
 args = sys.argv
 
-if len(args) == 1:
+if '-h' in args:
     print "build_doc [--nocfg] [--nosphinx] [--noweb]"
     sys.exit(0)
 
