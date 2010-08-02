@@ -1057,7 +1057,8 @@ class FreesurferAtlas(Atlas):
         dictdict = {"aseg.mgz": "aseg-lut.txt",
                     "aparc.annot": "aparc-lut.txt",
                     "aparc.a2009s.annot": "aparc.a2009s-lut.txt"}
-        datadir = os.path.join(os.path.split(__file__)[0], "data", "Freesurfer")
+        datadir = os.path.join(os.path.split(__file__)[0], 
+                               os.path.pardir, "data", "Freesurfer")
         dictfile = os.path.join(datadir, dictdict[self.fname])
         lutarray = np.genfromtxt(dictfile, str)
         self.lutdict = {}
@@ -1285,18 +1286,16 @@ class HarvardOxfordAtlas(Atlas):
      
         self.space = "standard"
         self.thresh = atlasdict["probthresh"]
-        pckgdir = os.path.split(__file__)[0]
+        datadir = os.path.abspath(os.path.join(os.path.split(__file__)[0], 
+                                               os.path.pardir, "data", "HarvardOxford"))
         filestem = "HarvardOxford-%d" % self.thresh
-        self.atlas = os.path.join(pckgdir, "data", 
-                                  "HarvardOxford", "%s.nii" % filestem)
-        self.lutfile = os.path.join(os.path.split(__file__)[0], "data", 
-                                 "HarvardOxford", "HarvardOxford-LUT.txt")
+        self.atlas = os.path.join(datadir, "%s.nii" % filestem)
+        self.lutfile = os.path.join(datadir, "HarvardOxford-LUT.txt")
         lutarray = np.genfromtxt(self.lutfile, str)
         self.lutdict = {}
         for row in lutarray:
             self.lutdict[int(row[0])] = row[1]
-        self.statsfile = os.path.join(pckgdir, "data", 
-                                      "HarvardOxford", "%s.stats" % filestem) 
+        self.statsfile = os.path.join(datadir, "%s.stats" % filestem) 
         self.regions = atlasdict["regions"] + [id + 55 for id in atlasdict["regions"]]
         self.regions.sort()
 
