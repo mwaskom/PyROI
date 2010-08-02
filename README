@@ -1,3 +1,4 @@
-This is the main Git repository for the PyROI Python package.
+This is PyROI, a Python package for functional neuroimaging region of interest
+extraction and analysis.
 
 See online documentation at http://web.mit.edu/mwaskom/pyroi
