@@ -11,6 +11,7 @@ res = roi.RoiResult(log=True, logdir=".")
 run = False
 native=True
 standard=True
+# Parse Args
 if "--no-native" in sys.argv: native=False
 if "--no-standard" in sys.argv: standard=False
 if "--run" in sys.argv: run = True
