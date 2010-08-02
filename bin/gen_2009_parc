@@ -6,6 +6,8 @@ gen_2009_parc [--s subject <--s subject ...>] or [--subjects textfile]
     --s subject <--s subject2> : subject name(s)
     --subjects subjlist.txt    : a text file with subject list
 
+    --subjectdir path : Freesurfer subjects directory
+
     --force : overwrite any existing files 
 
     --debug : turn on debugging
@@ -27,6 +29,10 @@ helptext = """
     or spaces).
 
     Note: --s and --subjects are mutually exclusive
+
+    --subjectsdir
+
+    Path to set as the Freesurfer Subjects Directory
 
     --force
 
@@ -88,6 +94,7 @@ else:
         print "\nError: Cannot use both '--s' flag(s) and '--subjects' flag.\n"
         sys.exit(1)
     subjectlist = []
+    get_subjdir_from_environ = True
     for i, arg in enumerate(sys.argv):
         if arg == "--s":
             subjectlist.append(sys.argv[i+1])
@@ -100,6 +107,8 @@ else:
             except ValueError:
                 print "\nError: Subject list file could not be parsed.\n"
                 sys.exit(1)
+        elif arg == "--subjectsdir":
+            subjects_dir = sys.argv[i+1]
         elif arg == "--debug": 
             debug = True
         elif arg == "--force":
@@ -108,7 +117,6 @@ else:
             print "Argument '%s' not understood." % arg
             sys.exit(1)
 
-
 # Set up the Freesurfer 4.5 Environment
 env = deepcopy(os.environ.data)
 env["PATH"] = "%s:%s" % ("/software/Freesurfer/4.5.0/bin", env["PATH"])
@@ -116,30 +124,35 @@ fs_home = "/software/Freesurfer/4.5.0"
 env["FREESURFER_HOME"] = fs_home
 
 # Get the subjects directory from the environment variable
-subjects_dir = os.getenv("SUBJECTS_DIR")
+if get_subjdir_from_environ:
+    subjects_dir = os.getenv("SUBJECTS_DIR")
 
 # Initialize the logger
 logger = RoiResult(log=True, logdir=os.path.abspath(os.curdir))
 
 # Loop over subjects
 for subject in subjectlist:
+    base = os.path.join(subjects_dir, subject)
+    surf = os.path.join(base, "surf")
+    stats = os.path.join(base, "stats")
+    label = os.path.join(base, "label")
     underline = ""
     for letter in subject:
-        underline = "".join((underline, "="))
-    print "\n%s\n%s\n\n" % (subject, underline)
+        underline = "".join((underline, "-"))
+    print "\n%s\n%s" % (subject, underline)
     for hemi in ["lh", "rh"]:   
         
         # Spherical registration
         # ======================
-        regfile = os.path.join(subjects_dir, subject, "surf", "%s.sphere.4.5.reg" % hemi)
+        regfile = os.path.join(surf,  "%s.sphere.4.5.reg" % hemi)
         if not os.path.isfile(regfile) or force:
             regcmd = ["mris_register"]
 
             args = ["-curv",
-                    "%s.sphere" % hemi,
+                    os.path.join(surf, "%s.sphere" % hemi),
                     os.path.join(
                         fs_home, "average", "%s.average.curvature.filled.buckner40.tif" % hemi),
-                    os.path.split(regfile)[1]]
+                    regfile]
             regcmd.extend(args)
             regrunner = RoiBase(debug=debug)
             res = regrunner._run(regcmd)
@@ -150,14 +163,14 @@ for subject in subjectlist:
 
         # Cortical Parcellation
         # =====================
-        annotfile = os.path.join(subjects_dir, subject, "label", "%s.aparc.a2009s.annot" % hemi)
+        annotfile = os.path.join(label, "%s.aparc.a2009s.annot" % hemi)
         if not os.path.isfile(annotfile) or force:
             parccmd = ["mris_ca_label"]
         
             args = ["-aseg aseg.mgz",
                     subject,
                     hemi,
-                    os.path.split(regfile)[1],
+                    regfile,
                     os.path.join(
                         fs_home, "average", "%s.destrieux.simple.2009-07-29.gcs" % hemi),
                     annotfile]
@@ -171,16 +184,15 @@ for subject in subjectlist:
 
         # Parcellation Statistics
         # =======================
-        statsfile = os.path.join(
-            subjects_dir, subject, "stats", "%s.aparc.annot.a2009s.stats" % hemi)
+        statsfile = os.path.join(stats, "%s.aparc.annot.a2009s.stats" % hemi)
         if not os.path.isfile(statsfile) or force:
             statcmd = ["mris_anatomical_stats"]
 
             args = ["-mgz", 
-                    "-f", os.path.join("stats", "%s.aparc.a2009s.stats" % hemi),
+                    "-f", os.path.join(stats, "%s.aparc.a2009s.stats" % hemi),
                     "-b", 
-                    "-a", os.path.join("label", "%s.aparc.a2009s.annot" % hemi),
-                    "-c", os.path.join("label", "%s.aparc.a2009s.ctab" % hemi),
+                    "-a", os.path.join(label, "%s.aparc.a2009s.annot" % hemi),
+                    "-c", os.path.join(label, "%s.aparc.a2009s.ctab" % hemi),
                     subject,
                     hemi]
             statcmd.extend(args)
