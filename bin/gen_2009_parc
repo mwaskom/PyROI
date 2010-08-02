@@ -1,0 +1,209 @@
+#! /usr/bin/env python
+"""
+USAGE: 
+gen_2009_parc [--s subject <--s subject ...>] or [--subjects textfile]
+
+    --s subject <--s subject2> : subject name(s)
+    --subjects subjlist.txt    : a text file with subject list
+
+    --force : overwrite any existing files 
+
+    --debug : turn on debugging
+    --help  : print help
+    
+    """
+helptext = """
+    Command Line Arguments
+    ======================
+
+    --s subject <--s subject>
+
+    Subject IDs.  Can specify any number of subjects on the command line.
+
+    --subjects textfile
+
+    A textfile with a list of subjects you want to run.  These subjects 
+    should be separated in some consistent way (e.g. different lines, tabs,
+    or spaces).
+
+    Note: --s and --subjects are mutually exclusive
+
+    --force
+
+    Force overwriting of any files this program produces that are found to
+    exist at runtime.
+
+    --debug
+
+    Don't run the commands, just print them to the terminal/log.
+
+    --help
+
+    Unlike the Freesurfer authors, I don't write cheeky descriptions for this flag.
+
+    Description
+    ===========
+
+    This program will generate surface parcellations and statistics for the
+    2009 Destrieux atlas (aka aparc.a2009s.annot) for either a single subject
+    or a list of subjects.  Thus, it allows you to use the new Destrieux atlas
+    if you processed your data using a Freesurfer version prior to 4.5 without
+    completely rerunning recon-all.
+
+    It runs the following Freesurfer binaries:
+     - mris_register
+     - mris_ca_label
+     - mris_anatomical_stats
+     - mri_aparc2aseg
+
+    And creates the following files:
+     - ?h.sphere.4.5.reg
+     - ?h.aparc.a2009s.annot
+     - ?h.aparc.a2009s.stats
+     - aparc.a2009s+aseg.mgz
+
+    Written by Michael Waskom, mwaskom@mit.edu
+"""
+
+import os
+import sys
+import numpy as np
+import subprocess as sp
+from copy import deepcopy
+from pyroi.core import RoiBase, RoiResult
+
+# Print usage if no args
+if len(sys.argv) == 1:
+    print __doc__
+    sys.exit(0)
+# Parse the args
+else:
+    if "--help" in sys.argv:
+        print __doc__ + helptext
+        sys.exit(0)
+    debug = False
+    force = False
+    # Catch subject list inconsistencies
+    if "--s" in sys.argv and "--subjects" in sys.argv:
+        print "\nError: Cannot use both '--s' flag(s) and '--subjects' flag.\n"
+        sys.exit(1)
+    subjectlist = []
+    for i, arg in enumerate(sys.argv):
+        if arg == "--s":
+            subjectlist.append(sys.argv[i+1])
+        elif arg == "--subjects":
+            try:
+                subjectlist = np.genfromtxt(sys.argv[i+1], str)
+            except IOError:
+                print "\nError: Subject list file could not be opened.\n"
+                sys.exit(1)
+            except ValueError:
+                print "\nError: Subject list file could not be parsed.\n"
+                sys.exit(1)
+        elif arg == "--debug": 
+            debug = True
+        elif arg == "--force":
+            force = True
+        elif arg.startswith("-"):
+            print "Argument '%s' not understood." % arg
+            sys.exit(1)
+
+
+# Set up the Freesurfer 4.5 Environment
+env = deepcopy(os.environ.data)
+env["PATH"] = "%s:%s" % ("/software/Freesurfer/4.5.0/bin", env["PATH"])
+fs_home = "/software/Freesurfer/4.5.0"
+env["FREESURFER_HOME"] = fs_home
+
+# Get the subjects directory from the environment variable
+subjects_dir = os.getenv("SUBJECTS_DIR")
+
+# Initialize the logger
+logger = RoiResult(log=True, logdir=os.path.abspath(os.curdir))
+
+# Loop over subjects
+for subject in subjectlist:
+    underline = ""
+    for letter in subject:
+        underline = "".join((underline, "="))
+    print "\n%s\n%s\n\n" % (subject, underline)
+    for hemi in ["lh", "rh"]:   
+        
+        # Spherical registration
+        # ======================
+        regfile = os.path.join(subjects_dir, subject, "surf", "%s.sphere.4.5.reg" % hemi)
+        if not os.path.isfile(regfile) or force:
+            regcmd = ["mris_register"]
+
+            args = ["-curv",
+                    "%s.sphere" % hemi,
+                    os.path.join(
+                        fs_home, "average", "%s.average.curvature.filled.buckner40.tif" % hemi),
+                    os.path.split(regfile)[1]]
+            regcmd.extend(args)
+            regrunner = RoiBase(debug=debug)
+            res = regrunner._run(regcmd)
+        else:
+            res = "Found %s\n" % regfile
+        print res
+        logger(res)
+
+        # Cortical Parcellation
+        # =====================
+        annotfile = os.path.join(subjects_dir, subject, "label", "%s.aparc.a2009s.annot" % hemi)
+        if not os.path.isfile(annotfile) or force:
+            parccmd = ["mris_ca_label"]
+        
+            args = ["-aseg aseg.mgz",
+                    subject,
+                    hemi,
+                    os.path.split(regfile)[1],
+                    os.path.join(
+                        fs_home, "average", "%s.destrieux.simple.2009-07-29.gcs" % hemi),
+                    annotfile]
+            parccmd.extend(args)
+            parcrunner = RoiBase(debug=debug)
+            res = parcrunner._run(parccmd)
+        else:
+            res = "Found %s\n" % annotfile
+        print res
+        logger(res)
+
+        # Parcellation Statistics
+        # =======================
+        statsfile = os.path.join(
+            subjects_dir, subject, "stats", "%s.aparc.annot.a2009s.stats" % hemi)
+        if not os.path.isfile(statsfile) or force:
+            statcmd = ["mris_anatomical_stats"]
+
+            args = ["-mgz", 
+                    "-f", os.path.join("stats", "%s.aparc.a2009s.stats" % hemi),
+                    "-b", 
+                    "-a", os.path.join("label", "%s.aparc.a2009s.annot" % hemi),
+                    "-c", os.path.join("label", "%s.aparc.a2009s.ctab" % hemi),
+                    subject,
+                    hemi]
+            statcmd.extend(args)
+            statrunner = RoiBase(debug=debug)
+            res = statrunner._run(statcmd)
+        else:
+            res = "Found %s\n" % statsfile
+        print res
+        logger(res)            
+
+        # Volume Projection
+        # =================
+        volfile = os.path.join(subjects_dir, subject, "mri", "aparc.a2009s+aseg.mgz")
+        if not os.path.isfile(volfile) or force:
+            projcmd = ["mri_aparc2aseg"]
+
+            args = ["--s", subject,
+                    "--ribbon",
+                    "--a2009s"]
+            projcmd.extend(args)
+            projrunner = RoiBase(debug=debug)
+            res = projrunner._run(projcmd)
+        else:
+            res = "Found %s\n" % volfile
+        print res
+        logger(res)
