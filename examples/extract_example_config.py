@@ -4,10 +4,12 @@ import os
 
 code = open("example_config.py", "w")
 
-lastline = ""
-for line in open("example_config.rst", "r").read():
-    if lastline.endswith("::"):
+for line in open("example_config.rst", "r"):
+    if line.startswith("    "):
         code.write(line[4:])
-    lastline = line
-
+    elif line.startswith("\n"):
+        code.write(line)
 code.close()
+
+import example_config
+    

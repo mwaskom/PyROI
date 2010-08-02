@@ -56,7 +56,7 @@ faces, and "NFvNS" for neutral faces versus neutral scenes.  In the
 novelfaces paradigm, we have "NvF", or novel versus familiar::
 
     contrasts = {"social" :  {"AFvNF": 1,
-                              "NFvNS": 2}
+                              "NFvNS": 2},
                  "novelfaces" :  {"NvF": 1}}
 
 Now we have to specify where the output of our first-level analysis lives::
