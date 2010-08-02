@@ -42,10 +42,51 @@ without further preamble, onto your project.
 
 """
 
-
     
 
 projname = ""
+
+
+subjects  =  {"": 
+
+                 [ ],
+
+              "":
+
+                 [ ]}
+
+
+paradigms = {"": "",
+             "": ""}
+
+
+level1program = ""
+
+hrfcomponents = 1
+
+betastoextract = []
+
+conditions = {"":   ["",""],
+              "":   ["",""]}
+
+
+contrasts = {"" :  {"": 1,
+                    "": 2},
+             "" :  {"": 1}}
+
+
+basepath = ""
+
+betapath = ""   
+
+contrastpath = ""
+
+
+meanfuncpath = ""
+
+regmatpath = ""
+
+timecoursepath = ""
 
 
 analysis = [{"par": "", "extract": ""},
@@ -92,49 +133,6 @@ atlases = {"":
                    "" : (0.,0.,0.)}
                 }}
    
-
-
-paradigms = {"": "",
-             "": ""}
-
-
-level1program = ""
-
-hrfcomponents = 1
-
-betastoextract = []
-
-conditions = {"":   ["",""],
-              "":   ["",""]}
-
-
-contrasts = {"" :  {"": 1,
-                    "": 2},
-             "" :  {"": 1}}
-
-
-basepath = ""
-
-betapath = ""   
-
-contrastpath = ""
-
-
-regmatpath = ""
-
-timecoursepath = ""
-
-meanfuncpath = ""
-
-
-
-subjects  =  {"": 
-
-                 [ ],
-
-              "":
-
-                 [ ]}
 
 #==========================================================================#    
 #==========================================================================#    
