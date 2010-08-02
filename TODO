@@ -1,9 +1,19 @@
 For version 0.2:
-Add multiple run specification for beta config
-Transition to NiPype 0.3
-Wrap nipype interfaces in Node
-Get config information from pypeline scripts
-Change .roiconfigfile to contain username
 
-Maybe:
+Features
+========
+Collect betas for multiple runs
+Subjects Dir in config file
+Make SphereAtlas work
+Create GaussianAtlas?
+
+
+Implementation
+==============
+Transition to NiPype 0.3
+Wrap nipype interfaces in Node (if this works)
+
+
+Aesthetic
+=========
 Add group specification to database name
