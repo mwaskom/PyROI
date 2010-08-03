@@ -2,17 +2,27 @@ For version 0.2:
 
 Features
 ========
+
+Extraction
+----------
 Collect betas for multiple runs
+
+Atlases
+-------
 User-created Freesurfer atlases
 Make SphereAtlas work
 Create GaussianAtlas?
 
+Analysis
+--------
+Stimulus locked timecourses
+FIR
+Mask > MVPA/SVC
 
 Implementation
 ==============
 Transition to NiPype 0.3
 Wrap nipype interfaces in Node (if this works)
-
 
 Aesthetic
 =========
