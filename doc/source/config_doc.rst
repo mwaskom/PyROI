@@ -65,141 +65,26 @@ Variable Name
 
 
 
-Analysis Parameters
--------------------
+Subjects
+--------
 
-An *analysis* consists of the functional paradigm for which data will 
-be extracted, which type of image the data will be extracted from, and,
-optionally, the parameters for a functional mask that will be applied
-to the image before extraction.  Here, you specify a list of these such
-analyses that will be used in your project.  
-
-Note that the "masking" considered part of an analysis is wholly 
-separate from the definition ROIs, which is part of the concept of an 
-*atlas,* and specified below.
-
-All of the mask parameters are optional. If left unset, analysis will 
-be specified as "nomask" and statistics will be extracted from the full
-ROI. 
-
-In your operation of the program, analyses will be referred to by their
-index in the list (i.e. analysis 1, analysis 2, etc.), so you may want
-to take some note of the order.  In the databases, the analyses are
-referred to by a code in the form EE_mmCvC_stat, where `EE` is the code
-for the paradigm that statistics are extracted from `mm` is the mask
-paradigm, `CvC` is the mask contrast, and `stat` is the type of image
-that is extracted.  See the paradigms_ section below to specify these
-codes.
-
-See the "Entries" notes for the key names to use and their meanings.  
-Values should be set according to the paradigm and contrast names you
-specify  in the appropriate sections below in this config file.
+Here you name the subjects in your project.  The format is a dictionary
+where keys are the names of your groups and values are lists of your
+subjects, specified by how they are stored in your filesystem (Freesurfer
+ID, etc.). Maintain this format even if you have only one group; simply 
+use the name of your experiment, or other, as the single key to the dict-
+ionary in that case.
 
 Format
 ^^^^^^
 
-A list of dictionaries
-
-
-Entries
-^^^^^^^
-
-- par : string -- full name of main analysis paradigm
-
-
-- extract: "beta," "contrast," or "timecourse"
-
-- maskpar : string -- the full name of the mask paradigm 
-
-- maskcon : string -- the name of the mask contrast 
-
-- maskthresh : float -- threshold for the mask in -log10(p)
-
-- masksign : "pos", "neg", or "abs" -- how to threshold
-
-Variable Name
-^^^^^^^^^^^^^
-
-``analysis``
-
-
-
-
-Atlases
--------
-
-An *atlas* is the concept that lets you define the regions PyROI will
-extract data from.  There currently five atlas types: Freesurfer atlases,
-the Harvard-Oxford probabilistic atlas distributed with FSL, and atlases
-composed of regions defined by the user in the form of Freesurfer surface
-labels, binary mask volumes, or spheres.
-
-See the atlas reference pages in the online documentation for a full
-description of the various atlases you can use and how to set them up.
-
-Format
-^^^^^^
-
-A dictionary of dictionaries.  
-
-The key in each inner dictionary is a string, and the value formats are given below.
-
-
-Entry Formats
-^^^^^^^^^^^^^^
-
-- source: "freesurfer", "fsl", "mask", "label", or "sphere"
-
-- regions: list of integers
-
-- manifold: "volume" or "surface"
-
-- fname: string
-
-- hemi: "lh" or "rh"
-
-- file: string
-
-- thresh: tuple ("sig" or "fdr", float)
-
-- probthresh: integer
-
-- sourcelevel: "subject" or "group"
-
-- sourcedir: string
-
-- sourcefiles: "all" or list of strings 
-
-- coordsys: "mni", "tal", or "vox"
-
-- radius: integer
-
-- centers: dictionary with a string keys and tuples of integers as values 
-
-
-
-Required Entries
-^^^^^^^^^^^^^^^^
-
-Note: source is required for all atlas types
-
-- freesurfer: manifold, fname, regions
-
-- fsl: probthresh, regions
-
-- sigsurf: hemi, file, thresh, minsize
-
-- mask: sourcedir, sourcelabels
-
-- label: hemi, sourcelebel, sourcedir, sourcelabels
-
-- sphere: coordsys, radius, centers
+dictionary with a string as each key and a list of strings as each value
 
 
 Variable Name
 ^^^^^^^^^^^^^
 
-``atlases``
+``subjects``
 
 
 
@@ -359,25 +244,140 @@ space analyses, you should leave the regmatpath and meanfuncpath as
 empty strings.
 
 
-Subjects
---------
+Analysis Parameters
+-------------------
 
-Here you name the subjects in your project.  The format is a dictionary
-where keys are the names of your groups and values are lists of your
-subjects, specified by how they are stored in your filesystem (Freesurfer
-ID, etc.). Maintain this format even if you have only one group; simply 
-use the name of your experiment, or other, as the single key to the dict-
-ionary in that case.
+An *analysis* consists of the functional paradigm for which data will 
+be extracted, which type of image the data will be extracted from, and,
+optionally, the parameters for a functional mask that will be applied
+to the image before extraction.  Here, you specify a list of these such
+analyses that will be used in your project.  
+
+Note that the "masking" considered part of an analysis is wholly 
+separate from the definition ROIs, which is part of the concept of an 
+*atlas,* and specified below.
+
+All of the mask parameters are optional. If left unset, analysis will 
+be specified as "nomask" and statistics will be extracted from the full
+ROI. 
+
+In your operation of the program, analyses will be referred to by their
+index in the list (i.e. analysis 1, analysis 2, etc.), so you may want
+to take some note of the order.  In the databases, the analyses are
+referred to by a code in the form EE_mmCvC_stat, where `EE` is the code
+for the paradigm that statistics are extracted from `mm` is the mask
+paradigm, `CvC` is the mask contrast, and `stat` is the type of image
+that is extracted.  See the paradigms_ section below to specify these
+codes.
+
+See the "Entries" notes for the key names to use and their meanings.  
+Values should be set according to the paradigm and contrast names you
+specify  in the appropriate sections below in this config file.
 
 Format
 ^^^^^^
 
-dictionary with a string as each key and a list of strings as each value
+A list of dictionaries
+
+
+Entries
+^^^^^^^
+
+- par : string -- full name of main analysis paradigm
+
+
+- extract: "beta," "contrast," or "timecourse"
+
+- maskpar : string -- the full name of the mask paradigm 
+
+- maskcon : string -- the name of the mask contrast 
+
+- maskthresh : float -- threshold for the mask in -log10(p)
+
+- masksign : "pos", "neg", or "abs" -- how to threshold
+
+Variable Name
+^^^^^^^^^^^^^
+
+``analysis``
+
+
+
+
+Atlases
+-------
+
+An *atlas* is the concept that lets you define the regions PyROI will
+extract data from.  There currently five atlas types: Freesurfer atlases,
+the Harvard-Oxford probabilistic atlas distributed with FSL, and atlases
+composed of regions defined by the user in the form of Freesurfer surface
+labels, binary mask volumes, or spheres.
+
+See the atlas reference pages in the online documentation for a full
+description of the various atlases you can use and how to set them up.
+
+Format
+^^^^^^
+
+A dictionary of dictionaries.  
+
+The key in each inner dictionary is a string, and the value formats are given below.
+
+
+Entry Formats
+^^^^^^^^^^^^^^
+
+- source: "freesurfer", "fsl", "mask", "label", or "sphere"
+
+- regions: list of integers
+
+- manifold: "volume" or "surface"
+
+- fname: string
+
+- hemi: "lh" or "rh"
+
+- file: string
+
+- thresh: tuple ("sig" or "fdr", float)
+
+- probthresh: integer
+
+- sourcelevel: "subject" or "group"
+
+- sourcedir: string
+
+- sourcefiles: "all" or list of strings 
+
+- coordsys: "mni", "tal", or "vox"
+
+- radius: integer
+
+- centers: dictionary with a string keys and tuples of integers as values 
+
+
+
+Required Entries
+^^^^^^^^^^^^^^^^
+
+Note: source is required for all atlas types
+
+- freesurfer: manifold, fname, regions
+
+- fsl: probthresh, regions
+
+- sigsurf: hemi, file, thresh, minsize
+
+- mask: sourcedir, sourcelabels
+
+- label: hemi, sourcelebel, sourcedir, sourcelabels
+
+- sphere: coordsys, radius, centers
 
 
 Variable Name
 ^^^^^^^^^^^^^
 
-``subjects``
+``atlases``
 
 
