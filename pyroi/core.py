@@ -8,6 +8,7 @@ import shutil
 import subprocess
 from copy import deepcopy
 from datetime import datetime
+from socket import gethostname
 import numpy as np
 import nipype.interfaces.base as pypebase
 import configinterface as cfg
@@ -200,10 +201,9 @@ class RoiResult(object):
                              os.path.join(self._oldlogdir, "pyroi_%s.log" % oldtimestamp))
         if not continue_log: 
             self._log_fid = open(self.log_file, "w")
-            self._write_new_log_header()
         else:
             self._log_fid = open(self.log_file, "a")
-            self._write_continue_log_header()
+        self._write_log_header()
 
         newtimestamp = str(
             datetime.now())[:-10].replace("-","").replace(":","").replace(" ","-")
@@ -212,11 +212,18 @@ class RoiResult(object):
             histfid.write(newtimestamp)
             histfid.close()
     
-    def _write_new_log_header(self):
-        pass
-
-    def _write_continue_log_header(self):
-        pass
+    def _write_log_header(self):
+        
+        header = "\n".join(("PyROI Log File",
+                            "%s" % str(datetime.now())[:-10],
+                            "User: %s" % os.getlogin(),
+                            "Host: %s" % gethostname()))
+        if config_file_path():
+            header = "\n".join((header,
+                                "Project name: %s" % cfg.projectname(),
+                                "Config file: %s" % config_file_path(),
+                                "\n"))
+        self._log_fid.write(header)
 
 
 def import_config(module_name):

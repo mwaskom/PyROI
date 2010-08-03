@@ -7,5 +7,5 @@ import exceptions
 import treeutils as tree
 import configinterface as cfg
 
-__version__ = 0.1
+__version__ = "0.1.1"
 

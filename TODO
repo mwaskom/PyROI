@@ -3,7 +3,7 @@ For version 0.2:
 Features
 ========
 Collect betas for multiple runs
-Subjects Dir in config file
+User-created Freesurfer atlases
 Make SphereAtlas work
 Create GaussianAtlas?
 

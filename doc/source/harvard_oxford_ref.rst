@@ -36,7 +36,7 @@ Atlas Notes
 -----------
 
 The Harvard Oxford atlas was created from a set of manually-segmented T1
-images.  See the `FSL website <http://www.fmrib.ox.ac.uk/fsl/data/atlas-descriptions.html#ho>`
+images.  See the `FSL website <http://www.fmrib.ox.ac.uk/fsl/data/atlas-descriptions.html#ho>`_
 for full information about the creation of the atlas.
    
 .. _id_table:
