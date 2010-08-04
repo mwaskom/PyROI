@@ -6,6 +6,8 @@ Features
 Extraction
 ----------
 Average betas across sessions before extraction
+Group processing reports (ie group_atlas_exsits, etc.)
+Auto-init paradigm if only one paradigm in config
 
 Atlases
 -------
@@ -23,6 +25,7 @@ Implementation
 ==============
 Transition to NiPype 0.3
 Wrap nipype interfaces in Node (if this works)
+Replace class ancestor calls with super()
 
 Aesthetic
 =========
