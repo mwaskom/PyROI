@@ -220,6 +220,7 @@ class ContrastImage(FirstLevelStats):
             self.conpath = cfg.pathspec("contrast", self.analysis.paradigm,
                                         self.subject, self.subjgroup, name)
             self.extractlist.append(os.path.join(self.conpath, image))
+            self.extractlist.sort()
 
         self.roistatdir = os.path.join(self.roidir, "levelone", "contrast",
                                        self.analysis.paradigm, subject)

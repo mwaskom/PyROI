@@ -354,24 +354,28 @@ def _prep_sphere_atlas(atlasdict):
     atlasdict["manifold"] = "volume"
 
 def fssubjdir():
-    """Return the path to the Freesurfer Subjects directory.
-
-    Looks for the fsubjectsdir variable in the config file and
-    gets it from the environment variables if it's not specified.
+    """Set and return the path to the Freesurfer Subjects directory.
 
     Returns
     -------
     str
     
     """
-    try:
-        return setup.fssubjectsdir
-    except AttributeError:
-        path = fs.FSInfo.subjectsdir(os.getenv("SUBJECTS_DIR"))
-        if path:
-            return path
-        else:
-            raise Exception("Freesurfer subjects directory could not be determined "
+   
+    """
+    dirpath = setup.subjdir
+    print dirpath
+    if not os.path.isabs:
+        dirpath = os.path.join(setup.basepath, dirpath)
+
+    subjdir = fs.FSInfo.subjectsdir(dirpath)
+    """
+
+    path = fs.FSInfo.subjectsdir(os.getenv("SUBJECTS_DIR"))
+    if path:
+        return path
+    else:
+        raise Exception("Freesurfer subjects directory could not be determined "
                         "from environment variables.")
 
 def first_level_program():
@@ -535,7 +539,7 @@ def contrasts(par=None, type="con-img", format=".nii"):
     """
 
     # Get the specified dict from setup
-    contrastdict = setup.contrasts
+    contrastdict = deepcopy(setup.contrasts)
 
     # Return the full dict if called with an empty scope
     if par is None:
@@ -598,7 +602,6 @@ def pathspec(imgtype, paradigm=None, subject=None, group=None, contrast=None):
     str : path to image directory or to image
 
     """
-
     basepath = setup.basepath
     betapath = setup.betapath
     regpath = setup.regmatpath
