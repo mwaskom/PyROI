@@ -361,22 +361,12 @@ def fssubjdir():
     str
     
     """
-   
-    """
-    dirpath = setup.subjdir
-    print dirpath
-    if not os.path.isabs:
-        dirpath = os.path.join(setup.basepath, dirpath)
-
-    subjdir = fs.FSInfo.subjectsdir(dirpath)
-    """
-
-    path = fs.FSInfo.subjectsdir(os.getenv("SUBJECTS_DIR"))
-    if path:
+    try:
+        path = setup.fssubjectsdir
+        os.environ["SUBJECTS_DIR"] = path
         return path
-    else:
-        raise Exception("Freesurfer subjects directory could not be determined "
-                        "from environment variables.")
+    except AttributeError:
+        return fs.FSInfo.subjectsdir(os.getenv("SUBJECTS_DIR"))
 
 def first_level_program():
     """Return the program used for first-level analysis.
