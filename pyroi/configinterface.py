@@ -15,7 +15,7 @@ import os
 import re
 import imp
 from warnings import warn
-from copy import deepcopy
+from copy import copy, deepcopy
 from glob import glob
 import nipype.interfaces.freesurfer as fs
 from exceptions import *
@@ -365,14 +365,14 @@ def fssubjdir():
     
     """
     try:
-        return setup.fssubjectsdir
+        path = fs.FSInfo.subjectsdir(setup.fssubjectsdir)
     except AttributeError:
         path = fs.FSInfo.subjectsdir(os.getenv("SUBJECTS_DIR"))
-        if path:
-            return path
-        else:
+        if not path:
             raise Exception("Freesurfer subjects directory could not be determined "
                         "from environment variables.")
+    os.environ["SUBJECTS_DIR"] = path
+    return path
 
 def first_level_program():
     """Return the program used for first-level analysis.
@@ -473,7 +473,7 @@ def betas(par=None, retval=None):
     # Check that the paradigm is in the conditions dictionary
     # Exit with a more informative error if it is not
     try:
-        dump = conditions[par]
+        names = copy(conditions[par]) 
     except KeyError:
         raise Exception("Paradigm '%s' not found in conditions dictionary"
                         % par)
@@ -491,24 +491,58 @@ def betas(par=None, retval=None):
         betastoextract = range(1, hrfcomponents + 1)
 
     # Insert additional component image/names
-    for i in range(1,len(conditions[par])+1):
-        for j in range(0,hrfcomponents):
+    for i in range(1,len(names)+1):
+        for j in range(hrfcomponents):
             if j+1 in betastoextract:
                 # Add the component number to condition names
-                mcompnames.append("%s-%02d" % (conditions[par][i-1], j+1))
+                mcompnames.append("%s-%02d" % (names[i-1], j+1))
                 num = i + ((i-1)*(hrfcomponents-1)) + j
                 # Add the image filename to the image list
                 condimages.append("beta_%04d.img" % num)
-    
+
+    # Add names and images for multiple sessions
+    if hasattr(setup, "sessions"):
+        try:
+            sessions = setup.sessions[par]
+        except KeyError:
+            sessions = 1
+    else:
+        sessions = 1
+    if not isinstance(sessions, tuple):
+        sessions = (sessions,)
+    if sessions[0] > 1:
+        taskbetapersess = hrfcomponents * len(names)
+        total = taskbetapersess
+        msnames = ["%s-s1" % n for n in names]
+        nmcompnames = copy(mcompnames)
+        mcompnames = ["%s-s1" % n for n in mcompnames]
+        ncondimages = copy(condimages)
+        for i in range(1, sessions[0]):
+            nuisance = sessions[1][i]
+            total += nuisance
+            msnames.extend(["%s-s%d"%(n, i+1) for n in names])
+            l = 4 
+            if condimages[0].endswith("nii.gz"):
+                l = 7
+            bump = lambda x: x + total 
+            mcompnames.extend(
+                ["%s%02d-s%s"%(n[:-2],int(n[-2:]),i+1) for n in nmcompnames])
+            for img in ncondimages:
+                condimages.append(
+                    "%s%02d%s"%(img[:-(l+2)],bump(int(img[-(l+2):-l])),img[-l:]))
+            total += taskbetapersess
+        msnames.extend(["%s-avg"%n for n in names])
+        names = msnames
+
     # Figure out what the function is being asked about and return it
     if retval == "images":
         return condimages
-    elif retval == "names" and (hrfcomponents == 1 or betastoextract == [1]):
-        return conditions[par]
-    elif retval == "names" and hrfcomponents > 1:
-        return mcompnames
-    else:
+    elif retval != "names":
         raise Exception("Beta return type \"%s\" not understood" % retval)
+    elif hrfcomponents == 1 or betastoextract == [1]:
+        return names
+    else:
+        return mcompnames
 
 
 def contrasts(par=None, type="con-img", format=".nii"):
