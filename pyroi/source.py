@@ -121,6 +121,7 @@ class FirstLevelStats(RoiBase):
 
     def _average_betas(self):
         """Average betas from multiple sessions."""
+        pass
         
 
     def sample_to_surface(self):
