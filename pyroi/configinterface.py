@@ -626,7 +626,7 @@ def contrasts(par=None, type="con-img", format=".nii"):
     """
 
     # Get the specified dict from setup
-    contrastdict = setup.contrasts
+    contrastdict = deepcopy(setup.contrasts)
 
     # Return the full dict if called with an empty scope
     if par is None:

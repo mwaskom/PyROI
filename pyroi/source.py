@@ -25,7 +25,6 @@ import sys
 import shutil
 import subprocess
 from glob import glob
-from tempfile import mkdtemp
 
 import numpy as np
 import scipy.stats as stats
@@ -108,21 +107,12 @@ class FirstLevelStats(RoiBase):
         if not self._init_subject:
             raise InitError("Subject")
         
-        result = RoiResult()
-        if self.analysis.extract == "beta" and self._multisessions:
-            result(self._average_betas) 
-
         concat = fs.Concatenate()
 
         concat.inputs.invol = self.extractlist
         concat.inputs.outvol = self.extractvol
 
         return self._nipype_run(concat)
-
-    def _average_betas(self):
-        """Average betas from multiple sessions."""
-        pass
-        
 
     def sample_to_surface(self):
         """Sample an extraction volume to the surface."""
@@ -193,17 +183,7 @@ class BetaImage(FirstLevelStats):
         self.extractlist = []
         for img in self.betalist:
             self.extractlist.append(os.path.join(self.betapath, img))
-        self._nsessions = 0
-        if hasattr(cfg.setup, "sessions"):
-            if self.analysis.paradigm in cfg.setup.sessions:
-                self.sessions = cfg.setup.sessions[self.analysis.paradigm]
-                if not isinstance(self.sessions, tuple):
-                    self.sessions = (sessions,)
-                self._nsessions = self.sessions[0]
-                tmpdir = mkdtemp()
-                ncon = range(len(cfg.setup.conditions[self.analysis.paradigm]))
-                self.avgfiles = \
-                    ["%s"%os.path.join(tmpdir,"avg-%d.mgz"%(i)) for i in ncon]
+
         self.roistatdir = os.path.join(self.roidir, "levelone", "beta",
                                        self.analysis.paradigm, subject)
         self.extractvol = os.path.join(self.roistatdir, "task_betas.mgz")
@@ -240,6 +220,7 @@ class ContrastImage(FirstLevelStats):
             self.conpath = cfg.pathspec("contrast", self.analysis.paradigm,
                                         self.subject, self.subjgroup, name)
             self.extractlist.append(os.path.join(self.conpath, image))
+            self.extractlist.sort()
 
         self.roistatdir = os.path.join(self.roidir, "levelone", "contrast",
                                        self.analysis.paradigm, subject)
