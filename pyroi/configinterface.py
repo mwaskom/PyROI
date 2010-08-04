@@ -63,7 +63,6 @@ def projectname():
  
     return setup.projname
 
-
 def analysis(dictnumber=None):
     """Return the analysis list or an analysis dict.  
     
@@ -95,7 +94,6 @@ def analysis(dictnumber=None):
             return
         else:
             return analyses[dictnumber - 1]
-
 
 def atlases(atlasname=None):
     """Return the atlas specifications.
@@ -384,13 +382,7 @@ def first_level_program():
     -------
     str : "SPM" or "FSL"
     """
-    try:
-        if setup.level1program.upper() not in ["SPM"]:
-            raise SetupError("First level program %s not understood or not supported."
-                             % setup.level1program)
-        return setup.level1program.upper()
-    except AttributeError:
-        return "spm"
+    return firstlevel()["l1prog"]
 
 def paradigms(parname=None, case="upper"):
     """Return paradigm information.
@@ -415,9 +407,13 @@ def paradigms(parname=None, case="upper"):
     
     """
 
-    pardict = setup.paradigms
+    pardict = deepcopy(setup.paradigms)
 
- 
+    # Remove any null entries
+    try:
+        del pardict[""]
+    except KeyError:
+        pass
     if parname is None:
         return pardict.keys()
     else:
@@ -430,7 +426,7 @@ def paradigms(parname=None, case="upper"):
                             "config.Paradigms not understood." % case) 
 
 
-def betas(par=None, retval=None):
+def betas(par=None, retval="names"):
     """Return information about task regressors.
     
     This function deals with both condition and file names for the 
@@ -462,13 +458,14 @@ def betas(par=None, retval=None):
     """    
 
     # Get the elements from the setup function 
-    hrfcomponents = setup.hrfcomponents
-    betastoextract = setup.betastoextract
-    conditions = setup.conditions
+    hrfcomponents = firstlevel()[hrfcomp]
+    betastoextract = firstleve()[beta2ext]
+    conditions = firstlevel()[conditions]
+    sessions = firstlevel()[sessions]
 
-    # Return the conditions dictionary and hrfcomponents if scope is empty
+    # Return the conditions dictionary and hrfcomponents if arglist is empty
     if par is None:
-        return conditions, hrfcomponents
+        return conditions, hrfcomponents, sessions
 
     # Check that the paradigm is in the conditions dictionary
     # Exit with a more informative error if it is not
@@ -504,34 +501,47 @@ def betas(par=None, retval=None):
     if hasattr(setup, "sessions"):
         try:
             sessions = setup.sessions[par]
+        # If paradigm not in sessions dict, assume 1 session
         except KeyError:
             sessions = 1
+    # If sessions dict not in config file, assume 1 session
     else:
         sessions = 1
+    # Wrap the session value in a tuple
     if not isinstance(sessions, tuple):
         sessions = (sessions,)
+    # Deal with multiple sessions
     if sessions[0] > 1:
+        # Figure out how many images are task
         taskbetapersess = hrfcomponents * len(names)
         total = taskbetapersess
+        # Add session suffix to names for session 1
         msnames = ["%s-s1" % n for n in names]
         nmcompnames = copy(mcompnames)
         mcompnames = ["%s-s1" % n for n in mcompnames]
         ncondimages = copy(condimages)
+        avgnames = ["%s-avg"%n for n in names]
+        avgmcnames = ["%s-avg"%n for n in nmcompnames]
+        # Loop through addition sessions
         for i in range(1, sessions[0]):
+            # Add the nuisance regressions to total
             nuisance = sessions[1][i]
             total += nuisance
+            # Add this sessions
             msnames.extend(["%s-s%d"%(n, i+1) for n in names])
+            # Add future flexibility for nii.gz
             l = 4 
             if condimages[0].endswith("nii.gz"):
                 l = 7
-            bump = lambda x: x + total 
             mcompnames.extend(
                 ["%s%02d-s%s"%(n[:-2],int(n[-2:]),i+1) for n in nmcompnames])
+            bump = lambda x: x + total 
             for img in ncondimages:
                 condimages.append(
                     "%s%02d%s"%(img[:-(l+2)],bump(int(img[-(l+2):-l])),img[-l:]))
             total += taskbetapersess
-        msnames.extend(["%s-avg"%n for n in names])
+        mcompnames.extend(avgmcnames)
+        msnames.extend(avgnames)
         names = msnames
 
     # Figure out what the function is being asked about and return it
@@ -544,7 +554,54 @@ def betas(par=None, retval=None):
     else:
         return mcompnames
 
+def firstlevel():
 
+    # Condition names
+    conditions = deepcopy(setup.conditions)
+
+    # HRF Components
+    hrfcomp = copy(setup.hrfcomponents)
+    if not isinstance(hrfcomp, int):
+        raise SetupError("hrfcomponents must be an integer")
+    beta2ext = copy(setup.betastoextract)
+    if not beta2ext:
+        beta2ext = [1]
+    elif not isinstance(beta2ext, list):
+        beta2ext = [beta2ext]
+    if beta2ext == ["all"]:
+        beta2ext = range(1, hrfcomp + 1)
+
+    # Multiple sessions
+    try:
+        sessions = copy(setup.sessions)
+    except AttributeError:
+        sessions = {}
+    for par in paradigms():    
+        if par not in sessions:
+            sessions[par] = (1,)
+        elif not isinstance(sessions[par], tuple):
+            sessions[par] = (sessions[par],)
+        if sessions[par][0] > 1:
+            if not sessions[par][0] == len(sessions[par]) or not sessions[par][1]:
+                raise SetupError("Multiple sessions specified but no list of "
+                                 "nuisance regressors exists, or the list length "
+                                 "does not correspond to the number of sessions")
+    
+    # First level program
+    try:
+        l1prog = copy(setup.level1program).lower()
+        if setup.level1program not in ["spm"]:
+            raise SetupError("First level program %s not understood "
+                             "or not supported." % setup.level1program)
+    except AttributeError:
+        l1prog = "spm"
+    
+    return dict(hrfcomp=hrfcomp,
+                beta2ext=beta2ext,
+                conditions=conditions,
+                sessions=sessions,
+                l1prog=l1prog)
+    
 def contrasts(par=None, type="con-img", format=".nii"):
     """Return information about contrasts.
     
