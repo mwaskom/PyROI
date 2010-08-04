@@ -555,7 +555,8 @@ class Atlas(RoiBase):
     
     def _get_atlas_info_from_sum(self):
         """Parse a surfcluster summary file and get label names/files."""
-
+        if not os.path.isfile(self.surfclustersum):
+            return "%s does not exist" % self.surfclustersum
         sumtable = np.genfromtxt(self.surfclustersum, str)
         roihash = {}
         self.sourcenames = []
@@ -649,6 +650,8 @@ class Atlas(RoiBase):
     
     def _write_lut(self):
         """Write a look up table to the roi atlas directory."""
+        if self.debug:
+            return ""
         lutfile = open(self.lutfile, "w")
         for id, name in self.lutdict.items():
             lutfile.write("%d\t%s\t\t\t" % (id, name))
@@ -657,7 +660,6 @@ class Atlas(RoiBase):
             lutfile.write("0\n")
 
         lutfile.close()
-        if self.debug: os.remove(self.lutfile)
         return RoiResult("Writing %s" % self.lutfile)
 
     def _make_freesurfer_atlas(self, reg=1):
