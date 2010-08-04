@@ -475,9 +475,6 @@ def betas(par=None, retval="names"):
         raise Exception("Paradigm '%s' not found in conditions dictionary"
                         % par)
 
-    # Wrap betastoextract in a list if it"s just an int
-    if isinstance(betastoextract, int):
-        betastoextract = [betastoextract]
 
     # Initialize filename and multi-component condition name lists
     condimages = []
