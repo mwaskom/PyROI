@@ -89,6 +89,9 @@ class Atlas(RoiBase):
         self._init_paradigm = False
         self._init_subject = False
         self._init_analysis = False
+        
+        if len(cfg.paradigms()) == 1:
+            self.init_paradigm(cfg.paradigms()[0])
 
         self.__dict__.update(**kwargs)
         if "debug" not in self.__dict__:
