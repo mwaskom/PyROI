@@ -7,7 +7,6 @@ now... """
 import sys
 import pyroi as roi
 
-res = roi.RoiResult(log=True, logdir=".")
 run = False
 native=True
 standard=True
@@ -20,6 +19,8 @@ if native:
     # Native space analyses
 
     roi.import_config("/u2/mwaskom/roidevelopment_native.py")
+    res = roi.RoiResult(log=True)
+    res("****TEST SCRIPT EXCEUTION***")
 
     path = roi.config_file_path()
     res("Config file: %s" % path)
@@ -35,7 +36,10 @@ if standard:
     # Standard space analyses
 
     roi.import_config("/u2/mwaskom/roidevelopment_standard.py")
+    if not native:
+        res = roi.RoiResult(log=True)
 
+    res("****TEST SCRIPT EXCEUTION***")
     path = roi.config_file_path()
     res("Config file: %s" % path)
 
