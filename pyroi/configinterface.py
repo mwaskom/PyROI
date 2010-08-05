@@ -40,6 +40,7 @@ if os.path.isfile(".roiconfigfile"):
         f, name, desc = imp.find_module(module)
         setup = imp.load_module("setup", f, name, desc)
         is_setup = True
+        print "\nConfig file `%s` successfully imported" % name
         f.close()
         del f, name, desc
     except ImportError, err:
