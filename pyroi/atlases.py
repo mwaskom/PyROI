@@ -973,7 +973,9 @@ class Atlas(RoiBase):
             print res
             result(res)
         if not self.debug:
-            result(build_database(self.atlasname, self.analysis.dict, subjects))
+            res=build_database(self.atlasname, self.analysis.dict, subjects)
+            print res
+            result(res)
         return result
 
 class FreesurferAtlas(Atlas):
