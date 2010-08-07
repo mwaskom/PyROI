@@ -458,32 +458,26 @@ def betas(par=None, retval="names"):
     """    
 
     # Get the elements from the setup function 
-    hrfcomponents = firstlevel()[hrfcomp]
-    betastoextract = firstleve()[beta2ext]
-    conditions = firstlevel()[conditions]
-    sessions = firstlevel()[sessions]
+    hrfcomponents = deepcopy(firstlevel()["hrfcomp"])
+    betastoextract = deepcopy(firstlevel()["beta2ext"])
+    conditions = deepcopy(firstlevel()["conditions"])
+    sessions = deepcopy(firstlevel()["sessions"])
 
     # Return the conditions dictionary and hrfcomponents if arglist is empty
     if par is None:
         return conditions, hrfcomponents, sessions
-
-    # Check that the paradigm is in the conditions dictionary
-    # Exit with a more informative error if it is not
-    try:
-        names = copy(conditions[par]) 
-    except KeyError:
-        raise Exception("Paradigm '%s' not found in conditions dictionary"
-                        % par)
+    else:
+        sessions = sessions[par]
+        try:
+            names = conditions[par]
+        except KeyError:
+            raise Exception("Paradigm '%s' not found in conditions dictionary"% par)
 
 
     # Initialize filename and multi-component condition name lists
     condimages = []
     mcompnames = []
-
-    # If extracting all beta components, make that list
-    if betastoextract == "all" or betastoextract == ["all"]:
-        betastoextract = range(1, hrfcomponents + 1)
-
+    
     # Insert additional component image/names
     for i in range(1,len(names)+1):
         for j in range(hrfcomponents):
@@ -494,19 +488,6 @@ def betas(par=None, retval="names"):
                 # Add the image filename to the image list
                 condimages.append("beta_%04d.img" % num)
 
-    # Add names and images for multiple sessions
-    if hasattr(setup, "sessions"):
-        try:
-            sessions = setup.sessions[par]
-        # If paradigm not in sessions dict, assume 1 session
-        except KeyError:
-            sessions = 1
-    # If sessions dict not in config file, assume 1 session
-    else:
-        sessions = 1
-    # Wrap the session value in a tuple
-    if not isinstance(sessions, tuple):
-        sessions = (sessions,)
     # Deal with multiple sessions
     if sessions[0] > 1:
         # Figure out how many images are task
@@ -526,8 +507,8 @@ def betas(par=None, retval="names"):
             total += nuisance
             # Add this sessions
             msnames.extend(["%s-s%d"%(n, i+1) for n in names])
-            # Add future flexibility for nii.gz
             l = 4 
+            # Add future flexibility for nii.gz
             if condimages[0].endswith("nii.gz"):
                 l = 7
             mcompnames.extend(
@@ -544,6 +525,8 @@ def betas(par=None, retval="names"):
     # Figure out what the function is being asked about and return it
     if retval == "images":
         return condimages
+    elif retval == "sessions":
+        return sessions[0]
     elif retval != "names":
         raise Exception("Beta return type \"%s\" not understood" % retval)
     elif hrfcomponents == 1 or betastoextract == [1]:

@@ -106,13 +106,20 @@ class FirstLevelStats(RoiBase):
         """Concatenate the first level statistic images."""
         if not self._init_subject:
             raise InitError("Subject")
+        result = RoiResult()
+        if cfg.betas(self.analysis.paradigm, "sessions") > 1:
+            result(self.make_avg_betas())
         
         concat = fs.Concatenate()
 
         concat.inputs.invol = self.extractlist
         concat.inputs.outvol = self.extractvol
 
-        return self._nipype_run(concat)
+        result(self._nipype_run(concat))
+        return result
+
+    def make_avg_betas(self):
+        pass
 
     def sample_to_surface(self):
         """Sample an extraction volume to the surface."""
