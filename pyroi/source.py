@@ -25,6 +25,7 @@ import sys
 import shutil
 import subprocess
 from glob import glob
+from tempfile import mkdtemp
 
 import numpy as np
 import scipy.stats as stats
@@ -107,7 +108,7 @@ class FirstLevelStats(RoiBase):
         if not self._init_subject:
             raise InitError("Subject")
         result = RoiResult()
-        if cfg.betas(self.analysis.paradigm, "sessions") > 1:
+        if hasattr(self, "_n_sessions") and self._n_sessions > 1:
             result(self.make_avg_betas())
         
         concat = fs.Concatenate()
@@ -116,10 +117,25 @@ class FirstLevelStats(RoiBase):
         concat.inputs.outvol = self.extractvol
 
         result(self._nipype_run(concat))
+        if hasattr(self, "_avgtempdir"):
+            shutil.rmtree(self._avgtempdir)
         return result
 
     def make_avg_betas(self):
-        pass
+        """Create the average parameter estimate images."""
+        self._avgtempdir = mkdtemp()
+        result = RoiResult()
+        for i, sourcelist in enumerate(self._avgsource):
+            avgimg = os.path.join(self._avgtempdir,"avg-%d.mgz"%i)
+            self.extractlist.append(avgimg)
+            average = fs.Concatenate()
+
+            average.inputs.invol = sourcelist
+            average.inputs.mean = True
+            average.inputs.outvol = avgimg
+
+            result(self._run(average))
+        return result
 
     def sample_to_surface(self):
         """Sample an extraction volume to the surface."""
@@ -173,12 +189,13 @@ class FirstLevelStats(RoiBase):
         return result
 
 class BetaImage(FirstLevelStats):
-    """Docstring goes here"""
+    """Class for first-level parameter estimate images."""
     def __init__(self, analysis, **kwargs):
 
         FirstLevelStats.__init__(self, analysis, **kwargs)
         self.betalist = cfg.betas(analysis.paradigm, "images")
         self.statsdir = os.path.join(self.roidir, "levelone", "beta")
+        self._n_sessions = cfg.betas(analysis.paradigm, "sessions")
 
     # Initialization methods
     def init_subject(self, subject):
@@ -187,9 +204,19 @@ class BetaImage(FirstLevelStats):
         self.subjgroup = cfg.subjects(subject=subject)
         self.betapath = cfg.pathspec("beta", self.analysis.paradigm,
                                         self.subject, self.subjgroup)
+        # Build a list of file paths
         self.extractlist = []
         for img in self.betalist:
             self.extractlist.append(os.path.join(self.betapath, img))
+        
+        # Get a list of lists to average
+        if self._n_sessions > 1:
+            imgpersess = len(self.betalist)/self._n_sessions
+            chunk = lambda ulist, step:  map(
+                lambda i: ulist[i:i+step],  xrange(0, len(ulist), step))
+            chunkedimgs = chunk(self.extractlist, imgpersess)
+            zippedimgs = zip(*chunkedimgs)
+            self._avgsource = [list(tup) for tup in zippedimgs]
 
         self.roistatdir = os.path.join(self.roidir, "levelone", "beta",
                                        self.analysis.paradigm, subject)
@@ -210,7 +237,7 @@ class BetaImage(FirstLevelStats):
 
 
 class ContrastImage(FirstLevelStats):
-    """Contrast Image class."""
+    """Class for first-level contrast effect-size images."""
     def __init__(self, analysis, **kwargs):
 
         FirstLevelStats.__init__(self, analysis, **kwargs)
@@ -246,7 +273,7 @@ class ContrastImage(FirstLevelStats):
 
 
 class TStatImage(FirstLevelStats):
-    """T Statistic class"""
+    """Class for first-level T-statistics."""
     def __init__(self, analysis, **kwargs):
         
         FirstLevelStats.__init__(self, analysis, **kwargs)
