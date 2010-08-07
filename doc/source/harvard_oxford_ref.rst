@@ -41,8 +41,8 @@ for full information about the creation of the atlas.
    
 .. _id_table:
 
-Atlas Regions
--------------
+Segmentation ID Table
+---------------------
 
 The atlas regions can be queried interactively with the :func:`find_id` function
 or by using the table below.  

@@ -25,6 +25,10 @@ FIR
 Mask > MVPA/SVC
 Different data table output format
 
+Core
+----
+Add Log class
+
 Implementation
 ==============
 Transition to NiPype 0.3
