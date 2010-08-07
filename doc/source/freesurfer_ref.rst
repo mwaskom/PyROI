@@ -3,14 +3,6 @@
 Freesurfer Atlases
 ==================
 
-.. toctree::
-    :maxdepth: 2
-
-    definition_
-    dictionary_
-    notes_
-    seg_ref_
-
 .. _definition:
 
 Atlas Definition

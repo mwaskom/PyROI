@@ -329,8 +329,8 @@ of the Freesurfer binaries used to perform the extraction
 Results and logging
 -------------------
 
-In the code snippets above, you may have noticed that processing method
-calls were assigned to a variable called ``res``.  All processing methods
+In the code snippets above, you may have noticed that the output of processing 
+method calls were assigned to a variable called ``res``.  All processing methods
 return an instance of the :class:`RoiResult` class, which holds the command lines
 used to call external binaries and any information that they returned
 through the stdout or stderr pipes.  To see this information, simply print
@@ -362,36 +362,43 @@ the result object::
     Writing to /g2/gablab/sad/PY_STUDY_DIR/Block/roi/analysis/development/NF_nomask_beta/aseg/extracttxt/SAD_020.txt
     Writing to /g2/gablab/sad/PY_STUDY_DIR/Block/roi/analysis/development/NF_nomask_beta/aseg/extractvol/SAD_020.nii
 
-If you call a result object on a different result object (or call it on a
-function that returns one), it will add the information in the latter
-object to its internal records.  The ``RoiResult`` object also supports
-logging, by setting the argument ``log`` to ``True`` when you instantiate
-the object::
 
-    >>> result = roi.RoiResult(log=True)
+If you want to save this infomration, use the :class:`Log` class::
+
+    >>> log = roi.Log()
 
 By default, this will write a log file to your project directory in
 ``$BASEPATH/roi/analysis/$PROJECTNAME/logfiles``, although you can
 specify a different log directory::
 
-    >>> result = roi.RoiResult(log=True, logdir="/path/to/my/log")
+    >>> log = roi.Log(logdir="/path/to/my/log")
 
 If you are writing to your project directory, PyROI will look for an
 old log file and archive it when you open a new one.  If you would rather
 add to the previously existing logfile, however, use the ``continue_log``
 argument::
     
-    >>> result = roi.RoiResult(log=True, continue_log=True)
+    >>> log = roi.Log(continue_log=True)
 
 No matter how you set up your log, you could then run through some processing
 steps::
 
     >>> res = atlas.make_atlas()
-    >>> result(res)
+    >>> log.write(res)
     >>> res = atlas.prepare_source_images()
-    >>> result(res)
+    >>> log.write(res)
     >>> res = atlas.extract()
-    >>> result(res)
+    >>> log.write(res)
 
-And all of the information will be automatically written to your log file.
+And all of the information will be automatically written to your log file.  You
+can pass the log object's :meth:`write` method either an instance of the RoiResult
+class or a string, and it will write the proper information to the log file.  Note 
+that you can also write to log object simply by calling it on a string or 
+:class:`RoiResult` object::
+
+    >>> res = atlas.make_atlas()
+    >>> log(res)
+
+Although the :meth:`write` method is provided as some people might find this syntax
+confusing.
 

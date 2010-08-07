@@ -13,7 +13,7 @@ import numpy as np
 import nipype.interfaces.base as pypebase
 import configinterface as cfg
 
-__all__ = ["RoiResult",
+__all__ = ["RoiResult", "Log",
            "import_config", "write_config_base", "config_file_path", "find_id"]
 
 __module__ = "core"
