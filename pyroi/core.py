@@ -128,7 +128,7 @@ class RoiResult(object):
 
     def __call__(self, cmdline, res=None):
         """Call the object with a cmdline and optionally a processing result.""" 
-        if isinstance(cmdline, self.__class__):
+        if isinstance(cmdline, RoiResult):
             self.cmdline.extend(cmdline.cmdline)
             self.stdout.extend(cmdline.stdout)
             self.stderr.extend(cmdline.stderr)
@@ -180,14 +180,16 @@ class RoiResult(object):
         self.log = True
         self.continue_log = continue_log
 
-        if logdir is None:
+        if logdir is None and hasattr(cfg, "setup"):
             self.logdir = os.path.join(cfg.setup.basepath, "roi", "analysis",
                                        cfg.projectname(), "logfiles")
             self._loghistfile = os.path.join(self.logdir, ".logtimestamp")                   
             self._archive_log = True                                           
             self._oldlogdir = os.path.join(self.logdir, "archive")
         else:
-            self.logdir = logdir
+            self.logdir = os.path.abspath(os.path.curdir)
+            if logdir is not None:
+                self.logdir = logdir
             self._archive_log = False
         self.log_file = os.path.join(self.logdir, "pyroi.log")
 
@@ -224,6 +226,14 @@ class RoiResult(object):
                                 "Config file: %s" % config_file_path(),
                                 "\n"))
         self._log_fid.write(header)
+
+class Log(RoiResult):
+    """Wraps RoiResult with logging automatically enabled."""
+    def __init__(self, continue_log=False, logdir=None):
+        RoiResult.__init__(self, log=True, continue_log=continue_log, logdir=logdir) 
+    
+    def write(self, cmdline, result=None):
+        self(cmdline, result)
 
 
 def import_config(module_name):
