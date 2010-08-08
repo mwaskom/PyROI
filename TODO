@@ -4,9 +4,7 @@ Features
 Extraction
 ----------
 Add process method
-Average betas across sessions before extraction
 Group processing reports (ie group_atlas_exsits, etc.)
-Auto-init paradigm if only one paradigm in config
 Add diffusion extraction
 
 Atlases

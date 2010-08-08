@@ -306,7 +306,7 @@ class Atlas(RoiBase):
             self.lutdict[i+1] = name
 
     # Display methods
-    def display(self):
+    def display(self, mask=False):
         """Display the atlas.
         
         This method will launch a viewing program that will display
@@ -326,11 +326,11 @@ class Atlas(RoiBase):
             raise InitError("Subject")
 
         if self.manifold == "surface":
-            self._surf_display()
+            self._surf_display(mask)
         else:
-            self._vol_display()
+            self._vol_display(mask)
     
-    def _surf_display(self):
+    def _surf_display(self, mask=False):
         """Display a surface atlas using tksurfer."""
         if "hemi" not in self.__dict__:
             hemi = "lh"
@@ -344,13 +344,18 @@ class Atlas(RoiBase):
         cmd.append("inflated")
         cmd.append("-gray")
         cmd.append("-annot %s" % self.atlas % hemi)
+        if mask and self._init_analysis:
+            cmd.append("-overlay %s" % self.analysis.maskimg % hemi)
+            cmd.append("-fthresh %.1f" % self.analysis.maskthresh)
+            cmd.append("-%s" % self.analysis.masksign)
+            cmd.append("-fmid 1000")
 
         if self.debug:
             print " ".join(cmd)
         else:
             subprocess.call(cmd) 
 
-    def _vol_display(self):
+    def _vol_display(self, mask=False):
         """Display a volume atlas using Freeview."""
         cmd = ["freeview"]
         cmd.append("-v")
@@ -428,6 +433,8 @@ class Atlas(RoiBase):
             res(switch[self.source]())
             if self._atlas_exists:
                 res(self._stats())
+                if self.manifold == "volume":
+                    res(self._write_mask())
         except KeyError:
             res("No make_atlas processing neccessary for %s atlases." 
                 % self.source)
@@ -702,6 +709,19 @@ class Atlas(RoiBase):
 
     def _make_sphere_atlas(self):
         raise NotImplementedError
+
+    def _write_mask(self):
+        """Turn an atlas into a binary mask volume."""
+        cmd = ["mri_binarize"]
+
+        cmd.extend(["--i %s" % self.atlas,
+                    "--o %s" % self.mask_image])
+        for id in self.regions:
+            cmd.append("--match %d" % id)
+
+        return(self._run(cmd))
+                    
+        
 
     def _stats(self):
         """Generate a summary of voxel/vertex counts for all regions in an atlas."""
@@ -1144,6 +1164,8 @@ class FreesurferAtlas(Atlas):
             self.statsfile = os.path.join(self.basedir, self.manifold, pardir,
                                           subject, self.atlasname,
                                           "%s.stats" % atlasname)
+            self.mask_image = os.path.join(self.basedir, self.manifold, pardir, subject,
+                                           self.atlasname, "%s_mask.%s" % (atlasname, ext))
 
             self._init_subject = True
 
