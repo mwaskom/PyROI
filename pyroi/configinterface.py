@@ -559,6 +559,7 @@ def firstlevel(par=None, subject=None):
         n_sessions = sessions[par]
     if n_sessions > 1:
         n_regressors = _get_n_regressor_per_sess(spmfile, n_sessions)
+        n_regressors = [i * hrfcomp for i in n_regressors]
         nuisance_list = [i - len(conditions) for i in n_regressors]
     else:
         nuisance_list = []
@@ -580,7 +581,7 @@ def firstlevel(par=None, subject=None):
                 l1prog=l1prog)
     
 def _get_n_regressor_per_sess(matfilepath, n_sessions):
-    """Return a list with the number of nuisance regressors in each session."""
+    """Return a list with the number of regressors for each session."""
     spmstruct = scio.loadmat(matfilepath, struct_as_record=False)["SPM"].flat[0]
     version = spmstruct.SPMid.flat[0]
     switch = dict(SPM8 = _parse_spm8_matfile,
