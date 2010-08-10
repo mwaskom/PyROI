@@ -95,7 +95,7 @@ def build_database(atlas, analysis, subjects=None):
     size = np.array("base-%s" % units)
     mask = np.array("final-%s" % units)
     if analysis["extract"] == "beta":
-        func = np.array(cfg.betas(analysis["par"], "names"))
+        func = np.array(cfg.betas(analysis["par"], "names", cfg.subjects()[0]))
     elif analysis["extract"] == "contrast":
         func = np.array(cfg.contrasts(analysis["par"], "names"))
     elif analysis["extract"] == "timecourse":
