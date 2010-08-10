@@ -200,8 +200,8 @@ class BetaImage(FirstLevelStats):
         """Initialize the object for a subject"""
         self.subject = subject
         self.subjgroup = cfg.subjects(subject=subject)
-        self.betalist = cfg.betas(self.analysis.paradigm, "images", subject) # XXX, subjgroup)
-        self._n_sessions = cfg.betas(self.analysis.paradigm, "sessions", subject) # XXX, subjgroup)
+        self.betalist = cfg.betas(self.analysis.paradigm, "images", subject) 
+        self._n_sessions = cfg.betas(self.analysis.paradigm, "sessions", subject)  
         self.betapath = cfg.pathspec("beta", self.analysis.paradigm,
                                         self.subject, self.subjgroup)
         # Build a list of file paths

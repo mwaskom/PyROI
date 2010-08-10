@@ -546,7 +546,7 @@ def firstlevel(par=None, subject=None):
     if beta2ext == ["all"]:
         beta2ext = range(1, hrfcomp + 1)
 
-    spmfile = os.path.join(pathspec("beta", par, subject), "SPM.mat")
+    spmfile = os.path.join(pathspec("beta", par, subject, subjects(subject=subject)), "SPM.mat")
     
     # Multiple sessions
     try:
