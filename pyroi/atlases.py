@@ -721,8 +721,6 @@ class Atlas(RoiBase):
 
         return(self._run(cmd))
                     
-        
-
     def _stats(self):
         """Generate a summary of voxel/vertex counts for all regions in an atlas."""
         if self.manifold == "volume":

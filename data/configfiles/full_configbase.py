@@ -138,6 +138,9 @@ Formats
 
 - dictionary where each key is a string and each value is a list of strings
 
+- dictionary where each key is a string and each value is a 2-tuple.  The first
+entry in the tuple is an integer, and the second (optional) value is a list of integers.
+
 Variable Names
 --------------
 - ``level1program``
@@ -147,6 +150,8 @@ Variable Names
 - ``betastoextract``
 
 - ``conditions``
+
+- ``sessions``
 
 """
 
@@ -158,6 +163,12 @@ betastoextract = []
 
 conditions = {"":   ["",""],
               "":   ["",""]}
+
+"""
+The ``sessions`` variable is only applicaple if any of your paradigms have
+"""
+
+sessions = {"":  (1, [])}
 
 #------------------------------<Contrasts>---------------------------------#
 """

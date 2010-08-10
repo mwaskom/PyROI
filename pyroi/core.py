@@ -314,7 +314,7 @@ def write_config_base(filename, force=False, clean=False):
         f = open(os.path.join(targpath, ".roiconfigfile"), "w")
         f.write(os.path.split(filename)[1])
 
-    sourcepath = os.path.join(os.path.split(__file__)[0], "data", "configfiles")
+    sourcepath = os.path.join(os.path.split(__file__)[0], os.path.pardir, "data", "configfiles")
     if clean:
         sourceprefix = "clean"
     else:
@@ -331,7 +331,7 @@ def config_file_path():
     Config file path if import was successful, or None if not
     """
     if hasattr(cfg, "setup"):
-        return os.path.abspath(cfg.setup.__file__)
+        return os.path.abspath(os.path.join(cfg.setup.__file__, os.path.pardir))
     else:
         print "Config file not imported."
         return None
