@@ -193,15 +193,15 @@ class BetaImage(FirstLevelStats):
     def __init__(self, analysis, **kwargs):
 
         FirstLevelStats.__init__(self, analysis, **kwargs)
-        self.betalist = cfg.betas(analysis.paradigm, "images")
         self.statsdir = os.path.join(self.roidir, "levelone", "beta")
-        self._n_sessions = cfg.betas(analysis.paradigm, "sessions")
 
     # Initialization methods
     def init_subject(self, subject):
         """Initialize the object for a subject"""
         self.subject = subject
         self.subjgroup = cfg.subjects(subject=subject)
+        self.betalist = cfg.betas(self.analysis.paradigm, "images", subject) 
+        self._n_sessions = cfg.betas(self.analysis.paradigm, "sessions", subject)  
         self.betapath = cfg.pathspec("beta", self.analysis.paradigm,
                                         self.subject, self.subjgroup)
         # Build a list of file paths
@@ -212,6 +212,7 @@ class BetaImage(FirstLevelStats):
         # Get a list of lists to average
         if self._n_sessions > 1:
             imgpersess = len(self.betalist)/self._n_sessions
+            # Magic?
             chunk = lambda ulist, step:  map(
                 lambda i: ulist[i:i+step],  xrange(0, len(ulist), step))
             chunkedimgs = chunk(self.extractlist, imgpersess)
