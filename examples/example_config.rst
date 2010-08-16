@@ -1,5 +1,8 @@
 .. _example_config:
 
+Example Config File
+===================
+
 Below are the example components of full config file.  This example is based
 off a real analysis stream, although some elements have been modified for
 demonstrative purposes.  The code for this file can also be obtained `here`.
@@ -38,17 +41,14 @@ a canonical HFR, which has one component::
     betastoextract = "all"
 
 There were five task-conditions for the social paradigm, and three task
-conditions for the novelfaces paradigm.  The novelfaces paradigm had two
-runs, so we must specify the beta image numbers for each run::
+conditions for the novelfaces paradigm::
 
-    conditions = {"social":     {"aface": 1,
-                                 "nface": 2,
-                                 "pscen": 3,
-                                 "escen": 4,
-                                 "nscen": 5},
-                  "novelfaces": {"fmzn": (1, 9),
-                                 "fmlr": (2, 10),
-                                 "novl": (3, 11)}}
+    conditions = {"social": ["aface","nface","pscen","escen","nscen"],
+                  "novelfaces": ["fmzn","fmlr","novl"]}
+
+The novelfaces paradigm had two runs, so we must add a sessions dictionary::
+
+    sessions = {"novelfaces": 2}                 
 
 For our ROI analysis, there are three contrasts of interest.  For the
 social paradigm, we will call them "AFvNF" for angry versus neutral
@@ -147,4 +147,8 @@ structure::
                     }
 
 And, we're done!
+
+Here's what the full file ends up looking like:
+
+.. literal_include:: example_config.py
 

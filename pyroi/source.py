@@ -7,15 +7,22 @@ on atlas objects.
 
 Classes
 -------
+
 Analysis         :  An object that defines analysis parameters
+
 FirstLevelStats  :  Base source image object
+
 BetaImage        :  Provides methods for preparing parameter estimate images
+
 ContrastImage    :  Provides methods for preparing contrast effect size images
+
 TStatImage       :  Provides methods for preparing T statisic images
+
 SigImage         :  Provides methods for preparing -log10(p) statistical images
 
 Functions
 ---------
+
 init_stat_object :  Provides a common interface to source image objects.
 
 """

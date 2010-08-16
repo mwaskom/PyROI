@@ -20,14 +20,11 @@ Analysis
 Stimulus locked timecourses
 GLM
 FIR
-Mask > MVPA/SVC
 Different data table output format
 
 Implementation
 ==============
-Transition to NiPype 0.3
-Wrap nipype interfaces in Node (if this works)
-Replace class ancestor calls with super()
+De-Nipypeize
 
 Aesthetic
 =========

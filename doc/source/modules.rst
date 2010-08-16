@@ -1,38 +1,48 @@
 .. _modules:
 
-================
 Module Reference
 ================
-
-.. _atlases:
 
 Atlases
 -------
 
-.. automodule:: atlases
+.. automodule:: pyroi.atlases
+    :synopsis: Atlas objects and data processing methods
     :members:
 
 Source
 ------
 
-.. automodule:: source
+.. automodule:: pyroi.source
+    :synopsis: Extraction object and source image processing methods
     :members:
-
-.. _core:
 
 Core
 ----
 
-.. automodule:: core
+.. automodule:: pyroi.core
+    :synopsis: Base classes and top-level functions
     :members:
 
-.. _configinterface:
+Database
+--------
+
+.. automodule:: pyroi.database
+    :synopsis: Offers support for spreadsheet-like databases
+    :members:
 
 Config Interface
 ----------------
 
-.. automodule:: configinterface
+.. automodule:: pyroi.configinterface
+    :synopsis: Interface functions for config file info
     :members:
 
+Exceptions
+----------
+
+.. automodule:: pyroi.exceptions
+    :synopsis: Custom exceptions
+    :members:
 
 

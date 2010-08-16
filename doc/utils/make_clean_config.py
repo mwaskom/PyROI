@@ -19,7 +19,7 @@ def flip(value):
 for num, line in enumerate(fullfid):
     
     if not line.startswith("#--"):
-        if line.startswith("\"\"\"") and num > 45:
+        if line.startswith("\"\"\"") and num > 15:
             write = flip(write)
             lastflip = num
 
