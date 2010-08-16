@@ -201,7 +201,20 @@ class Atlas(RoiBase):
                 else:  
                     exists.append(False)
             return all(exists)
-        
+    def _extract_exists(self):
+        """Return whether an extraction text file exists."""
+        if self.manifold == "volume":
+            return os.path.isfile(self.functxt)
+        else:
+            exists = []
+            for hemi in self.iterhemi:
+                if os.path.isfile(self.functxt % hemi):
+                    exists.append(True)
+                else:  
+                    exists.append(False)
+            return all(exists)
+
+
     # Initialization methods
     def init_paradigm(self, paradigm):
         """Initialize the atlas with a paradigm.
@@ -994,24 +1007,75 @@ class Atlas(RoiBase):
             result(res)
         return result
 
-    def process(self, subject, analysis, force=1):
-        """Process a subject up through extraction."""
+    def process(self, subject, analysis, force=False):
+        """Process a subject up through extraction.
+        
+        Parameters
+        ----------
+        subject : str
+            Subject ID
+        analysis : int
+            Analysis index
+        force : bool, optional
+            Force overwriting of the files the processing methods create 
+            if they are found to exist.  False by default.
+
+        Returns
+        -------
+        RoiResult object
+
+        """
         if isinstance(analysis, dict) or isinstance(analysis, int):
             analysis = source.Analysis(analysis)
         self.init_paradigm(analysis.paradigm)
         self.init_subject(subject)
         result = RoiResult()
-        if force==2 or (not self._atlas_exists() and force==1):
+        if force or not self._atlas_exists():
             result(self.make_atlas())
         self.init_analysis(analysis)
-        if force==2 or (not self._source_exists() and force==1):
-            result(self.prepare_source_images(reg=force)
-        if force==2 or (not self._() and force==1):
+        if force or not self._source_exists():
+            result(self.prepare_source_images())
+        if force or not self._extract_exists():
+            result(self.extract())
+        return result
 
+    def group_process(self, analysis, subjects=None, force=False):
+        """Process a group up through extraction.
         
-        
+        Parameters
+        ----------
+        analysis : int
+            Analysis index
+        subjects : None, string or list
+            If None, runs all subjects defined in the config file.  If a
+            string, runs the group defined by that name.  If a list, runs
+            the each subject defined in that list.  None by default.
+        force : bool, optional
+            Force overwriting of the files the processing methods create 
+            if they are found to exist.  False by default.
 
+        Returns
+        -------
+        RoiResult object
 
+        """
+        if subjects is None:
+            subjects = cfg.subjects()
+        elif isinstance(subjects, str):
+            subjects = cfg.subjects(subjects)
+        if isinstance(analysis, dict) or isinstance(analysis, int):
+            analysis = source.Analysis(analysis)
+        result = RoiResult()
+        for subj in subjects:
+            res = self.process(subj, analysis, force)
+            print res
+            result(res)
+        if not self.debug:
+            res=build_database(self.atlasname, self.analysis.dict, subjects)
+            print res
+            result(res)
+        return result
+            
 class FreesurferAtlas(Atlas):
     """Class for Freesurfer atlases.
 
