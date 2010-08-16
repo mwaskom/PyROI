@@ -338,15 +338,15 @@ the result object::
 
     >>> res = aseg.extract()
     >>> print res
-    mri_segstats --i /g2/gablab/sad/PY_STUDY_DIR/Block/roi/levelone/beta/novelfaces/SAD_020/task_betas.mgz 
-    --seg /g2/gablab/sad/PY_STUDY_DIR/Block/roi/atlases/freesurfer/volume/novelfaces/SAD_020/aseg/aseg.mgz 
+    mri_segstats --i /usr/roidev/roi/levelone/beta/novelfaces/SAD_020/task_betas.mgz 
+    --seg /usr/roidev/roi/atlases/freesurfer/volume/novelfaces/SAD_020/aseg/aseg.mgz 
     --id 17 --id 18 --id 53 --id 54 
-    --sum /g2/gablab/sad/PY_STUDY_DIR/Block/roi/analysis/development/NF_nomask_beta/aseg/stats/SAD_020.stats 
-    --avgwf /g2/gablab/sad/PY_STUDY_DIR/Block/roi/analysis/development/NF_nomask_beta/aseg/extracttxt/SAD_020.txt 
-    --avgwfvol /g2/gablab/sad/PY_STUDY_DIR/Block/roi/analysis/development/NF_nomask_beta/aseg/extractvol/SAD_020.nii
+    --sum /usr/roidev/roi/analysis/development/NF_nomask_beta/aseg/stats/SAD_020.stats 
+    --avgwf /usr/roidev/roi/analysis/development/NF_nomask_beta/aseg/extracttxt/SAD_020.txt 
+    --avgwfvol /usr/roidev/roi/analysis/development/NF_nomask_beta/aseg/extractvol/SAD_020.nii
 
-    Loading /g2/gablab/sad/PY_STUDY_DIR/Block/roi/atlases/freesurfer/volume/novelfaces/SAD_020/aseg/aseg.mgz
-    Loading /g2/gablab/sad/PY_STUDY_DIR/Block/roi/levelone/beta/novelfaces/SAD_020/task_betas.mgz
+    Loading /usr/roidev/roi/atlases/freesurfer/volume/novelfaces/SAD_020/aseg/aseg.mgz
+    Loading /usr/roidev/roi/levelone/beta/novelfaces/SAD_020/task_betas.mgz
     Voxel Volume is 14.6228 mm^3
     Generating list of segmentation ids
     Found   4 segmentations
@@ -359,8 +359,8 @@ the result object::
     Reporting on   4 segmentations
     Computing spatial average of each frame
       0  1  2  3
-    Writing to /g2/gablab/sad/PY_STUDY_DIR/Block/roi/analysis/development/NF_nomask_beta/aseg/extracttxt/SAD_020.txt
-    Writing to /g2/gablab/sad/PY_STUDY_DIR/Block/roi/analysis/development/NF_nomask_beta/aseg/extractvol/SAD_020.nii
+    Writing to /usr/roidev/roi/analysis/development/NF_nomask_beta/aseg/extracttxt/SAD_020.txt
+    Writing to /usr/roidev/roi/analysis/development/NF_nomask_beta/aseg/extractvol/SAD_020.nii
 
 
 If you want to save this infomration, use the :class:`Log` class::

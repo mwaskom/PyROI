@@ -8,4 +8,5 @@ Atlas Reference
 
     freesurfer_ref.rst
     harvard_oxford_ref.rst
+    label_ref.rst
 

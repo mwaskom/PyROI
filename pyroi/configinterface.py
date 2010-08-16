@@ -17,6 +17,7 @@ import imp
 from warnings import warn
 from copy import copy, deepcopy
 from glob import glob
+import scipy.io as scio
 import nipype.interfaces.freesurfer as fs
 from exceptions import *
 
@@ -81,6 +82,8 @@ def analysis(dictnumber=None):
     """
 
     analyses = setup.analysis
+    analyses = [anal for anal in analyses if anal["par"]]
+
 
     if isinstance(analyses, dict):
         analyses = [analyses]
@@ -424,7 +427,7 @@ def paradigms(parname=None, case="upper"):
                             "config.Paradigms not understood." % case) 
 
 
-def betas(par=None, retval="names"):
+def betas(paradigm, retval="names", subject=None):
     """Return information about task regressors.
     
     This function deals with both condition and file names for the 
@@ -444,33 +447,25 @@ def betas(par=None, retval="names"):
 
     Parameters
     ----------
-    par : str
+    pardigm : str
         paradigm
-    retval : str
-        "images" or "names"
+    retval : str, optional
+        "images", "names", or "sessions"; default: "names"
+    subject : str, optional
+        subject name
+
 
     Returns
     -------
-    list or dict
+    list or int
     
     """    
 
     # Get the elements from the setup function 
-    hrfcomponents = deepcopy(firstlevel()["hrfcomp"])
-    betastoextract = deepcopy(firstlevel()["beta2ext"])
-    conditions = deepcopy(firstlevel()["conditions"])
-    sessions = deepcopy(firstlevel()["sessions"])
-
-    # Return the conditions dictionary and hrfcomponents if arglist is empty
-    if par is None:
-        return conditions, hrfcomponents, sessions
-    else:
-        sessions = sessions[par]
-        try:
-            names = conditions[par]
-        except KeyError:
-            raise Exception("Paradigm '%s' not found in conditions dictionary"% par)
-
+    hrfcomponents = deepcopy(firstlevel(paradigm, subject)["hrfcomp"])
+    betastoextract = deepcopy(firstlevel(paradigm, subject)["beta2ext"])
+    names = deepcopy(firstlevel(paradigm, subject)["conditions"])
+    sessions = deepcopy(firstlevel(paradigm, subject)["sessions"])
 
     # Initialize filename and multi-component condition name lists
     condimages = []
@@ -532,10 +527,10 @@ def betas(par=None, retval="names"):
     else:
         return mcompnames
 
-def firstlevel():
+def firstlevel(par=None, subject=None):
 
     # Condition names
-    conditions = deepcopy(setup.conditions)
+    conditions = deepcopy(setup.conditions)[par]
 
     # HRF Components
     hrfcomp = copy(setup.hrfcomponents)
@@ -549,26 +544,29 @@ def firstlevel():
     if beta2ext == ["all"]:
         beta2ext = range(1, hrfcomp + 1)
 
+    spmfile = os.path.join(pathspec("beta", par, subject, subjects(subject=subject)), "SPM.mat")
+    
     # Multiple sessions
     try:
-        sessions = copy(setup.sessions)
+        sessions = deepcopy(setup.sessions)
     except AttributeError:
         sessions = {}
-    for par in paradigms():    
-        if par not in sessions:
-            sessions[par] = (1,)
-        elif not isinstance(sessions[par], tuple):
-            sessions[par] = (sessions[par],)
-        if sessions[par][0] > 1:
-            if not sessions[par][0] == len(sessions[par]) or not sessions[par][1]:
-                raise SetupError("Multiple sessions specified but no list of "
-                                 "nuisance regressors exists, or the list length "
-                                 "does not correspond to the number of sessions")
-    
+    if par not in sessions:
+        n_sessions = 1
+    else:
+        n_sessions = sessions[par]
+    if n_sessions > 1:
+        n_regressors = _get_n_regressor_per_sess(spmfile, n_sessions)
+        n_regressors = [i * hrfcomp for i in n_regressors]
+        nuisance_list = [i - len(conditions) for i in n_regressors]
+    else:
+        nuisance_list = []
+    sessions = (n_sessions, nuisance_list)
+
     # First level program
     try:
         l1prog = copy(setup.level1program).lower()
-        if setup.level1program not in ["spm"]:
+        if l1prog not in ["spm"]:
             raise SetupError("First level program %s not understood "
                              "or not supported." % setup.level1program)
     except AttributeError:
@@ -580,7 +578,33 @@ def firstlevel():
                 sessions=sessions,
                 l1prog=l1prog)
     
-def contrasts(par=None, type="con-img", format=".nii"):
+def _get_n_regressor_per_sess(matfilepath, n_sessions):
+    """Return a list with the number of regressors for each session."""
+    spmstruct = scio.loadmat(matfilepath, struct_as_record=False)["SPM"].flat[0]
+    version = spmstruct.SPMid.flat[0]
+    switch = dict(SPM8 = _parse_spm8_matfile,
+                  SPM5 = _parse_spm5_matfile)
+    try:
+        return switch[version[:4]](spmstruct, n_sessions)
+    except KeyError:
+        raise NotImplementedError("Parsing %s .mat file" % version[:4])
+
+def _parse_spm8_matfile(spmstruct, n_sessions):
+    """Return a list of regressor count per session."""
+    names = spmstruct.xX.flat[0].name[0]
+    sessionlist = [0 for i in range(n_sessions+1)]
+    session = 0
+    pattern = names[0][0].replace("Sn(1) ", "")
+    for name in names:
+        if pattern in name[0]:
+            session += 1
+        sessionlist[session] += 1
+    return sessionlist[1:]
+
+def _parse_spm5_matfile(spm_struct, n_sessions):
+    raise NotImplementedError("Parsing SPM5 .mat file (yet)")
+
+def contrasts(type="con-img", format=".nii"):
     """Return information about contrasts.
     
     This function controls the contrast images used in the analysis.
@@ -605,10 +629,6 @@ def contrasts(par=None, type="con-img", format=".nii"):
 
     # Get the specified dict from setup
     contrastdict = deepcopy(setup.contrasts)
-
-    # Return the full dict if called with an empty scope
-    if par is None:
-        return contrastdict
 
     # Get the dictionary for the paradigm we"re looking at
     contrasts = contrastdict[par]
@@ -753,29 +773,3 @@ def subjects(group = None, subject = None):
         return subjects.keys()
     else:
         raise Exception("Group '%s' not found." % group)
-
-
-def overwrite(filetype=None):
-    """Control file overwriting.
-    
-    Query whether a given filetype should be overwritten if it is found
-    to exist at runtime.
-
-    If this filetype is None, the function will return the dictionary
-
-    Parameters
-    ----------
-    string specifying file type
-
-    Returns
-    -------
-    boolean where True means "overwrite"
-    
-    """
-
-    overwrite = setup.overwrite
-
-    if filetype is None:
-        return overwrite
-    else:
-        return overwrite[filetype]

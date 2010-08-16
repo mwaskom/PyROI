@@ -4,9 +4,7 @@ Features
 Extraction
 ----------
 Add process method
-Average betas across sessions before extraction
 Group processing reports (ie group_atlas_exsits, etc.)
-Auto-init paradigm if only one paradigm in config
 Add diffusion extraction
 
 Atlases
@@ -22,14 +20,11 @@ Analysis
 Stimulus locked timecourses
 GLM
 FIR
-Mask > MVPA/SVC
 Different data table output format
 
 Implementation
 ==============
-Transition to NiPype 0.3
-Wrap nipype interfaces in Node (if this works)
-Replace class ancestor calls with super()
+De-Nipypeize
 
 Aesthetic
 =========
