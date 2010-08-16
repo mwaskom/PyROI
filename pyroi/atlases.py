@@ -102,11 +102,9 @@ class Atlas(RoiBase):
 
         Parameters
         ----------
-        analysis : Analysis object or dict
+        analysis : int, dict, or analysis object
 
         """
-        if isinstance(analysis, dict):
-            analysis = source.Analysis(analysis)
         self.init_analysis(analysis)
 
     def __str__(self):
@@ -977,6 +975,24 @@ class Atlas(RoiBase):
             print res
             result(res)
         return result
+
+    def process(self, subject, analysis, force=1):
+        """Process a subject up through extraction."""
+        if isinstance(analysis, dict) or isinstance(analysis, int):
+            analysis = source.Analysis(analysis)
+        self.init_paradigm(analysis.paradigm)
+        self.init_subject(subject)
+        result = RoiResult()
+        if force==2 or (not self._atlas_exists() and force==1):
+            result(self.make_atlas())
+        self.init_analysis(analysis)
+        if force==2 or (not self._source_exists() and force==1):
+            result(self.prepare_source_images(reg=force)
+        if force==2 or (not self._() and force==1):
+
+        
+        
+
 
 class FreesurferAtlas(Atlas):
     """Class for Freesurfer atlases.
