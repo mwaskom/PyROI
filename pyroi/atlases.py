@@ -4,16 +4,22 @@ This module contains classes with methods that relate to atlas manipulation.
 Classes
 -------
 Atlas              :  Base class with most processing methods
+
 FreesurferAtlas    :  Methods for extraction from Freesurfer volume and surface 
                       atlases in native space
+
 HarvardOxfordAtlas :  Methods for extraction from the Harvard-Oxford probabilistic
                       atlas in standard space
+
 SigSurfAtlas       :  Methods for turning the blobs on a second-level Freesurfer
                       significance map into an atlas
+
 LabelAtlas         :  Methods for the creation of user-defined atlases from
                       Freesurfer surface labels
+
 MaskAtlas          :  Methods for the creation of user-defined atlases from
                       binary mask images in standard space
+
 SphereAtlas        :  Methods for the creation of user-defined atlases from
                       spherical ROIs
 
@@ -808,7 +814,8 @@ class Atlas(RoiBase):
                         res(maskreg.register())
         extractvols = source.init_stat_object(self.analysis, debug=self.debug)
         extractvols.init_subject(self.subject)
-        res(extractvols.concatenate())
+        if not self.analysis.extract == "timecourse":
+            res(extractvols.concatenate())
         if self.manifold == "surface":
             res(extractvols.sample_to_surface())
         if self.mask:

@@ -9,8 +9,8 @@ imported through the ``import_setup()`` fucntion.
 
 See the docstrings for individual functions in this module for 
 information on how to use them.
-"""
 
+"""
 import os
 import re
 import imp

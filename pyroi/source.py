@@ -8,10 +8,17 @@ on atlas objects.
 Classes
 -------
 Analysis         :  An object that defines analysis parameters
+
 FirstLevelStats  :  Base source image object
+
 BetaImage        :  Provides methods for preparing parameter estimate images
+
 ContrastImage    :  Provides methods for preparing contrast effect size images
+
+TimecourseImage  :  Provides methods for preparing timecourse images
+
 TStatImage       :  Provides methods for preparing T statisic images
+
 SigImage         :  Provides methods for preparing -log10(p) statistical images
 
 Functions
@@ -38,7 +45,7 @@ import core
 from core import RoiBase, RoiResult
 
 __all__ = ["Analysis", "FirstLevelStats", 
-           "BetaImage", "ContrastImage", "TStatImage", "SigImage",
+           "BetaImage", "ContrastImage", "TStatImage", "SigImage", "Timecourse",
            "init_stat_object"]
 
 __module__ = "source"
@@ -366,10 +373,11 @@ class Timecourse(FirstLevelStats):
         """Initialize the object for a subject"""
         self.subject = subject
         self.subjgroup = cfg.subjects(subject=subject)
+        self.roistatdir = os.path.join(self.roidir, "levelone", "timecourse",
+                                       self.analysis.paradigm, subject)
         self.extractvol = cfg.pathspec("timecourse", self.analysis.paradigm, 
                                        self.subject, self.subjgroup)
-            
-        self.extractsurf = None
+        self.extractsurf = os.path.join(self.roistatdir, "%s.timecourse.mgz")
         self._regtreepath = os.path.join(self.roidir, "reg", self.analysis.paradigm,
                                          subject, "func2orig.dat")
         cfgreg = cfg.pathspec("regmat", self.analysis.paradigm, self.subject,

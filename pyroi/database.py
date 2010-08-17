@@ -101,7 +101,10 @@ def build_database(atlas, analysis, subjects=None):
     elif analysis["extract"] == "timecourse":
         atlas.init_subject(subjects[0])
         atlas(analysis)
-        dummy = np.genfromtxt(atlas.functxt)
+        if atlas.manifold == "volume":
+            dummy = np.genfromtxt(atlas.functxt)
+        else:
+            dummy = np.genfromtxt(atlas.functxt % atlas.iterhemi[0])
         ntps = dummy.shape[0]
         func = np.array(["%s-%d"%(cfg.paradigms(analysis["par"]),i) for i in range(ntps)],)
 
