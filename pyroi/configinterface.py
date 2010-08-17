@@ -9,8 +9,8 @@ imported through the ``import_setup()`` fucntion.
 
 See the docstrings for individual functions in this module for 
 information on how to use them.
-"""
 
+"""
 import os
 import re
 import imp
@@ -707,7 +707,8 @@ def pathspec(imgtype, paradigm=None, subject=None, group=None, contrast=None):
    
     if not imgdict[imgtype]:
         return None
-    varpath = os.path.join(basepath, imgdict[imgtype])
+    if not os.path.isabs(imgdict[imgtype]):
+        varpath = os.path.join(basepath, imgdict[imgtype])
 
     for var in vardict:
         if var in varpath:

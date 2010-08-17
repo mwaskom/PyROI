@@ -16,6 +16,8 @@ BetaImage        :  Provides methods for preparing parameter estimate images
 
 ContrastImage    :  Provides methods for preparing contrast effect size images
 
+TimecourseImage  :  Provides methods for preparing timecourse images
+
 TStatImage       :  Provides methods for preparing T statisic images
 
 SigImage         :  Provides methods for preparing -log10(p) statistical images
@@ -46,7 +48,7 @@ import core
 from core import RoiBase, RoiResult
 
 __all__ = ["Analysis", "FirstLevelStats", 
-           "BetaImage", "ContrastImage", "TStatImage", "SigImage",
+           "BetaImage", "ContrastImage", "TStatImage", "SigImage", "Timecourse",
            "init_stat_object"]
 
 __module__ = "source"
@@ -397,6 +399,35 @@ class SigImage(FirstLevelStats):
 
         self._init_subject = True                                               
 
+class Timecourse(FirstLevelStats):
+    """Timecourse class"""
+    def __init__(self, analysis, **kwargs):
+        
+        FirstLevelStats.__init__(self, analysis, **kwargs)
+        self.statsdir = os.path.join(self.roidir, "levelone", "timecourse")
+    
+    def init_subject(self, subject):
+        """Initialize the object for a subject"""
+        self.subject = subject
+        self.subjgroup = cfg.subjects(subject=subject)
+        self.roistatdir = os.path.join(self.roidir, "levelone", "timecourse",
+                                       self.analysis.paradigm, subject)
+        self.extractvol = cfg.pathspec("timecourse", self.analysis.paradigm, 
+                                       self.subject, self.subjgroup)
+        self.extractsurf = os.path.join(self.roistatdir, "%s.timecourse.mgz")
+        self._regtreepath = os.path.join(self.roidir, "reg", self.analysis.paradigm,
+                                         subject, "func2orig.dat")
+        cfgreg = cfg.pathspec("regmat", self.analysis.paradigm, self.subject,
+                              self.subjgroup)
+        if cfgreg:
+            self.regmat = cfgreg
+        else: 
+            self.regmat = self._regtreepath
+        self.roistatdir = os.path.join(self.roidir, "levelone", "contrast",
+                                       self.analysis.paradigm, subject)
+
+        self._init_subject = True                                               
+
 def init_stat_object(analysis, **kwargs):
     """Initalize the proper first level statistic class with an analysis object.
     
@@ -421,5 +452,7 @@ def init_stat_object(analysis, **kwargs):
         return BetaImage(analysis, **kwargs)
     elif analysis.extract == "contrast":
         return ContrastImage(analysis, **kwargs)
-    elif analysis.extract in ["timecourse", "tstat", "sig"]:
+    elif analysis.extract == "timecourse":
+        return Timecourse(analysis, **kwargs)
+    elif analysis.extract in ["tstat", "sig"]:
         raise NotImplementedError("%s cannot yet be extracted." % analysis.extract)

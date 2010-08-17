@@ -99,7 +99,14 @@ def build_database(atlas, analysis, subjects=None):
     elif analysis["extract"] == "contrast":
         func = np.array(cfg.contrasts(analysis["par"], "names"))
     elif analysis["extract"] == "timecourse":
-        raise NotImplementedError("Using build_database() function for timecourse extractions")
+        atlas.init_subject(subjects[0])
+        atlas(analysis)
+        if atlas.manifold == "volume":
+            dummy = np.genfromtxt(atlas.functxt)
+        else:
+            dummy = np.genfromtxt(atlas.functxt % atlas.iterhemi[0])
+        ntps = dummy.shape[0]
+        func = np.array(["%s-%d"%(cfg.paradigms(analysis["par"]),i) for i in range(ntps)],)
 
     if atlas.manifold == "volume":
         addrois = np.array([atlas.lutdict[id] for id in atlas.regions])
