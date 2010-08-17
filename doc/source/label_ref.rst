@@ -45,7 +45,7 @@ Atlas Notes
 -----------
 
 The :class:`LabelAtlas` class can be used to extract statistics from regions defined in
-a variety of ways, including by functional activation or morphometric aberration.  The
+a variety of ways, including by functional activation or morphological aberration.  The
 `TkSurfer <http://surfer.nmr.mgh.harvard.edu/fswiki/TkSurferGuide>`_ program (part of
 Freesurfer) has some nice tools for the creation of labels from functional blobs;
 if you load the curvature file and an annotation along with your activation map, you 
