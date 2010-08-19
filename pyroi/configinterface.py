@@ -80,8 +80,10 @@ def analysis(dictnumber=None):
     list of dicts or dict
 
     """
-
-    analyses = setup.analysis
+    if hasattr(setup, "extractions"):
+        analyses = setup.extractions
+    else:
+        analyses = setup.analysis
     analyses = [anal for anal in analyses if anal["par"]]
 
 
