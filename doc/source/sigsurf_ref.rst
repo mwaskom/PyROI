@@ -1,4 +1,4 @@
-.. _sigsurf_atlases::
+.. sigsurf_atlases::
 
 SigSurf Atlases
 ===============

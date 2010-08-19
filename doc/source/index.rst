@@ -18,9 +18,13 @@ Documentation
    contents
    atlas_reference
 
- :ref:`genindex`
+* :ref:`genindex`
 
- :ref:`modindex`
+* :ref:`modindex`
 
- :ref:`search`
+* :ref:`search`
+
+
+
+
 
