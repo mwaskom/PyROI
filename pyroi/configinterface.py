@@ -606,7 +606,7 @@ def _parse_spm8_matfile(spmstruct, n_sessions):
 def _parse_spm5_matfile(spm_struct, n_sessions):
     raise NotImplementedError("Parsing SPM5 .mat file (yet)")
 
-def contrasts(type="con-img", format=".nii"):
+def contrasts(par=None, type="con-img", format=".nii"):
     """Return information about contrasts.
     
     This function controls the contrast images used in the analysis.
