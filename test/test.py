@@ -46,6 +46,6 @@ if standard:
     for anal in roi.cfg.analysis():
         for name in roi.cfg.atlases():
             atlas = roi.init_atlas(name, anal["par"], debug= not run)
-            log(atlas.group_make_atlas())
+            log(atlas.make_atlas())
             log(atlas.group_prepare_source_images(anal))
             log(atlas.group_extract(anal))

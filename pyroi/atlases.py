@@ -36,6 +36,7 @@ import sys
 import shutil
 import subprocess
 from glob import glob
+from tempfile import mkdtemp
 
 import numpy as np
 import scipy.stats as stats
@@ -145,17 +146,17 @@ class Atlas(RoiBase):
                 exists = "No"
             repr = "\n".join((repr, "Atlas Image%s Exist%s -- %s"%(s1,s2,exists)))
             if self._atlas_exists():
+                atlas = ("...%s"
+                         % self.atlas.replace(cfg.setup.basepath, "").strip("/"))
                 if self.manifold == "surface":
-                    atlas = ("...%s"
-                             % self.atlas.replace(cfg.setup.basepath, "")[1:])
-                    repr = "\n".join((repr, "Atlas Image%s -- %s" 
+                    repr = "\n".join((repr, "Atlas Image%s:","    %s" 
                                       % (s1, atlas % self.iterhemi[0])))
                     if len(self.iterhemi) == 2:
-                        repr = "\n".join((repr,"                %s" 
+                        repr = "\n".join((repr,"\t%s" 
                                           % atlas
                                           % self.iterhemi[1]))
                 else:
-                    repr = "\n".join((repr, "Atlas Image -- %s" % self.atlas))
+                    repr = "\n".join((repr, "Atlas Image:","    %s" % atlas))
             if self._init_analysis:
                 repr = "\n".join((repr, ""))
                 repr = "\n".join((repr, "Analysis -- %s" % self.analysis.name))
@@ -166,20 +167,43 @@ class Atlas(RoiBase):
                 repr = "\n".join((repr, 
                     "Source Image%s Exist%s -- %s"%(s1,s2,exists)))
                 if self._source_exists():
+                    source = ("...%s"
+                              % self.analysis.source.replace(
+                                 cfg.setup.basepath, "").strip())
                     if self.manifold == "surface":
                         source = ("...%s"
                                   % self.analysis.source.replace(
-                                     cfg.setup.basepath, "")[1:])
-                        repr = "\n".join((repr, "Source Image%s -- %s" 
+                                     cfg.setup.basepath, "").strip("/"))
+                        repr = "\n".join((repr, "Source Image%s:","    %s" 
                                           % (s1, source % self.iterhemi[0])))
                         if len(self.iterhemi) == 2:
-                            repr = "\n".join((repr,"                 %s" 
+                            repr = "\n".join((repr,"    %s" 
                                               % source
                                               % self.iterhemi[1]))
                     else:
-                        repr = "\n".join((repr, "Source Image -- %s" 
-                                                 % self.analysis.source))
+                        repr = "\n".join((repr, "Source Image:", "    %s" 
+                                                 % source))
 
+                if self._extract_exists():
+                    exists = "Yes"
+                else:
+                    exists = "No"
+                repr = "\n".join((repr, 
+                    "\nExtraction File%s Exist%s -- %s"%(s1,s2,exists)))
+                if self._extract_exists():
+                    text = ("...%s"
+                             % self.functxt.replace(
+                               cfg.setup.basepath, "").strip("/"))
+                    if self.manifold == "surface":
+                        repr = "\n".join((repr, "Extraction Table%s:", "    %s" 
+                                          % (s1, text % self.iterhemi[0])))
+                        if len(self.iterhemi) == 2:
+                            repr = "\n".join((repr,"    %s" 
+                                              % source
+                                              % self.iterhemi[1]))
+                    else:
+                        repr = "\n".join((repr, "Extraction Table:","    %s" 
+                                                 % text))
         return repr
 
     def _atlas_exists(self):
@@ -365,7 +389,7 @@ class Atlas(RoiBase):
             cmd.append("-overlay %s" % self.analysis.maskimg % hemi)
             cmd.append("-fthresh %.1f" % self.analysis.maskthresh)
             cmd.append("-%s" % self.analysis.masksign)
-            cmd.append("-fmid 1000")
+            cmd.append("-fmax %.1f" % (0.1 + self.analysis.maskthresh))
 
         if self.debug:
             print " ".join(cmd)
@@ -382,7 +406,11 @@ class Atlas(RoiBase):
             anat = os.path.join(os.getenv("FSLDIR"), "data", "standard",
                                 "avg152T1.nii.gz")
         cmd.append("%s:%s" % (anat, "colormap=grayscale"))
-        cmd.append("%s:colormap=lut:lut=%s" % (self.atlas, self.lutfile))
+        cmd.append("%s:colormap=lut:lut=%s:opacity=.5" % (self.atlas, self.lutfile))
+        if mask and self._init_analysis:
+            thresh = [i + self.analysis.maskthresh for i in [0., 0.001, 0.002]]
+            cmd.append("%s:colormap=heat:heatscale=%.3f,%.3f,%.3f"
+                       %tuple([self.analysis.maskimg] + thresh))
 
         if self.debug:
             print " ".join(cmd)
@@ -407,56 +435,7 @@ class Atlas(RoiBase):
         else:
             subprocess.call(cmd)
         
-
-    # Processing methods
-    def make_atlas(self, reg=1, gen_new_atlas=False):
-        """Run the neccessary preprocessing steps to make a mask or label atlas.
-        
-        For native-space atlases (Freesurfer and Label atlases), a subject
-        must be initialized.  This is uneccesary for standard-space atlases.
-
-        Parameters
-        ----------
-        reg : int, optional
-            This option controls whether Freesurfer's bbregister program will 
-            be run to register the mean functional volume to the anatomical.  
-            This is only relevant for Freesurfer atlases.  It has three settings:
-            0 : do not create registration matrix
-            1 : create registration matrix if it does not exist -- default
-            2 : create or overwrite registration matrix
-        gen_new_atlas : bool, optional
-            For SigSurf atlases, a surface significance map only needs to be
-            analyzed for clusters once.  By default, if the surfcluster summary
-            file is found, this method will skip that step.  To force  a new
-            cluster summary table to be made, set to true.  This parameter is
-            only relevant for sigsurf atlases.
-
-
-        Returns
-        -------
-        RoiResult object
-            
-        """
-        res = RoiResult()
-        if self.space == "native" and not self._init_subject:
-            raise InitError("Subject")
-        switch = dict(freesurfer = self._make_freesurfer_atlas,
-                      label      = self._make_label_atlas,
-                      sigsurf    = self._make_sigsurf_atlas,
-                      mask       = self._make_mask_atlas,
-                      sphere     = self._make_sphere_atlas)
-                      
-        try:                      
-            res(switch[self.source]())
-            if self._atlas_exists:
-                res(self._stats())
-                if self.manifold == "volume":
-                    res(self._write_mask())
-        except KeyError:
-            res("No make_atlas processing neccessary for %s atlases." 
-                % self.source)
-        return res
-
+    
     def group_make_atlas(self, subjects=None, reg=1, gen_new_atlas=False):
         """Run atlas preprocessing steps for a list of subjects.
         
@@ -477,16 +456,14 @@ class Atlas(RoiBase):
             1 : create registration matrices if they do not exist -- default
             2 : create or overwrite registration matricies
         gen_new_atlas : bool, optional
-            For SigSurf atlases, a surface significance map only needs to be
-            analyzed for clusters once.  By default, if the surfcluster summary
-            file is found, this method will skip that step.  To force  a new
-            cluster summary table to be made, set to true.  The new table will
-            only be generated for the first subject in the gruop list.  This 
-            parameter is only relevant for sigsurf atlases.
-
+            An average surface significance map only needs to be analyzed 
+            for clusters once.  By default, if the surfcluster summary file
+            is found, this method will skip that step.  To force  a new
+            cluster summary table to be made, set to true.  
+        
         Returns
         -------
-        RoiResult object
+        result : RoiResult object
 
         """
         if subjects is None:
@@ -494,35 +471,23 @@ class Atlas(RoiBase):
         elif isinstance(subjects, str):
             subjects = cfg.subjects(subjects)
         result = RoiResult()
-        if self.space == "standard":
+        if self.source == "standard":
             result(self.make_atlas(reg))
         else:
             for i, subject in enumerate(subjects):
                 self.init_subject(subject)
-                if not i:
-                    gen_new_atlas = gen_new_atlas
+                if self.source != "sigsurf":
+                    res = self.make_atlas(reg)
                 else:
-                    gen_new_atlas = False
-                res = self.make_atlas(reg, gen_new_atlas)
+                    if not i:
+                        gen_new_atlas = gen_new_atlas
+                    else:
+                        gen_new_atlas = False
+                    res = self.make_atlas(reg, gen_new_atlas=gen_new_atlas)
                 print res
                 result(res)
         return result
 
-    def _make_mask_atlas(self):
-        """Make the single atlas image and look-up-table from a group of masks."""
-        self.tempdir = os.path.join(self.basedir, ".temp")
-        if not os.path.isdir(self.tempdir): os.mkdir(self.tempdir)
-        self.tempvols = []
-        result = RoiResult(self._write_lut())
-        for segnum in range(1, len(self.sourcefiles) + 1):
-            res = self._adj_binary_segvol(segnum)
-            result(res)
-
-        res = self._combine_segvols()
-        result(res)
-        shutil.rmtree(self.tempdir)
-
-        return result
 
     def _adj_binary_segvol(self, segnum):
         """Adjust the segmentation value of a binary mask image."""
@@ -547,19 +512,6 @@ class Atlas(RoiBase):
 
         return self._run(combine)
 
-    def _make_sigsurf_atlas(self, gen_new_atlas=False):
-        """Turn a second level sig image into an atlas."""
-        result = RoiResult()
-        if not os.path.isfile(self.surfclustersum) or gen_new_atlas:
-            result(self._surfcluster())
-            self._get_atlas_info_from_sum()
-            result(self._write_lut())
-        else:
-            self._get_atlas_info_from_sum()
-        result(self._resample_labels())
-        result(self._gen_annotation())
-        
-        return result
 
     def _surfcluster(self):
         """Run mri_surfcluster to get a list of significant labels."""
@@ -606,16 +558,6 @@ class Atlas(RoiBase):
         self.all_regions = {}
         self.all_regions[self.hemi] = self.lutdict.keys()
             
-    def _make_label_atlas(self):
-        """Turn a list of label files into a label annotation."""
-        result = RoiResult(self._write_lut())
-        if self.sourcelevel == "group":
-            result(self._resample_labels())
-        else:
-            result(self._copy_labels())
-        result(self._gen_annotation())
-        return result
-
     def _copy_labels(self):
         """Copy labels from the sourcedir to the roi atlas hierarchy."""
         result = RoiResult()
@@ -689,27 +631,6 @@ class Atlas(RoiBase):
         lutfile.close()
         return RoiResult("Writing %s" % self.lutfile)
 
-    def _make_freesurfer_atlas(self, reg=1):
-        """Run atlas preprocessing steps for a Freesurfer atlas."""
-        if not os.path.isfile(self.regmat) and not reg:
-            print ("\nRegistration matrix not found for %s."
-                   "\nCall method with a different setting for the `reg` argument "
-                   "to create."
-                   % self.subject)
-            return
-        result = RoiResult()
-        if self.manifold == "volume":
-            if reg==2 or (reg==1 and not os.path.isfile(self.regmat)):
-                reg = FSRegister(debug=self.debug)
-                reg.init_paradigm(self.paradigm)
-                reg.init_subject(self.subject)
-                result(reg.register())
-            result(self._resample())
-        else:
-            result(self._copy_atlas())
-            result(self._inv_copy_annot())
-        return result
-
     def _resample(self):
         """Resample a freesurfer volume atlas into functional space."""
 
@@ -723,9 +644,6 @@ class Atlas(RoiBase):
         transform.inputs.outfile = self.atlas
 
         return self._run(transform)
-
-    def _make_sphere_atlas(self):
-        raise NotImplementedError
 
     def _write_mask(self):
         """Turn an atlas into a binary mask volume."""
@@ -1254,6 +1172,97 @@ class FreesurferAtlas(Atlas):
 
             self._init_subject = True
 
+    def make_atlas(self, reg=1):
+        """Run the neccessary preprocessing steps to make a create the atlas image.
+        
+        Parameters
+        ----------
+        reg : int, optional
+            This option controls whether Freesurfer's bbregister program will 
+            be run to register the mean functional volume to the anatomical.  
+            This is only relevant for Freesurfer atlases.  It has three settings:
+            0 : do not create registration matrix
+            1 : create registration matrix if it does not exist -- default
+            2 : create or overwrite registration matrix
+
+        Notes
+        -----
+        For volume atlases, the original image, which is in Freesurfer anatomical
+        space (1mm isotropic voxels) is resampled into native functional space
+        by inverting the transformation matrix used to map functional images to
+        the anatomical models.  A mask volume is also created by binarizing the
+        atlas image so that all voxels within regions specified in the region list
+        of the config dictionary have a value of 1 and other voxels have a value of
+        0.  This mask image can be used for small-volume correction, MVPA analysis,
+        or any other situation that requires such a mask.
+
+        Surface atlases do not have to undergo any processing steps to be used to
+        define ROIs for extraction, but the .annot file is copied over to the roi
+        directory tree.  
+
+        Returns
+        -------
+        result : RoiResult object
+            
+        """
+        result = RoiResult()
+        if self.space == "native" and not self._init_subject:
+            raise InitError("Subject")
+        if not os.path.isfile(self.regmat) and not reg:
+            print ("\nRegistration matrix not found for %s."
+                   "\nCall method with a different setting for the `reg` argument "
+                   "to create."
+                   % self.subject)
+            return
+        result = RoiResult()
+        if self.manifold == "volume":
+            if reg==2 or (reg==1 and not os.path.isfile(self.regmat)):
+                reg = FSRegister(debug=self.debug)
+                reg.init_paradigm(self.paradigm)
+                reg.init_subject(self.subject)
+                result(reg.register())
+            result(self._resample())
+        else:
+            result(self._copy_atlas())
+            result(self._inv_copy_annot())
+        if self._atlas_exists:
+            result(self._stats())
+            if self.manifold == "volume":
+                result(self._write_mask())
+        return result
+
+    def group_make_atlas(self, subjects=None, reg=1):
+        """Run atlas preprocessing steps for a list of subjects.
+        
+        Parameters
+        ----------
+        subjects : list, or str, optional
+            List of subjects to preprocess. If a string, it runs the
+            group defined by that name in the config file. Will run
+            the full subject list from config if ommitted.
+        reg : int, optional
+            See make_atlas() docstring for more info
+            0 : do not create registration matrices
+            1 : create registration matrices if they do not exist -- default
+            2 : create or overwrite registration matricies
+        
+        Returns
+        -------
+        result : RoiResult object
+
+        """
+        if subjects is None:
+            subjects = cfg.subjects()
+        elif isinstance(subjects, str):
+            subjects = cfg.subjects(subjects)
+        result = RoiResult()
+        for i, subject in enumerate(subjects):
+            self.init_subject(subject)
+            res = self.make_atlas(reg)
+            print res
+            result(res)
+        return result
+
 class FSRegister(FreesurferAtlas):
     """Extension of FreesurferAtlas for intramodal registration.
     
@@ -1424,6 +1433,14 @@ class HarvardOxfordAtlas(Atlas):
    
        self._init_subject = True
 
+    def make_atlas(self):
+        """Simply returns an empty RoiResult object.
+        
+        No processing is needed for the Harvard Oxford atlas.
+        
+        """
+        return RoiResult(None)
+
 
 class SigSurfAtlas(Atlas):
     """Atlas made from a second level sig map on the average surface.
@@ -1485,7 +1502,8 @@ class SigSurfAtlas(Atlas):
 
         self.basedir = os.path.join(self.roidir, "atlases", "sigsurf", 
                                     cfg.projectname())
-        self.lutfile = os.path.join(self.basedir, "lookup_tables", "%s.lut" % self.atlasname)
+        self.lutfile = os.path.join(
+            self.basedir, "lookup_tables", "%s.lut" % self.atlasname)
         self.sourcedir = os.path.join(self.basedir, "source", self.atlasname)
         self.surfclustersum = os.path.join(self.sourcedir, 
                                            "%s.sum" % self.atlasname)
@@ -1509,6 +1527,76 @@ class SigSurfAtlas(Atlas):
                                       "label", "%s." + self.fname)
         
         self._init_subject = True
+
+    def make_atlas(self, gen_new_atlas=False):
+        """Turn a second level sig image into an atlas image.
+
+        Parameters
+        ----------
+        gen_new_atlas : bool, optional
+            An average surface significance map only needs to be analyzed 
+            for clusters once.  By default, if the surfcluster summary file
+            is found, this method will skip that step.  To force  a new
+            cluster summary table to be made, set to true.  
+        
+        Returns
+        -------
+        result : RoiResult object
+
+        """
+        result = RoiResult()
+        if not os.path.isfile(self.surfclustersum) or gen_new_atlas:
+            result(self._surfcluster())
+            self._get_atlas_info_from_sum()
+            result(self._write_lut())
+        else:
+            self._get_atlas_info_from_sum()
+        result(self._resample_labels())
+        result(self._gen_annotation())
+        if self._atlas_exists():
+            result(self._stats())
+        return result
+
+    def group_make_atlas(self, subjects=None, gen_new_atlas=False):
+        """Run atlas preprocessing steps for a list of subjects.
+        
+        Prerequisite
+        ------------
+        For native space atlases, the paradigm has to be initialized.  
+        This is uneccesary for standard space atlases.
+
+        Parameters
+        ----------
+        subjects : list, or str, optional
+            List of subjects to preprocess. If a string, it runs the
+            group defined by that name in the config file. Will run
+            the full subject list from config if ommitted.
+        gen_new_atlas : bool, optional
+            An average surface significance map only needs to be analyzed 
+            for clusters once.  By default, if the surfcluster summary file
+            is found, this method will skip that step.  To force  a new
+            cluster summary table to be made, set to true.  
+        
+        Returns
+        -------
+        result : RoiResult object
+
+        """
+        if subjects is None:
+            subjects = cfg.subjects()
+        elif isinstance(subjects, str):
+            subjects = cfg.subjects(subjects)
+        result = RoiResult()
+        for i, subject in enumerate(subjects):
+            self.init_subject(subject)
+            if not i:
+                gen_new_atlas = gen_new_atlas
+            else:
+                gen_new_atlas = False
+            res = self.make_atlas(gen_new_atlas=gen_new_atlas)
+            print res
+            result(res)
+        return result
 
 
 class LabelAtlas(Atlas):
@@ -1596,6 +1684,59 @@ class LabelAtlas(Atlas):
                                       "label", "%s." + self.fname)
         self._init_subject = True
 
+    def make_atlas(self):
+        """Run the neccessary steps required to make the atlas annotation.
+        
+        Notes
+        -----
+        If the atlas is defined in average space, the first step is to resample
+        each label back to individual subject space via the spherical transformation.
+        Once all labels are in native space, a color look-up-table is generated, and
+        then the labels are combined into a single annotation that is used to 
+        define regions for extraction.  Finally, a summary file is generated that
+        reports the size of each region in both number of vertices and mm^3.
+
+        Returns
+        --------
+        RoiResult object
+        
+        """
+        result = RoiResult(self._write_lut())
+        if self.sourcelevel == "group":
+            result(self._resample_labels())
+        else:
+            result(self._copy_labels())
+        result(self._gen_annotation())
+        if self._atlas_exists():
+            result(self._stats())
+        return result
+
+    def group_make_atlas(self, subjects=None):
+        """Run atlas preprocessing steps for a list of subjects.
+        
+        Parameters
+        ----------
+        subjects : list, or str, optional
+            List of subjects to preprocess. If a string, it runs the
+            group defined by that name in the config file. Will run
+            the full subject list from config if ommitted.
+        
+        Returns
+        -------
+        result : RoiResult object
+
+        """
+        if subjects is None:
+            subjects = cfg.subjects()
+        elif isinstance(subjects, str):
+            subjects = cfg.subjects(subjects)
+        result = RoiResult()
+        for i, subject in enumerate(subjects):
+            self.init_subject(subject)
+            res = self.make_atlas()
+            print res
+            result(res)
+        return result
 
 class MaskAtlas(Atlas):
     """Class for atlases constructed from binary volume masks.
@@ -1675,8 +1816,25 @@ class MaskAtlas(Atlas):
         
         self._init_subject = True
 
-class SphereAtlas(Atlas):
+    def make_atlas(self):
+        """Make the single atlas image and look-up-table from a group of masks."""
+        self.tempdir = mkdtemp()
+        self.tempvols = []
+        result = RoiResult(self._write_lut())
+        for segnum in range(1, len(self.sourcefiles) + 1):
+            res = self._adj_binary_segvol(segnum)
+            result(res)
 
+        res = self._combine_segvols()
+        result(res)
+        shutil.rmtree(self.tempdir)
+        if self._atlas_exists():
+            result(self._stats())
+        return result
+
+
+class SphereAtlas(Atlas):
+    """Not yet implemented."""
     def __init__(self, atlasdict, subject=None, **kwargs):
 
         if isinstance(atlasdict, str):
@@ -1721,6 +1879,8 @@ class SphereAtlas(Atlas):
         
         self._init_subject = True
 
+    def make_atlas(self):
+        raise NotImplementedError
 
 def init_atlas(atlas, *args, **kwargs):
     """Initialize the proper atlas class with an atlas dictionary.
