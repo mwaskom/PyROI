@@ -491,27 +491,27 @@ class Atlas(RoiBase):
 
     def _adj_binary_segvol(self, segnum):
         """Adjust the segmentation value of a binary mask image."""
-        adjust = fs.Concatenate()
+        cmd = ["mri_concat"]
 
-        adjust.inputs.invol = self.sourcefiles[segnum - 1]
-        output = os.path.join(self.tempdir, "adj-%s" 
-                              % os.path.split(self.sourcefiles[segnum-1])[1])
+        cmd.append("--i %s"%self.sourcefiles[segnum-1])
+        output = os.path.join(
+            self.tempdir, "adj-%s"%os.path.split(self.sourcefiles[segnum-1])[1])
         self.tempvols.append(output)
-        adjust.inputs.outvol = output
-        adjust.inputs.mul = segnum
+        cmd.append("--o %s"%output)
+        cmd.append("--mul %d"%segnum)
 
-        return self._run(adjust)
+        return self._run(cmd)
 
     def _combine_segvols(self):
         """Combine adjusted segvols into one atlas."""
-        combine = fs.Concatenate()
+        cmd = ["mri_concat"]
 
-        combine.inputs.invol = self.tempvols
-        combine.inputs.outvol = self.atlas
-        combine.inputs.combine = True
+        for vol in self.tempvols:
+            cmd.append("--i %s"%vol)
+        cmd.append("--o %s"%self.atlas)
+        cmd.append("--combine")
 
-        return self._run(combine)
-
+        return self._run(cmd)
 
     def _surfcluster(self):
         """Run mri_surfcluster to get a list of significant labels."""
@@ -633,17 +633,16 @@ class Atlas(RoiBase):
 
     def _resample(self):
         """Resample a freesurfer volume atlas into functional space."""
+        cmd = ["mri_vol2vol"]
+        
+        cmd.append("--mov %s"%self.meanfuncimg)
+        cmd.append("--targ %s"%self.origatlas)
+        cmd.append("--reg %s"%self.regmat)
+        cmd.append("--inv")
+        cmd.append("--interp nearest")
+        cmd.append("--o %s"%self.atlas)
 
-        transform = fs.ApplyVolTransform()
-
-        transform.inputs.targfile = self.origatlas
-        transform.inputs.sourcefile = self.meanfuncimg
-        transform.inputs.tkreg = self.regmat
-        transform.inputs.inverse = True
-        transform.inputs.interp = "nearest"
-        transform.inputs.outfile = self.atlas
-
-        return self._run(transform)
+        return self._run(cmd)
 
     def _write_mask(self):
         """Turn an atlas into a binary mask volume."""
@@ -669,17 +668,6 @@ class Atlas(RoiBase):
 
     def _surf_stats(self, hemi):
         """Generate stats for a surface atlas."""
-        
-        """Running this manually until NiPype interface is fixed
-        segstats = fs.SegStats()
-
-        segstats.inputs.annot = [self.subject, hemi, self.fname[3:-6]]
-        segstats.inputs.invol = self.atlas % hemi
-        segstats.inputs.segid = self.all_regions
-        segstats.inputs.sumfile = self.statsfile % hemi
-
-        return self._run(segstats)
-        """
         cmd = ["mri_segstats"]
 
         cmd.append("--annot %s %s %s" % (self.subject, hemi, self.atlasname))
@@ -694,17 +682,18 @@ class Atlas(RoiBase):
 
     def _vol_stats(self):
         """Generate stats for a volume atlas."""
-        segstats = fs.SegStats()
+        cmd = ["mri_segstats"]
 
-        segstats.inputs.segvol = self.atlas
-        segstats.inputs.invol = self.atlas
+        cmd.append("--seg %s"%self.atlas)
+        cmd.append("--i %s"%self.atlas)
         ids = self.all_regions
         ids.sort()
-        segstats.inputs.segid = ids
-        segstats.inputs.colortable = self.lutfile
-        segstats.inputs.sumfile = self.statsfile
+        for id in ids:
+            cmd.append("--id %d"%id)
+        cmd.append("--ctab %s"%self.lutfile)
+        cmd.append("--sum %s"%self.statsfile)
 
-        return self._run(segstats)
+        return self._run(cmd)
 
     def prepare_source_images(self, analysis=None, reg=1):
         """Prepare the functional and statistical images for extraction.
@@ -855,42 +844,43 @@ class Atlas(RoiBase):
 
     def _surf_extract(self, hemi):
         """Internal function to extract from a surface."""
-        funcex = fs.SegStats()
-        
-        funcex.inputs.annot = [self.subject, hemi, self.fname[:-6]]
-        funcex.inputs.invol = self.analysis.source % hemi
+        cmd = ["mri_segstats"]
+
+        cmd.append("--annot %s %s %s"%(self.subject, hemi, self.fname[:-6]))
+        cmd.append("--i %s"%self.analysis.source%hemi)
         ids = self.regions[hemi]
         ids.sort()
-        funcex.inputs.segid = ids
+        for id in ids:
+            cmd.append("--id %d"%id)
         if self.mask:
-            funcex.inputs.maskvol = self.analysis.maskimg % hemi
-            funcex.inputs.maskthresh = self.analysis.maskthresh
-            funcex.inputs.masksign = self.analysis.masksign
-        funcex.inputs.sumfile = self.funcstats % hemi
-        funcex.inputs.avgwftxt = self.functxt % hemi
-        funcex.inputs.avgwfvol = self.funcvol % hemi
+            cmd.append("--mask %s"%self.analysis.maskimg%hemi)
+            cmd.append("--maskthresh %.1d"%self.analysis.maskthresh)
+            cmd.append("--masksign %s"%self.analysis.masksign)
+        cmd.append("--avgwf %s"%self.functxt%hemi)
+        cmd.append("--avgwfvol %s"%self.funcvol%hemi)
+        cmd.append("--sum %s"%self.funcstats%hemi)
 
-        return self._run(funcex)
-        return cmdline, res
+        return self._run(cmd)
 
     def _vol_extract(self):
         """Internal function to extract from a volume."""
-        funcex = fs.SegStats()
+        cmd = ["mri_segstats"]
 
-        funcex.inputs.segvol = self.atlas
-        funcex.inputs.invol = self.analysis.source
+        cmd.append("--seg %s"%self.atlas)
+        cmd.append("--i %s"%self.analysis.source)
         ids = self.regions
         ids.sort()
-        funcex.inputs.segid = ids
+        for id in ids:
+            cmd.append("--id %d"%id)
         if self.mask:
-            funcex.inputs.maskvol = self.analysis.maskimg
-            funcex.inputs.maskthresh = self.analysis.maskthresh
-            funcex.inputs.masksign = self.analysis.masksign
-        funcex.inputs.sumfile = self.funcstats
-        funcex.inputs.avgwftxt = self.functxt
-        funcex.inputs.avgwfvol = self.funcvol
+            cmd.append("--mask %s"%self.analysis.maskimg)
+            cmd.append("--maskthresh %s"%self.analysis.maskthresh)
+            cmd.append("--masksign %s"%self.analysis.masksign)
+        cmd.append("--avgwf %s"%self.functxt)
+        cmd.append("--avgwfvol %s"%self.funcvol)
+        cmd.append("--sum %s"%self.funcstats)
 
-        return self._run(funcex)
+        return self._run(cmd)
 
     def group_extract(self, analysis, subjects=None):
         """Extract functional data for a group of subjects.
@@ -1313,20 +1303,15 @@ class FSRegister(FreesurferAtlas):
         RoiResult object
 
         """
-        reg = fs.BBRegister()
+        cmd = ["bbregister"]
 
-        reg.inputs.subject_id = self.subject
-        reg.inputs.sourcefile = self.meanfuncimg
-        reg.inputs.t2_contrast = True
-        reg.inputs.outregfile = self._regtreepath      
-        if method == "fsl":
-            reg.inputs.init_fsl = True
-        elif method == "spm":
-            reg.inputs.init_spm = True
-        elif method == "header":
-            reg.inputs.init_header = True
+        cmd.append("--s %s"%self.subject)
+        cmd.append("--mov %s"%self.meanfuncimg)
+        cmd.append("--bold")
+        cmd.append("--reg %s"%self._regtreepath)
+        cmd.append("--init-%s"%method)
 
-        return self._run(reg)
+        return self._run(cmd)
 
     def group_register(self, subjects=None, method="fsl"):
         """Register functional space to Freesurfer original atlas space for a group.
