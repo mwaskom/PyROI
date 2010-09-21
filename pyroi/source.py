@@ -116,16 +116,17 @@ class FirstLevelStats(RoiBase):
         """Concatenate the first level statistic images."""
         if not self._init_subject:
             raise InitError("Subject")
+        
         result = RoiResult()
         if hasattr(self, "_n_sessions") and self._n_sessions > 1:
             result(self.make_avg_betas())
         
-        concat = fs.Concatenate()
+        cmd = ["mri_concat"]
+        for f in self.extractlist:
+            cmd.append("--i %s"%f)
+        cmd.append("--o %s"self.extractvol)
 
-        concat.inputs.invol = self.extractlist
-        concat.inputs.outvol = self.extractvol
-
-        result(self._nipype_run(concat))
+        self._run(cmd)
         if hasattr(self, "_avgtempdir"):
             shutil.rmtree(self._avgtempdir)
         return result
@@ -137,13 +138,14 @@ class FirstLevelStats(RoiBase):
         for i, sourcelist in enumerate(self._avgsource):
             avgimg = os.path.join(self._avgtempdir,"avg-%d.mgz"%i)
             self.extractlist.append(avgimg)
-            average = fs.Concatenate()
 
-            average.inputs.invol = sourcelist
-            average.inputs.mean = True
-            average.inputs.outvol = avgimg
+            cmd = ["mri_concat"]
+            for f in sourcelist:
+                cmd.append("--i %s"%f)
+            cmd.append("--mean")
+            cmd.append("--o %s"%avgimg)
 
-            result(self._run(average))
+            result(self._run(cmd))
         return result
 
     def sample_to_surface(self):
@@ -164,7 +166,7 @@ class FirstLevelStats(RoiBase):
             cmd.append("--projfrac 1")
             cmd.append("--noreshape")
 
-            result = self._manual_run(cmd)
+            result = self._run(cmd)
             res(result)
 
         return res
