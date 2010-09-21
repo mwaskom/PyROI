@@ -41,7 +41,6 @@ from tempfile import mkdtemp
 import numpy as np
 import scipy.stats as stats
 import nibabel as nib
-import nipype.interfaces.freesurfer as fs
 
 import configinterface as cfg
 import source
