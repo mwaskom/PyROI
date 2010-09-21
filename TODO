@@ -10,6 +10,7 @@ Add diffusion extraction
 Atlases
 -------
 SigVol/SigClusterAtlas
+FS 5.0 Broadmann atlases
 User-created Freesurfer atlases
 Make SphereAtlas work
 Add wmparc support to Freesurfer Atlas
@@ -20,10 +21,6 @@ Stimulus locked timecourses
 GLM
 FIR
 Different data table output format
-
-Implementation
-==============
-De-Nipypeize
 
 Aesthetic
 =========
