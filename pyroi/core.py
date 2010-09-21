@@ -10,8 +10,11 @@ from copy import deepcopy
 from datetime import datetime
 from socket import gethostname
 import numpy as np
-import nipype.interfaces.base as pypebase
 import configinterface as cfg
+try:
+    import nipype.interfaces.base as pypebase
+except ImportError:
+    pass
 
 __all__ = ["RoiResult", "Log",
            "import_config", "write_config_base", "config_file_path", "find_id"]
@@ -42,10 +45,10 @@ class RoiBase(object):
         RoiResult object
         """
 
-        if isinstance(input, pypebase.Interface):
-            return self._nipype_run(input)
-        elif isinstance(input, list):
+        if isinstance(input, list):
             return self._manual_run(input)
+        elif isinstance(input, pypebase.Interface):
+            return self._nipype_run(input)
         else:
             raise TypeError("Unexpected input %s" % type(input))
             
