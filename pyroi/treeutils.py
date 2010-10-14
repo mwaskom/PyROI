@@ -118,13 +118,25 @@ def make_levelone_tree():
         if not os.path.isdir(direct):
             os.mkdir(direct)
 
-def make_fs_atlas_tree():
+def make_fs_atlas_tree(atlas=None, subject=None):
     """Setup the Freesurfer atlas tree."""
     roidir = os.path.join(cfg.setup.basepath, "roi")
     atlasdir = os.path.join(roidir, 'atlases')
     basedir = os.path.join(atlasdir, "freesurfer")
 
     fsdirs = [roidir, atlasdir, basedir]
+
+    # Setup atlas in arguments, or all
+    if atlas is None:
+        atlaslist = cfg.atlases
+    else:
+        atlaslist = [dict(atlas=cfg.atlases(atlas))]
+
+    # Setup for subject in arguments, or all
+    if subject is None:
+        subjects = cfg.subjects()
+    else:
+        subjects = [subject]
 
     for mani in ["volume", "surface"]:
         manidir = os.path.join(basedir, mani)
@@ -137,13 +149,13 @@ def make_fs_atlas_tree():
             else:
                 pardir = manidir
 
-            for subj in cfg.subjects():
+            for subj in subject:
                 subjdir = os.path.join(pardir, subj)
                 fsdirs.append(subjdir)
 
-                for name, atdict in cfg.atlases().items():
-                    if atdict["source"] == "freesurfer" and atdict["manifold"] == mani:
-                        atnamedir = os.path.join(subjdir, name)
+                for atlasdict in atlaslist:
+                    if atlasdict["source"] == "freesurfer" and atlasdict["manifold"] == mani:
+                        atnamedir = os.path.join(subjdir, atlasdict["atlasname"])
                         fsdirs.append(atnamedir)
                     
     for direct in fsdirs:

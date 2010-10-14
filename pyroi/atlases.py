@@ -1064,8 +1064,6 @@ class FreesurferAtlas(Atlas):
 
         Atlas.__init__(self, atlasdict, **kwargs)
 
-        tree.make_fs_atlas_tree()
-        
         if self.manifold == "surface":
             self.iterhemi = ["lh","rh"]
         self.fname = atlasdict["fname"]
@@ -1124,6 +1122,9 @@ class FreesurferAtlas(Atlas):
         """Initialize the atlas for a subject"""
         if not self._init_paradigm:
             raise InitError("Paradigm")
+
+        tree.make_fs_atlas_tree(self.atlasname, subject)
+        
         self.subject = subject
         self.subjgroup = cfg.subjects(subject=subject)
         if self.manifold == "surface":

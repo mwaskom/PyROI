@@ -123,7 +123,7 @@ class FirstLevelStats(RoiBase):
         cmd = ["mri_concat"]
         for f in self.extractlist:
             cmd.append("--i %s"%f)
-        cmd.append("--o %s"self.extractvol)
+        cmd.append("--o %s"%self.extractvol)
 
         self._run(cmd)
         if hasattr(self, "_avgtempdir"):
