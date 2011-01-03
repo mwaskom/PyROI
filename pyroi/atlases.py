@@ -148,8 +148,8 @@ class Atlas(RoiBase):
                 atlas = ("...%s"
                          % self.atlas.replace(cfg.setup.basepath, "").strip("/"))
                 if self.manifold == "surface":
-                    repr = "\n".join((repr, "Atlas Image%s:","    %s" 
-                                      % (s1, atlas % self.iterhemi[0])))
+                    repr = "\n".join((repr, "Atlas Image%s:"%s1,
+                                      "\t%s"%atlas%self.iterhemi[0]))
                     if len(self.iterhemi) == 2:
                         repr = "\n".join((repr,"\t%s" 
                                           % atlas
@@ -173,10 +173,10 @@ class Atlas(RoiBase):
                         source = ("...%s"
                                   % self.analysis.source.replace(
                                      cfg.setup.basepath, "").strip("/"))
-                        repr = "\n".join((repr, "Source Image%s:","    %s" 
-                                          % (s1, source % self.iterhemi[0])))
+                        repr = "\n".join((repr, "Source Image%s:"%s1,
+                                          "\t%s"%source%self.iterhemi[0]))
                         if len(self.iterhemi) == 2:
-                            repr = "\n".join((repr,"    %s" 
+                            repr = "\n".join((repr,"\t%s" 
                                               % source
                                               % self.iterhemi[1]))
                     else:
@@ -194,10 +194,10 @@ class Atlas(RoiBase):
                              % self.functxt.replace(
                                cfg.setup.basepath, "").strip("/"))
                     if self.manifold == "surface":
-                        repr = "\n".join((repr, "Extraction Table%s:", "    %s" 
-                                          % (s1, text % self.iterhemi[0])))
+                        repr = "\n".join((repr, "Extraction Table%s:"%s1,
+                                          "\t%s"%text%self.iterhemi[0]))
                         if len(self.iterhemi) == 2:
-                            repr = "\n".join((repr,"    %s" 
+                            repr = "\n".join((repr,"\t%s" 
                                               % source
                                               % self.iterhemi[1]))
                     else:
@@ -1123,7 +1123,10 @@ class FreesurferAtlas(Atlas):
         if not self._init_paradigm:
             raise InitError("Paradigm")
 
-        tree.make_fs_atlas_tree(self.atlasname, subject)
+        if self.atlasname == "register":
+            tree.make_reg_tree()
+        else:
+            tree.make_fs_atlas_tree(self.atlasname, subject)
         
         self.subject = subject
         self.subjgroup = cfg.subjects(subject=subject)
