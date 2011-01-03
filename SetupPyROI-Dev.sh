@@ -1,3 +1,3 @@
-export PYTHONPATH=/repos/pyroi/PyROI-Dev:/u2/mwaskom/NiTime/:$PYTHONPATH
-eval $(/repos/pyroi/setdevprompt.py)
+export PYTHONPATH=/software/pyroi/PyROI-Dev:$PYTHONPATH
+eval $(/software/pyroi/setdevprompt.py)
 echo 'The PyROI development environment is now active'

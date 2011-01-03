@@ -3,8 +3,8 @@ PyROI Home
 ==========
 
 PyROI is a Python package for functional neuroimaging region of interest
-extraction and analysis.  It offers a highly efficient processing stream
-and a wide range of flexibility in the way source images are parcellated.
+extraction and analysis.  It offers an efficient processing stream and a
+wide range of flexibility in the way source images are parcellated.
 Using PyROI, users can extract parameter and contrast effect sizes or 
 timecourses from regions defined the following ways:
 
