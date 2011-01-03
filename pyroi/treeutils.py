@@ -128,9 +128,9 @@ def make_fs_atlas_tree(atlas=None, subject=None):
 
     # Setup atlas in arguments, or all
     if atlas is None:
-        atlaslist = cfg.atlases
+        atlaslist = cfg.atlases().values()
     else:
-        atlaslist = [dict(atlas=cfg.atlases(atlas))]
+        atlaslist = [cfg.atlases(atlas)]
 
     # Setup for subject in arguments, or all
     if subject is None:
@@ -149,7 +149,7 @@ def make_fs_atlas_tree(atlas=None, subject=None):
             else:
                 pardir = manidir
 
-            for subj in subject:
+            for subj in subjects:
                 subjdir = os.path.join(pardir, subj)
                 fsdirs.append(subjdir)
 
