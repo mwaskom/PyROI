@@ -368,7 +368,7 @@ def fssubjdir():
     try:
         path = fs.FSInfo.subjectsdir(setup.fssubjectsdir)
     except AttributeError:
-        path = fs.FSInfo.subjectsdir(os.getenv("SUBJECTS_DIR"))
+        path = os.getenv("SUBJECTS_DIR")
         if not path:
             raise Exception("Freesurfer subjects directory could not be determined "
                         "from environment variables.")
