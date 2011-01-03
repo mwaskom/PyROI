@@ -30,10 +30,7 @@ init_stat_object :  Provides a common interface to source image objects.
 """
 import os
 import re
-import sys
 import shutil
-import subprocess
-from glob import glob
 from tempfile import mkdtemp
 
 import numpy as np
@@ -162,7 +159,7 @@ class FirstLevelStats(RoiBase):
             cmd.append("--o %s" % self.extractsurf % hemi)
             cmd.append("--reg %s" % self.regmat)
             cmd.append("--hemi %s" % hemi)
-            cmd.append("--projfrac 1")
+            cmd.append("--projfrac-avg 0 1 .1")
             cmd.append("--noreshape")
 
             result = self._run(cmd)
